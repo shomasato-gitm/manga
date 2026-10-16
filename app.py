@@ -9,6 +9,7 @@ import streamlit as st
 
 from manga.models import Project
 from manga.storage import ProjectStore, StorageError
+from manga.story_ui import render_story_workspace
 
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data" / "projects"
@@ -24,7 +25,7 @@ def set_form(project=None):
 def main():
     st.set_page_config(page_title="AI漫画スタジオ", page_icon="📖", layout="centered")
     st.title("📖 AI漫画スタジオ")
-    st.caption("第1段階：漫画の企画を作成し、JSONに保存します。")
+    st.caption("漫画の企画とストーリーを、ChatGPTとの手動連携で制作します。")
     store = ProjectStore(Path(os.environ.get("MANGA_DATA_DIR", str(DEFAULT_DATA_DIR))).expanduser())
     if "active_project" not in st.session_state:
         set_form()
@@ -85,7 +86,10 @@ def main():
             file_name=f"{active.id}.json",
             mime="application/json",
         )
-    st.caption("AI生成・画像編集・費用管理は今後追加予定です。この版ではAPI接続や課金は発生しません。")
+        render_story_workspace(active, store.directory)
+    else:
+        st.info("プロジェクトを保存すると、ストーリー制作を始められます。")
+    st.caption("OpenAI APIは使用しません。APIキーは不要で、このアプリによるAPI課金は発生しません。")
 
 
 if __name__ == "__main__":

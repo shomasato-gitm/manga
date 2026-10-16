@@ -14,6 +14,25 @@ class StorageError(Exception):
     """利用者に表示できる保存・読み込みエラー。"""
 
 
+def write_json_atomic(path: Path, data: dict) -> None:
+    """JSON全体を一時ファイルに書き、成功したときだけ置き換える。"""
+    temporary = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, suffix=".tmp", delete=False) as file:
+            temporary = Path(file.name)
+            json.dump(data, file, ensure_ascii=False, indent=2)
+            file.write("\n")
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(temporary, path)
+    except OSError as error:
+        raise StorageError("保存できませんでした。保存先の権限と空き容量を確認してください。") from error
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 class ProjectStore:
     def __init__(self, directory: Path):
         self.directory = Path(directory)
@@ -25,21 +44,7 @@ class ProjectStore:
         """一時ファイルから置き換え、書き込み失敗時は元のJSONを守る。"""
         saved = replace(project, updated_at=now_iso())
         path = self._path(saved.id)
-        temporary = None
-        try:
-            self.directory.mkdir(parents=True, exist_ok=True)
-            with NamedTemporaryFile(mode="w", encoding="utf-8", dir=self.directory, suffix=".tmp", delete=False) as file:
-                temporary = Path(file.name)
-                json.dump(saved.to_dict(), file, ensure_ascii=False, indent=2)
-                file.write("\n")
-                file.flush()
-                os.fsync(file.fileno())
-            os.replace(temporary, path)
-        except OSError as error:
-            raise StorageError("保存できませんでした。保存先の権限と空き容量を確認してください。") from error
-        finally:
-            if temporary is not None:
-                temporary.unlink(missing_ok=True)
+        write_json_atomic(path, saved.to_dict())
         return saved
 
     def load(self, project_id: str) -> Project:

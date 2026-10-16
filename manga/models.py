@@ -41,7 +41,7 @@ class WorkflowState:
 
 @dataclass
 class BudgetState:
-    """将来の費用管理用。金額は丸め誤差を避けるため文字列で保存する。"""
+    """第1段階のJSONとの互換用。手動連携ではこの費用項目を使用しない。"""
 
     limit_usd: Optional[str] = None
     spent_usd: str = "0.00"

@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "title": "月の図書館",
+  "summary": "月の司書ルナと少年ソラが、忘れられた物語を読み継ぐことで街の記憶を取り戻す。",
+  "pages": [
+    {
+      "page": 1,
+      "summary": "消えた物語",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "月の図書館で、司書のルナが白紙の本を見つける。",
+          "dialogue": "ルナ：昨日までは文字があったのに。",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "本の間から小さな光がこぼれ、窓の外へ飛ぶ。",
+          "dialogue": "ルナ：待って！",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "月の街を見下ろすルナ。街の看板からも文字が消えている。",
+          "dialogue": "ルナ：街の記憶まで消えている？",
+          "narration": ""
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "summary": "光を追って",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "ルナがランタンを手に図書館を出る。",
+          "dialogue": "ルナ：本の続きを探しに行こう。",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "路地で、光を追う少年ソラと出会う。",
+          "dialogue": "ソラ：ぼくも大事な話を忘れそうなんだ。",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "二人が光の流れる古い時計塔を見上げる。",
+          "dialogue": "ルナ：あそこから調べよう。",
+          "narration": ""
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "summary": "時計塔の番人",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "時計塔の扉に、羽根のない紙の鳥が止まっている。",
+          "dialogue": "紙の鳥：物語は、読まれなくなると眠るのです。",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "ソラが胸の古いしおりを握りしめる。",
+          "dialogue": "ソラ：おばあちゃんが読んでくれた話も？",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "鳥が塔の上の淡い光を指す。",
+          "dialogue": "紙の鳥：最後の言葉は、まだあそこに。",
+          "narration": ""
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "summary": "欠けた階段",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "塔の階段が途中で途切れ、二人が足を止める。",
+          "dialogue": "ルナ：これでは登れない。",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "ソラがしおりに書かれた一節を読み上げる。",
+          "dialogue": "ソラ：小さな一歩が、夜に橋をかける。",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "言葉が光の階段になり、ルナがソラの手を取る。",
+          "dialogue": "ルナ：物語が道を作ってくれた！",
+          "narration": ""
+        }
+      ]
+    },
+    {
+      "page": 5,
+      "summary": "最後の一冊",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "最上階に、街の記憶を集めた大きな本が浮かぶ。",
+          "dialogue": "",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "本が閉じかけ、光の文字が暗闇へほどけていく。",
+          "dialogue": "ルナ：まだ間に合う！",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "ルナが本を開くが、最後のページだけが白い。",
+          "dialogue": "ソラ：続きは、どこにあるんだろう。",
+          "narration": ""
+        }
+      ]
+    },
+    {
+      "page": 6,
+      "summary": "思い出の続き",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "ソラがしおりを本に置き、目を閉じる。",
+          "dialogue": "ソラ：おばあちゃんは、いつも最後に笑ってた。",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "ルナがソラの隣で、思い出した言葉を書き留める。",
+          "dialogue": "ルナ：一緒に思い出してみよう。",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "二人の言葉でページに道と星の絵が現れる。",
+          "dialogue": "ソラ：旅人は帰ってきたんだ。待っている人のところへ。",
+          "narration": ""
+        }
+      ]
+    },
+    {
+      "page": 7,
+      "summary": "街に戻る言葉",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "本が開ききり、光の文字が窓から街へ流れる。",
+          "dialogue": "",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "紙の鳥に光の羽根が戻り、塔の周りを飛ぶ。",
+          "dialogue": "紙の鳥：誰かに語るたび、物語は目を覚まします。",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "ソラとルナが、文字の戻った街を眺める。",
+          "dialogue": "ルナ：今度は、みんなで読もう。",
+          "narration": ""
+        }
+      ]
+    },
+    {
+      "page": 8,
+      "summary": "新しい読者",
+      "panels": [
+        {
+          "panel": 1,
+          "description": "翌日、図書館でルナとソラが読み聞かせ会を開く。",
+          "dialogue": "ソラ：今日は、おばあちゃんにもらったお話です。",
+          "narration": ""
+        },
+        {
+          "panel": 2,
+          "description": "子どもたちが本を囲み、紙の鳥が窓辺で耳を傾ける。",
+          "dialogue": "子ども：その続きは？",
+          "narration": ""
+        },
+        {
+          "panel": 3,
+          "description": "ルナが新しい白いページを開き、ソラと笑い合う。",
+          "dialogue": "ルナ：続きは、ここから一緒に作ろう。",
+          "narration": ""
+        }
+      ]
+    }
+  ]
+}
