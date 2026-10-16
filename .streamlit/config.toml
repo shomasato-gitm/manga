@@ -3,4 +3,4 @@ gatherUsageStats = false
 
 [server]
 address = "127.0.0.1"
-maxUploadSize = 2
+maxUploadSize = 20
