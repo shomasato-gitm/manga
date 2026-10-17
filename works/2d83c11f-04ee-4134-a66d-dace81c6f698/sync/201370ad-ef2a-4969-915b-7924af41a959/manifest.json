@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "format": "manga-studio-sync",
+  "project_id": "2d83c11f-04ee-4134-a66d-dace81c6f698",
+  "snapshot_id": "201370ad-ef2a-4969-915b-7924af41a959",
+  "created_at": "2026-10-17T15:43:46.471924+00:00",
+  "story_version_id": "0c4cc5fc-857f-54ab-9630-d2b38d32220f",
+  "source_commit": "0a2aa0e5ce723147bb547b513da28fd08f430ea5",
+  "settings_versions": {
+    "artwork": 1,
+    "composition": 1
+  },
+  "characters": [
+    {
+      "id": "b8ed8ac7-60f1-4b8c-94d0-442ea3338740",
+      "primary_reference_id": null,
+      "references": []
+    },
+    {
+      "id": "33e85a7a-5ce1-4897-8dad-6240c491663d",
+      "primary_reference_id": null,
+      "references": []
+    }
+  ],
+  "adoptions": [
+    {
+      "page": 1,
+      "panel": 1,
+      "image_id": "dea00271-e771-54e9-85a0-9f999f2b677a",
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 1,
+      "panel": 2,
+      "image_id": "1e6d8329-b461-5448-993c-8bd17a76984c",
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 1,
+      "panel": 3,
+      "image_id": "49b865ea-370b-5c95-b710-9b4783de5163",
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 2,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 2,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 2,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 3,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 3,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 3,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 4,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 4,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 4,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 5,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 5,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 5,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 6,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 6,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 6,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 7,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 7,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 7,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 8,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 8,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    },
+    {
+      "page": 8,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "0c4cc5fc-857f-54ab-9630-d2b38d32220f"
+    }
+  ],
+  "files": [
+    {
+      "path": "artwork.json",
+      "size": 74717,
+      "sha256": "4c28399e73513a69ef50b96fd9eebc5ca3b1867032b3e58b009d56211abb9398"
+    },
+    {
+      "path": "composition.json",
+      "size": 576,
+      "sha256": "e15dc775ce6c6042dbac3a42f975ceb59dc59e49f4abbe23cfe8fd17ae7de86e"
+    },
+    {
+      "path": "exports/book.pdf",
+      "size": 804408,
+      "sha256": "a30ae8c43d42be9a43088ce8fe7b593d35773343e009b9ba3cecc70e596245aa"
+    },
+    {
+      "path": "exports/page_001.png",
+      "size": 683463,
+      "sha256": "51c5bd35ee8569febf101722739c7de97fcaf2d60a56bd7dde67fbe69605737d"
+    },
+    {
+      "path": "images/panels/1e6d8329-b461-5448-993c-8bd17a76984c.png",
+      "size": 2003017,
+      "sha256": "647640263de146cf4fce90af5058cffffa93503b3088398b36e83693d78148e3"
+    },
+    {
+      "path": "images/panels/49b865ea-370b-5c95-b710-9b4783de5163.png",
+      "size": 1963096,
+      "sha256": "82d0c5cf7bc16425d39cb7aa052adb23591f1a7f74b0f611bbd41b6319600bde"
+    },
+    {
+      "path": "images/panels/dea00271-e771-54e9-85a0-9f999f2b677a.png",
+      "size": 2022450,
+      "sha256": "e8e909d94d44808934dcf3a17e4ef83d92075b91ff337489ebee33e929dd579d"
+    },
+    {
+      "path": "pdca.json",
+      "size": 170,
+      "sha256": "2ecffbd98ceaf95d2f2b987582dbacce440d85f237104c694af7e3b039c0c2cb"
+    },
+    {
+      "path": "project.json",
+      "size": 1092,
+      "sha256": "b00355786623fb27dcb544674e0ced6183bc283f72aa251de521661df1e1ddd7"
+    },
+    {
+      "path": "story.json",
+      "size": 15619,
+      "sha256": "18511e2097c8d5b0e42cd4d1166dcf1881bfeb3451c42ef52771a33c619483a0"
+    },
+    {
+      "path": "story_history.json",
+      "size": 17104,
+      "sha256": "5bc4aef0fa1968ff356c395825c8a2459f86f0dde35288359bb2512c0689eff8"
+    }
+  ]
+}

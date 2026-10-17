@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "project_id": "2d83c11f-04ee-4134-a66d-dace81c6f698",
+  "policy": {
+    "max_iterations": 3,
+    "minimum_score": 80
+  },
+  "iterations": []
+}
