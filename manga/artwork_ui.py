@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from manga.artwork_models import CHARACTER_FIELDS, DIRECTION_FIELDS, panel_key
+from manga.artwork_models import CHARACTER_ALL_FIELDS as CHARACTER_FIELDS, DIRECTION_FIELDS, image_context_changed, panel_key
 from manga.artwork_storage import ArtworkStore
 from manga.image_prompts import character_image_prompt, panel_image_prompt
 from manga.storage import StorageError
@@ -90,7 +90,7 @@ def _characters(store, data, prefix, notice_key):
     with st.form(f"{key}_character_form"):
         values = {}
         for field, label in CHARACTER_FIELDS.items():
-            value = character[field] if character else ""
+            value = character.get(field, "") if character else ""
             if field in ("clothing", "personality", "features"):
                 values[field] = st.text_area(label, value=value, max_chars=2000, key=f"{key}_{field}")
             else:
@@ -176,7 +176,7 @@ def _directions(project, store, data, latest, prefix, notice_key):
             st.warning(str(error))
 
 
-def _gallery(store, entry, prefix, current_panel=None, inside_expander=False):
+def _gallery(store, entry, prefix, current_panel=None, inside_expander=False, current_artwork=None):
     columns = st.columns(3)
     for index, image in enumerate(entry["candidates"]):
         with columns[index % 3]:
@@ -184,6 +184,8 @@ def _gallery(store, entry, prefix, current_panel=None, inside_expander=False):
             _show_image(store, image, f"候補{index + 1}{badge} {image['original_name']}", f"{prefix}_{image['id']}")
             if current_panel is not None and image["source_panel"] != current_panel:
                 st.warning("以前のストーリー内容の候補です。")
+            if current_artwork is not None and image_context_changed(image, entry, current_artwork):
+                st.warning("画像登録後に作画指示・作風・人物設定が変わっています。画像との一致を確認してください。")
             conditions = st.container() if inside_expander else st.expander("登録時の作画条件")
             with conditions:
                 if inside_expander:
@@ -211,7 +213,7 @@ def _panel_images(store, data, latest, prefix, notice_key):
                  "候補画像を保存しました。採用する画像を選んでください。", notice_key)
     entry = data["panels"].get(panel_key(page["page"], panel["panel"]))
     if entry and entry["candidates"]:
-        _gallery(store, entry, f"{prefix}_candidate", panel)
+        _gallery(store, entry, f"{prefix}_candidate", panel, current_artwork=data)
         by_id = {image["id"]: image for image in entry["candidates"]}
         ids = list(by_id)
         selected = st.selectbox("採用候補を選ぶ", ids, index=ids.index(entry["selected_image_id"]) if entry["selected_image_id"] else 0,

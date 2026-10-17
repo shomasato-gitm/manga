@@ -8,9 +8,13 @@ CHARACTER_FIELDS = {
     "hair_color": "髪色", "eye_color": "目の色", "body_type": "体格",
     "clothing": "服装", "personality": "性格", "features": "特徴",
 }
+CHARACTER_EXTRA_FIELDS = {"height": "身長", "role": "物語上の役割", "visual_identity": "視覚的な差別化"}
+CHARACTER_ALL_FIELDS = {**CHARACTER_FIELDS, **CHARACTER_EXTRA_FIELDS}
 DIRECTION_FIELDS = {
     "location": "場所", "time_of_day": "時間帯", "expression": "表情",
     "pose": "ポーズ", "camera_angle": "カメラ角度", "composition": "構図",
+    "background": "背景", "lighting": "光", "color_palette": "色彩",
+    "dramatic_role": "演出的な役割", "continuity": "前後のコマとの連続性",
 }
 DEFAULT_STYLE = "白黒の日本漫画。読みやすい線画と整理された背景。"
 
@@ -27,10 +31,13 @@ def text(value, label, maximum=2000, required=False):
 
 
 def character_fields(values):
-    return {
+    fields = {
         key: text(values.get(key, ""), label, 100 if key == "name" else 2000, required=key == "name")
         for key, label in CHARACTER_FIELDS.items()
     }
+    # 旧JSONに追加項目がなくても、そのまま読み込める。
+    fields.update({key: text(values[key], label) for key, label in CHARACTER_EXTRA_FIELDS.items() if key in values})
+    return fields
 
 
 def direction_fields(values):
@@ -46,6 +53,16 @@ def panel_key(page, panel):
     if type(page) is not int or not 1 <= page <= 100 or type(panel) is not int or not 1 <= panel <= 6:
         raise ValueError("ページ番号・コマ番号が不正です。")
     return f"{page}:{panel}"
+
+
+def image_context_changed(image, entry, artwork):
+    """脚本が同じでも、採用後の作画・人物変更で画像が古くなりうる。"""
+    context = image["context"]
+    if context["style"] != artwork["style"] or direction_fields(context["direction"] or {}) != direction_fields(entry["direction"] or {}):
+        return True
+    current = {character["id"]: character for character in artwork["characters"] if not character["deleted_at"]}
+    return any(character["id"] not in current or character_fields(character) != character_fields(current[character["id"]])
+               for character in context["characters"])
 
 
 def empty_artwork(project_id):
@@ -86,7 +103,7 @@ def validate_artwork(data, project_id):
     character_ids, image_ids = set(), set()
     for character in data["characters"]:
         validate_id(character["id"])
-        if character["id"] in character_ids or character_fields(character) != {key: character[key] for key in CHARACTER_FIELDS}:
+        if character["id"] in character_ids or character_fields(character) != {key: character[key] for key in character_fields(character)}:
             raise ValueError("キャラクター設定が不正です。")
         character_ids.add(character["id"])
         text(character["created_at"], "キャラクターの作成日時", required=True)

@@ -43,54 +43,57 @@ class EditorialStore:
         except OSError as error:
             raise StorageError("参考作品・評価履歴を読み込めません。保存先の権限を確認してください。") from error
         try:
-            data = json.loads(raw)
-            if not isinstance(data, dict) or type(data["schema_version"]) is not int or data["schema_version"] != 1 or data["project_id"] != self.project_id:
-                raise ValueError
-            if type(data["revision"]) is not int or data["revision"] < 0:
-                raise ValueError
-            for key in ("references", "analyses", "evaluations", "finalizations"):
-                if not isinstance(data[key], list):
-                    raise ValueError
-            seen, refs = set(), {}
-            for reference in data["references"]:
-                validate_id(reference["id"])
-                if reference["id"] in seen or type(reference["version"]) is not int or reference["version"] < 1:
-                    raise ValueError
-                seen.add(reference["id"])
-                if reference_fields(reference) != {key: reference[key] for key in reference_fields(reference)}:
-                    raise ValueError
-                _stamp(reference["created_at"])
-                _stamp(reference["updated_at"])
-                if reference["deleted_at"] is not None:
-                    _stamp(reference["deleted_at"])
-                refs[reference["id"]] = reference
-            for analysis in data["analyses"]:
-                self._validate_record(analysis, seen)
-                payload = analysis["payload"]
-                reference = refs[payload["reference_id"]]
-                snapshot = analysis["reference_snapshot"]
-                if snapshot["id"] != reference["id"] or type(snapshot["version"]) is not int or not 1 <= snapshot["version"] <= reference["version"]:
-                    raise ValueError
-                reference_fields(snapshot)
-                if payload["reference_version"] != snapshot["version"]:
-                    raise ValueError
-                if normalize_analysis(payload, reference["id"]) != payload:
-                    raise ValueError
-            for evaluation in data["evaluations"]:
-                self._validate_record(evaluation, seen)
-                payload = evaluation["payload"]
-                validate_id(payload["story_version_id"])
-                source = normalize_story(evaluation["source_story"]).story
-                if source != evaluation["source_story"] or normalize_evaluation(payload, payload["story_version_id"], source) != payload:
-                    raise ValueError
-            for final in data["finalizations"]:
-                self._validate_record(final, seen)
-                validate_id(final["story_version_id"])
-                if normalize_story(final["source_story"]).story != final["source_story"]:
-                    raise ValueError
-            return data
+            return self.validate(json.loads(raw))
         except (ValueError, TypeError, KeyError, AttributeError, RecursionError) as error:
             raise StorageError("参考作品・評価履歴の形式が不正です。上書きせず、バックアップから確認してください。") from error
+
+    def validate(self, data):
+        """採用の再開記録も、通常の読み込みと同じ規則で検証する。"""
+        if not isinstance(data, dict) or type(data["schema_version"]) is not int or data["schema_version"] != 1 or data["project_id"] != self.project_id:
+            raise ValueError
+        if type(data["revision"]) is not int or data["revision"] < 0:
+            raise ValueError
+        for key in ("references", "analyses", "evaluations", "finalizations"):
+            if not isinstance(data[key], list):
+                raise ValueError
+        seen, refs = set(), {}
+        for reference in data["references"]:
+            validate_id(reference["id"])
+            if reference["id"] in seen or type(reference["version"]) is not int or reference["version"] < 1:
+                raise ValueError
+            seen.add(reference["id"])
+            if reference_fields(reference) != {key: reference[key] for key in reference_fields(reference)}:
+                raise ValueError
+            _stamp(reference["created_at"])
+            _stamp(reference["updated_at"])
+            if reference["deleted_at"] is not None:
+                _stamp(reference["deleted_at"])
+            refs[reference["id"]] = reference
+        for analysis in data["analyses"]:
+            self._validate_record(analysis, seen)
+            payload = analysis["payload"]
+            reference = refs[payload["reference_id"]]
+            snapshot = analysis["reference_snapshot"]
+            if snapshot["id"] != reference["id"] or type(snapshot["version"]) is not int or not 1 <= snapshot["version"] <= reference["version"]:
+                raise ValueError
+            reference_fields(snapshot)
+            if payload["reference_version"] != snapshot["version"]:
+                raise ValueError
+            if normalize_analysis(payload, reference["id"]) != payload:
+                raise ValueError
+        for evaluation in data["evaluations"]:
+            self._validate_record(evaluation, seen)
+            payload = evaluation["payload"]
+            validate_id(payload["story_version_id"])
+            source = normalize_story(evaluation["source_story"]).story
+            if source != evaluation["source_story"] or normalize_evaluation(payload, payload["story_version_id"], source) != payload:
+                raise ValueError
+        for final in data["finalizations"]:
+            self._validate_record(final, seen)
+            validate_id(final["story_version_id"])
+            if normalize_story(final["source_story"]).story != final["source_story"]:
+                raise ValueError
+        return data
 
     @staticmethod
     def _validate_record(record, seen):

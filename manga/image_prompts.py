@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from manga.artwork_models import CHARACTER_FIELDS, DIRECTION_FIELDS, panel_key
+from manga.artwork_models import CHARACTER_ALL_FIELDS as CHARACTER_FIELDS, DIRECTION_FIELDS, panel_key
 
 
 NO_TEXT = "画像にはセリフ、吹き出し、ナレーション、文字、擬音、ロゴ、透かしを描き込まないでください。文字は後工程で配置します。"
@@ -15,7 +15,7 @@ CONSISTENCY = (
 
 
 def _character_description(character):
-    lines = [f"{label}：{character[key] or '未指定'}" for key, label in CHARACTER_FIELDS.items()]
+    lines = [f"{label}：{character.get(key) or '未指定'}" for key, label in CHARACTER_FIELDS.items()]
     references = character["references"]
     if references:
         lines.append("参照画像（ユーザーがこの会話に手動で添付するファイル）：")
@@ -57,7 +57,7 @@ def panel_image_prompt(project, story, page, panel, artwork):
         "コマの描写": panel["description"], "セリフ（内容理解用）": panel["dialogue"],
         "ナレーション（内容理解用）": panel["narration"],
     }
-    directions = "\n".join(f"{label}：{direction[key] or '描写に合わせる'}" for key, label in DIRECTION_FIELDS.items())
+    directions = "\n".join(f"{label}：{direction.get(key) or '未指定・必要なら確認'}" for key, label in DIRECTION_FIELDS.items())
     people = "\n\n".join(characters) if characters else "登場人物なし。背景や物を中心に描き、人物を追加しないでください。"
     return (
         f"漫画の{page['page']}ページ・{panel['panel']}コマ目のイラストを1枚作成してください。ページ全体の合成は不要です。\n"

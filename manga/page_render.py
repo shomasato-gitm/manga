@@ -9,7 +9,7 @@ from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageOps, UnidentifiedImageError
 
-from manga.artwork_models import panel_key
+from manga.artwork_models import image_context_changed, panel_key
 from manga.japanese_text import TextLayoutError, draw_fitted_text
 from manga.page_layout import bubble_text, dimensions, effective_page, template_frames
 from manga.storage import StorageError
@@ -148,6 +148,8 @@ def render_cell(page_number, panel, config, artwork, store, frame_size, page_wid
     notes = []
     content = None
     if image:
+        if image_context_changed(image, artwork["panels"][panel_key(page_number, panel["panel"])], artwork):
+            notes.append("画像登録後に作画設定が変わっています。画像と現在の指示の一致を確認してください。")
         try:
             content = store.image_bytes(image)
         except StorageError as error:
