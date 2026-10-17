@@ -1,5 +1,6 @@
 """同期画面の各作業。選んだ1画面だけを構築する。"""
 import json
+import unicodedata
 from manga.ui_runtime import ui as st
 from manga.sync_manifest import decode_json,sha256,json_bytes
 from manga.sync_adoption import SCOPES
@@ -37,7 +38,7 @@ def import_view(service,data,branch,prefix,perform):
     art=st.selectbox('人物・作画指示の既存提案JSON（任意）',[None]+jsons,format_func=lambda p:p or '指定しない',key=f'{prefix}_art')
     notes=st.multiselect('参考資料JSON（資料として保持・評価点に自動変換しない）',jsons,key=f'{prefix}_notes')
     pngs=[p for p in names if p.endswith('.png')]
-    selected=st.multiselect('取り込むカラー画像・コマ画像（任意）',pngs,key=f'{prefix}_pngs')
+    selected=st.multiselect('取り込むカラー画像・コマ画像（任意）',pngs,format_func=lambda path:unicodedata.normalize('NFC',path),key=f'{prefix}_pngs')
     images=[]
     for index,path in enumerate(selected):
         st.caption(path);cols=st.columns(2)

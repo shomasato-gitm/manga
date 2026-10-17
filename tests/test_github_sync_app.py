@@ -101,3 +101,24 @@ def test_existing_png_export_can_be_explicitly_retained_for_sync(workspace):
     items=output_index(s.directory,p.id)['items']
     assert len(items)==1 and read_output(s.directory,p.id,items[0]).startswith(b'\x89PNG')
     assert s.store.load()['exports']==[]
+
+
+def test_unicode_image_display_keeps_actual_git_name_and_imports(workspace):
+    import unicodedata
+    from review_fixtures import sample_image
+    app,s,r,p,latest,art,pages,candidate,head=workspace
+    actual=f'works/{p.id}/'+unicodedata.normalize('NFD','夕暮れの教室、涙色のまなざし.png')
+    r.publish('exchange',head,head,{actual:sample_image()},'Unicode image fixture')
+    element(app,'text_input','取得するブランチ').set_value('exchange').run()
+    element(app,'radio','GitHubからの取得方式').set_value('既存worksファイル').run()
+    button(app,'GitHubの作品ファイル一覧を取得')
+    selector=element(app,'multiselect','取り込むカラー画像・コマ画像（任意）')
+    assert selector.options==[unicodedata.normalize('NFC',actual)]
+    selector.set_value([actual]).run()
+    assert element(app,'multiselect','取り込むカラー画像・コマ画像（任意）').value==[actual]
+    before=art.path.read_bytes()
+    button(app,'選択したファイルを候補取得')
+    incoming=s.store.load()['candidates'][-1]
+    assert incoming['status']=='確認待ち'
+    assert len([e for e in incoming['manifest']['files'] if e['path'].startswith('images/')])==1
+    assert art.path.read_bytes()==before

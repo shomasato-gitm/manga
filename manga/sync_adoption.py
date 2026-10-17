@@ -1,5 +1,6 @@
 """明示採用する変更だけを作る。人物ID・基準画像・過去候補を保持する。"""
 import copy
+import unicodedata
 from manga.models import Project,now_iso
 from manga.sync_manifest import decode_json,json_bytes,sha256,SyncConflict
 from manga.artwork_models import empty_artwork,character_fields,direction_fields
@@ -9,8 +10,9 @@ SCOPES={'story':'ストーリー','settings':'人物・作風・作画指示','i
 
 
 def image_identity(image):
-    """再取得日時だけ違う同一候補は重複登録しない。既存の監査日時は保持する。"""
+    """日時・元名のNFC/NFD差で候補を増やさない。既存の記録は保持する。"""
     value=copy.deepcopy(image);value.pop('saved_at',None)
+    if 'original_name' in value:value['original_name']=unicodedata.normalize('NFC',value['original_name'])
     context=value.get('context')
     if context:
         if context['direction']:context['direction'].pop('updated_at',None)

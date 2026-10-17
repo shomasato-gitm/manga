@@ -4,6 +4,7 @@ import fcntl
 import re
 import subprocess
 import tempfile
+import unicodedata
 from pathlib import Path
 from contextlib import contextmanager
 from manga.sync_manifest import safe_path,commit_id,check_limits,MAX_FILE_BYTES
@@ -83,13 +84,25 @@ class GitRemote:
 
     def read(self,commit,path):
         commit_id(commit);safe_path(path)
-        entries=self._run('ls-tree','-z',commit,'--',path).split(b'\0')
-        exact=[entry for entry in entries if entry and entry.split(b'\t',1)[1].decode('utf-8')==path]
-        if len(exact)!=1 or exact[0].split(b' ',1)[0] not in (b'100644',b'100755'):
+        if path.isascii():
+            args=['ls-tree','-z',commit,'--',path]
+        else:
+            # 非ASCIIの最初の要素より手前だけをGitの検索条件にする。
+            # パス引数を正規化しうるMacでも、ツリーの生の名前を照合できる。
+            parts=path.split('/');index=next(i for i,part in enumerate(parts) if not part.isascii())
+            prefix='/'.join(parts[:index])
+            args=['ls-tree','-rz',commit]+(['--',prefix+'/'] if prefix else [])
+        entries=self._run(*args,extra_env={'GIT_LITERAL_PATHSPECS':'1'}).split(b'\0')
+        canonical=unicodedata.normalize('NFC',path)
+        matches=[entry for entry in entries if entry and unicodedata.normalize('NFC',entry.split(b'\t',1)[1].decode('utf-8'))==canonical]
+        if len(matches)>1:raise ValueError('Unicode正規化で同名になるファイルが複数あります。取得先を推測せず停止しました。GitHub上の名前を確認してください。')
+        if not matches or matches[0].split(b' ',1)[0] not in (b'100644',b'100755'):
             raise ValueError('取得対象は存在する通常ファイルにしてください。リンク・フォルダは取得できません。')
-        size=int(self._run('cat-file','-s',f'{commit}:{path}'))
+        oid=matches[0].split(b'\t',1)[0].split()[2].decode('ascii')
+        size=int(self._run('cat-file','-s',oid))
         if size>MAX_FILE_BYTES:raise ValueError('取得ファイルが10MiBを超えています。')
-        return self._run('show',f'{commit}:{path}')
+        # 検証した通常ファイルのblobを直接読む。ファイル名を再解釈させない。
+        return self._run('cat-file','blob',oid)
 
     def publish(self,branch,parent,expected_head,files,message):
         self.branch(branch);check_limits(files)
