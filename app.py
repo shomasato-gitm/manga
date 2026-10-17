@@ -11,6 +11,7 @@ from manga.models import Project
 from manga.storage import ProjectStore, StorageError
 from manga.story_ui import render_story_workspace
 from manga.artwork_ui import render_artwork_workspace
+from manga.page_ui import render_page_workspace
 
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data" / "projects"
@@ -89,6 +90,7 @@ def main():
         )
         render_story_workspace(active, store.directory)
         render_artwork_workspace(active, store.directory)
+        render_page_workspace(active, store.directory)
     else:
         st.info("プロジェクトを保存すると、ストーリー制作を始められます。")
     st.caption("OpenAI APIは使用しません。APIキーは不要で、このアプリによるAPI課金は発生しません。")
