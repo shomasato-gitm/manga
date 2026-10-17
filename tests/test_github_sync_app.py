@@ -108,6 +108,7 @@ def test_unicode_image_display_keeps_actual_git_name_and_imports(workspace):
     from review_fixtures import sample_image
     app,s,r,p,latest,art,pages,candidate,head=workspace
     actual=f'works/{p.id}/'+unicodedata.normalize('NFD','夕暮れの教室、涙色のまなざし.png')
+    r._run('config','core.precomposeUnicode','false')
     r.publish('exchange',head,head,{actual:sample_image()},'Unicode image fixture')
     element(app,'text_input','取得するブランチ').set_value('exchange').run()
     element(app,'radio','GitHubからの取得方式').set_value('既存worksファイル').run()

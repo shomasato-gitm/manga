@@ -13,10 +13,18 @@ from review_fixtures import sample_image
 NAME='夕暮れの教室、涙色のまなざし.png'
 
 
+@pytest.fixture
+def raw_remote(local_remote):
+    # MacのGit設定に左右されず、実際にNFDのツリーを作ってから読み取りを検証する。
+    local_remote.head('exchange')
+    local_remote._run('config','core.precomposeUnicode','false')
+    return local_remote
+
+
 @pytest.mark.parametrize('stored_form',['NFC','NFD'])
 @pytest.mark.parametrize('precompose',['true','false'])
-def test_read_both_normalizations_by_actual_blob(local_remote,stored_form,precompose):
-    remote=local_remote
+def test_read_both_normalizations_by_actual_blob(raw_remote,stored_form,precompose):
+    remote=raw_remote
     path='works/example/'+unicodedata.normalize(stored_form,NAME)
     image=sample_image()
     commit=remote.publish('exchange',None,None,{path:image},'Unicode fixture')
@@ -26,24 +34,24 @@ def test_read_both_normalizations_by_actual_blob(local_remote,stored_form,precom
         assert remote.read(commit,unicodedata.normalize(requested_form,path))==image
 
 
-def test_unicode_directories_are_resolved_without_renaming(local_remote):
+def test_unicode_directories_are_resolved_without_renaming(raw_remote):
     stored=unicodedata.normalize('NFD','works/example/画像/がぞう/'+NAME)
-    commit=local_remote.publish('exchange',None,None,{stored:sample_image()},'Unicode folders')
-    assert local_remote.read(commit,unicodedata.normalize('NFC',stored))==sample_image()
+    commit=raw_remote.publish('exchange',None,None,{stored:sample_image()},'Unicode folders')
+    assert raw_remote.read(commit,unicodedata.normalize('NFC',stored))==sample_image()
 
 
 @pytest.mark.parametrize('requested_form',['NFC','NFD'])
-def test_canonical_name_collision_is_rejected_even_for_exact_match(local_remote,requested_form):
+def test_canonical_name_collision_is_rejected_even_for_exact_match(raw_remote,requested_form):
     prefix='works/example/'
     files={prefix+unicodedata.normalize('NFC',NAME):sample_image(),
            prefix+unicodedata.normalize('NFD',NAME):sample_image(color='blue')}
-    commit=local_remote.publish('exchange',None,None,files,'Ambiguous names')
+    commit=raw_remote.publish('exchange',None,None,files,'Ambiguous names')
     with pytest.raises(ValueError,match='複数'):
-        local_remote.read(commit,prefix+unicodedata.normalize(requested_form,NAME))
+        raw_remote.read(commit,prefix+unicodedata.normalize(requested_form,NAME))
 
 
-def test_unicode_alias_never_accepts_a_symlink(local_remote,tmp_path):
-    remote=local_remote
+def test_unicode_alias_never_accepts_a_symlink(raw_remote,tmp_path):
+    remote=raw_remote
     commit=remote.publish('exchange',None,None,{'target.png':sample_image()},'Symlink target')
     env=dict(GIT_INDEX_FILE=str(tmp_path/'index'),GIT_AUTHOR_NAME='Test',GIT_AUTHOR_EMAIL='test@example.invalid',
              GIT_COMMITTER_NAME='Test',GIT_COMMITTER_EMAIL='test@example.invalid')
@@ -57,10 +65,10 @@ def test_unicode_alias_never_accepts_a_symlink(local_remote,tmp_path):
         remote.read(linked,unicodedata.normalize('NFC',path))
 
 
-def test_compatibility_characters_are_not_folded(local_remote):
-    commit=local_remote.publish('exchange',None,None,{'works/example/Ａ.png':sample_image()},'Distinct name')
+def test_compatibility_characters_are_not_folded(raw_remote):
+    commit=raw_remote.publish('exchange',None,None,{'works/example/Ａ.png':sample_image()},'Distinct name')
     with pytest.raises(ValueError,match='通常ファイル'):
-        local_remote.read(commit,'works/example/A.png')
+        raw_remote.read(commit,'works/example/A.png')
 
 
 def test_image_identity_ignores_only_original_filename_normalization():
@@ -72,15 +80,15 @@ def test_image_identity_ignores_only_original_filename_normalization():
     assert image_identity(old)!=image_identity(dict(incoming,original_name='別画像.png'))
 
 
-def test_supplied_three_images_import_via_nfc_and_nfd_keeps_same_candidates(tmp_path,local_remote):
+def test_supplied_three_images_import_via_nfc_and_nfd_keeps_same_candidates(tmp_path,raw_remote):
     from manga.artwork_storage import ArtworkStore
     from manga.story_storage import StoryStore
     from manga.sync_manifest import decode_json
     source=Path(__file__).resolve().parents[1]/'works'/'2d83c11f-04ee-4134-a66d-dace81c6f698'
     originals={p:p.read_bytes() for p in source.iterdir() if p.is_file()}
     prefix=f'works/{source.name}/'
-    local_remote.publish('exchange',None,None,{prefix+p.name:b for p,b in originals.items()},'Read-only work copy')
-    service=SyncService(tmp_path/'client',source.name,local_remote)
+    raw_remote.publish('exchange',None,None,{prefix+p.name:b for p,b in originals.items()},'Read-only work copy')
+    service=SyncService(tmp_path/'client',source.name,raw_remote)
     mapping=decode_json(originals[source/'page_01_composition_manifest_2026-10-17.json'])['sources']
     previous=None
     for form in ('NFD','NFC'):
