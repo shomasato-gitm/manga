@@ -1,0 +1,50 @@
+{
+  "date_jst": "2026-10-18",
+  "branch": "feature/github-studio-sync",
+  "base_main": "1dc4b932c0d873e02791b9ee1addc745f1e167f0",
+  "before": {
+    "command": ".venv/bin/python -m pytest -q",
+    "passed": 396,
+    "failed": 0,
+    "elapsed_seconds": 111.63
+  },
+  "after": [
+    {
+      "python": "3.11.17",
+      "streamlit": "1.40.2",
+      "passed": 438,
+      "failed": 0,
+      "skipped": 0,
+      "elapsed_seconds": 145.31
+    },
+    {
+      "python": "3.12.14",
+      "streamlit": "1.40.2",
+      "passed": 438,
+      "failed": 0,
+      "skipped": 0,
+      "elapsed_seconds": 136.45
+    }
+  ],
+  "new_test_cases": 42,
+  "platform": "Linux x86_64",
+  "mac_hardware_tested": false,
+  "test_first": "未実装時の先行テストはmanga.github_syncの未存在による収集エラー。実装後に全テスト成功。",
+  "compatibility": "既存396件を維持。実行用依存パッケージの追加なし。",
+  "checks": [
+    "固定コミット取得とJSON schema_version: 1互換",
+    "ハッシュ・容量・パス・重複キー・不正データの拒否",
+    "取得だけでは正式採用しない",
+    "競合停止・実差分表示",
+    "人物ID・基準画像・履歴・元画像の保持",
+    "採用途中失敗と再開・画像の原子的確定",
+    "送信成功後のローカル記録失敗からの復旧",
+    "同じ候補の再取得と無関係なコミットでの版増殖防止",
+    "並行ブランチ取得の混線防止",
+    "品質レビュー・AI返答の未確認状態",
+    "PDCA上限・点数・停止理由",
+    "完成PNG/PDFの明示保存",
+    "Streamlitの初回作品登録・取得・採用・送信確認",
+    "別作品と認証情報を収集しない"
+  ]
+}
