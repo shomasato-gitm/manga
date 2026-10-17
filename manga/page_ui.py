@@ -68,7 +68,7 @@ def _layout(config, settings, key, save):
             save(dict(config, template=template, frames=frames if manual else None))
 
 
-def _bubbles(config, page, project_id, key, save):
+def _bubbles(config, page, project_id, key, save, settings):
     with st.expander("セリフ・吹き出しを編集"):
         st.caption("セリフ・ナレーションはストーリー本文に追従します。専用の文章に切り替えて分割・調整できます。本文の変更は元のストーリーへ影響しません。")
         by_id = {item["id"]: item for item in config["bubbles"]}
@@ -89,6 +89,13 @@ def _bubbles(config, page, project_id, key, save):
                 changed["font_scale"] = st.number_input("文字サイズ上限（ページ幅の%）", min_value=1.2, max_value=7.0, value=round(bubble["font_scale"] * 100, 4), step=0.1) / 100
                 submitted = st.form_submit_button("吹き出しを保存")
             if submitted:
+                if changed["flow"] != bubble["flow"] and all(abs(changed["box"][field]-bubble["box"][field]) < .00001 for field in ("x","y","width","height")) and bubble.get("text_layout") == "japanese_v2":
+                    from manga.bubble_layout import size_for_text
+                    from manga.page_layout import pixel_frames
+                    content=bubble_text(changed,page["panels"][changed["panel"]-1])
+                    frame=pixel_frames(page,config,settings)[changed["panel"]-1]
+                    w,h,_=size_for_text(content,changed["flow"],changed["shape"],changed["tail"],changed["font_scale"],frame,settings["width"])
+                    changed["box"].update(width=w,height=h,x=min(changed["box"]["x"],1-w),y=min(changed["box"]["y"],1-h))
                 updated = copy.deepcopy(config)
                 updated["bubbles"] = [changed if item["id"] == selected else item for item in config["bubbles"]]
                 save(updated)
@@ -105,6 +112,7 @@ def _bubbles(config, page, project_id, key, save):
 def _preview(page, latest, artwork, data, images, prefix):
     cache = st.session_state.setdefault("composition_render_cache", RenderCache())
     preview_key = f"{prefix}_preview"
+    high_quality=st.checkbox("完成サイズでプレビュー（高品質）",value=True,key=f"{prefix}_preview_quality")
     force = st.button("ページをプレビュー・再描画", key=f"{prefix}_preview_button")
     if force:
         st.session_state[preview_key] = True
@@ -115,19 +123,19 @@ def _preview(page, latest, artwork, data, images, prefix):
             from manga.studio_storage import StudioStore
             fingerprint=production_fingerprint(latest,artwork,data,images.root)
             preview_cache=st.session_state.setdefault("_page_previews",{})
-            cache_key=(prefix,page["page"])
+            cache_key=(prefix,page["page"],high_quality)
             entry=preview_cache.get(cache_key)
-            if force or entry is None or entry["fingerprint"] != fingerprint or entry["font"] != font.signature:
+            if force or entry is None or entry.get("engine") != 2 or entry["fingerprint"] != fingerprint or entry["font"] != font.signature:
                 with operation("ページプレビューを描画しています"):
-                    rendered=render_page(page, latest["id"], artwork, data, images, font, cache, width=min(600, data["settings"]["width"]))
-                preview_cache[cache_key]=dict(fingerprint=fingerprint,font=font.signature,rendered=rendered)
+                    rendered=render_page(page, latest["id"], artwork, data, images, font, cache, width=None if high_quality else min(600, data["settings"]["width"]))
+                preview_cache[cache_key]=dict(fingerprint=fingerprint,font=font.signature,rendered=rendered,engine=2)
                 while len(preview_cache)>8 or sum(len(v["rendered"].png) for v in preview_cache.values())>8*1024*1024:
                     preview_cache.pop(next(iter(preview_cache)))
                 if not rendered.errors:
                     StudioStore(images.root.parent,data["project_id"]).record_render(page["page"],fingerprint)
             else:
                 rendered=entry["rendered"]
-            st.image(rendered.png, caption=f"{page['page']}ページ（プレビューは最大600px。出力は設定したサイズ）", use_container_width=True)
+            st.image(rendered.png, caption=f"{page['page']}ページ（{'完成サイズ' if high_quality else '軽量表示'}：{rendered.width}×{rendered.height}px）", use_container_width=True)
             st.caption(f"日本語フォント：{font.name} ｜ 変更のないコマはキャッシュから再利用します。")
             for error in rendered.errors:
                 st.error(error)
@@ -151,7 +159,7 @@ def _export(page, latest, artwork, data, images, prefix):
                 pages = [page]
         st.caption("保存済みの編集内容を出力します。欠けた画像はプレースホルダーになります。縦読みはコマ番号順で、8000px以内のPNGに分割します。")
         state_fingerprint=production_fingerprint(latest,artwork,data,images.root)
-        fingerprint = (state_fingerprint, page["page"], kind, sns_width, len(pages))
+        fingerprint = (state_fingerprint, page["page"], kind, sns_width, len(pages), 2)
         export_key = f"{prefix}_export"
         if st.session_state.get(export_key, {}).get("fingerprint") != fingerprint:
             st.session_state.pop(export_key, None)
@@ -187,7 +195,6 @@ def _export(page, latest, artwork, data, images, prefix):
 
 
 def render_page_workspace(project, directory, mode="editor"):
-    st.divider()
     st.header("漫画ページ編集" if mode=="editor" else "PNG・PDF書き出し")
     prefix = f"composition_{project.id}"
     notice = f"{prefix}_notice"
@@ -207,10 +214,17 @@ def render_page_workspace(project, directory, mode="editor"):
     latest = history[-1]
     if mode == "export":
         _settings(store, data, prefix, notice)
-    number = st.selectbox("合成するページ" if mode=="editor" else "出力するページ", [page["page"] for page in latest["story"]["pages"]], key=f"{prefix}_{mode}_page")
+    if mode == "editor":
+        page_column,method_column=st.columns([1,2])
+        with page_column:
+            number=st.selectbox("合成するページ",[p["page"] for p in latest["story"]["pages"]],key=f"{prefix}_{mode}_page")
+        with method_column:
+            method=st.radio("編集方法",["ビジュアル編集","従来の数値編集"],horizontal=True,key=f"{prefix}_method")
+    else:
+        number=st.selectbox("出力するページ",[p["page"] for p in latest["story"]["pages"]],key=f"{prefix}_{mode}_page")
     page = latest["story"]["pages"][number - 1]
     saved = data["pages"].get(str(number))
-    config = effective_page(saved, project.id, page, latest["id"])
+    config = effective_page(saved, project.id, page, latest["id"], data["settings"])
     if saved and saved["source_page"] != page:
         st.warning("保存後にストーリーが変わっています。コマ数が同じ場合は配置を引き継ぎ、異なる場合は一時的に標準配置を使います。元の編集履歴と画像は保持します。内容を確認して再保存してください。")
     key = f"{prefix}_{number}_{latest['id']}_{data['revision']}"
@@ -221,9 +235,18 @@ def render_page_workspace(project, directory, mode="editor"):
 
     if mode == "editor":
         st.caption("出力サイズ・余白・枠線・フォントは「PNG・PDF書き出し」で設定します。")
-        _layout(config, data["settings"], key, save)
-        _bubbles(config, page, project.id, key, save)
-        st.caption("保存済みの内容をプレビューします。入力の下書きはこのブラウザセッション内に保持します。")
-        _preview(page, latest, artwork, data, images, prefix)
+        with st.empty().container():
+            if method == "ビジュアル編集":
+                from manga.page_editor_ui import visual_editor
+                visual_editor(project,store,data,page,latest,artwork,images,config,prefix,notice)
+            else:
+                _layout(config, data["settings"], key, save)
+                _bubbles(config, page, project.id, key, save, data["settings"])
+        with st.expander("保存後の完成プレビュー（書き出しと同じ配置）"):
+            st.caption("保存済みの内容を完成サイズで合成して縮小表示します。書き出しには保存前の下書きを含みません。")
+            _preview(page, latest, artwork, data, images, prefix)
     else:
+        drafts=st.session_state.get("_page_editor_drafts",{})
+        if any(c[0]==project.id and d["config"]!=d["base"] for c,d in drafts.items()):
+            st.warning("未保存のページ編集があります。書き出しに含める場合は漫画ページ編集へ戻って保存してください。ここでは保存済みの設定を出力します。")
         _export(page, latest, artwork, data, images, prefix)

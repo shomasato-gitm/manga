@@ -111,6 +111,8 @@ def render_panel_workspace(project, directory, navigate, history_only=False):
         if history_only:
             image_history(store, data, latest, prefix)
             return
+        from manga.page_storage import PageStore
+        composition=read_store(PageStore(directory,project.id))
         story = latest["story"]
         rows = panel_states(story, data, store.root)
     except StorageError as error:
@@ -136,6 +138,8 @@ def render_panel_workspace(project, directory, navigate, history_only=False):
         st.warning("採用画像は以前のストーリー・作画設定、または画像ファイルが見つからない状態です。画像との一致を確認してください。")
     st.write(f"描写：{panel['description']}")
     st.caption(f"作風：{data['style']}")
+    from manga.page_prompt_hints import layout_hint
+    st.caption(layout_hint(page,composition,panel["panel"]).split("\n")[0])
     with st.expander("セリフ・ナレーション・作風を確認"):
         st.write(f"セリフ：{panel['dialogue'] or 'なし'}")
         st.write(f"ナレーション：{panel['narration'] or 'なし'}")
@@ -162,7 +166,7 @@ def render_panel_workspace(project, directory, navigate, history_only=False):
     try:
         from manga.image_prompts import panel_image_prompt
         from manga.prompt_ui import prompt_tools
-        prompt = panel_image_prompt(project, story, page, panel, data)
+        prompt = panel_image_prompt(project, story, page, panel, data, composition)
         with st.empty().container():
             prompt_tools(prompt, f"{prefix}_{latest['id']}_{state['key']}_prompt", f"image_p{page['page']}_c{panel['panel']}.txt", response_json=False)
     except ValueError as error:

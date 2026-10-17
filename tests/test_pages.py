@@ -121,7 +121,9 @@ def test_stale_story_rejected_and_removed_panels_keep_saved_layout(composition):
         store.save_page(1, config, story_version_id=latest["id"], expected_revision=1)
     fresh = store.load()
     fallback = effective_page(fresh["pages"]["1"], data["project_id"], changed_story["pages"][0], str(uuid4()))
-    assert len(fallback["bubbles"]) == 4
+    assert len(fallback["bubbles"]) == 2  # 仮配置は空のナレーション枠を作らない
+    from manga.page_images import placement_for
+    assert placement_for(fallback,1)["mode"] == "contain"  # 旧ページを確認なしで新規cropにしない
     assert fresh["pages"]["1"] == config
 
 
@@ -194,6 +196,8 @@ def test_render_rtl_color_and_source_unchanged(composition, font):
 def test_image_contain_preserves_both_edges_and_alpha(composition, font):
     _, data, images, latest = composition
     config = quiet_page(data, latest)
+    config.pop("image_placements")  # 第7段階までの保存済みページ
+    config.pop("editor_version")
     source = Image.new("RGBA", (300, 50), (0,0,0,0))
     draw = ImageDraw.Draw(source)
     draw.rectangle((0,0,49,49), fill="red")

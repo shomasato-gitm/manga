@@ -11,7 +11,7 @@ import streamlit as native
 
 _SCOPE = ContextVar("manga_ui_scope", default="global")
 _FORM = ContextVar("manga_ui_form", default="")
-INPUTS = {"text_input", "text_area", "number_input", "checkbox", "selectbox", "multiselect", "radio"}
+INPUTS = {"text_input", "text_area", "number_input", "checkbox", "selectbox", "multiselect", "radio", "slider", "color_picker"}
 
 
 @contextmanager

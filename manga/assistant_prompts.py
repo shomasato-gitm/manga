@@ -55,14 +55,14 @@ def production_prompt(project, request, evaluation=None):
     )
 
 
-def batch_image_prompts(project, latest, artwork):
+def batch_image_prompts(project, latest, artwork, composition=None):
     """既存の単コマ用生成関数を再利用。未設定・古いコマは理由付きで列挙する。"""
     prompts, warnings = [], []
     for page in latest["story"]["pages"]:
         for panel in page["panels"]:
             key = panel_key(page["page"], panel["panel"])
             try:
-                prompt = panel_image_prompt(project, latest["story"], page, panel, artwork)
+                prompt = panel_image_prompt(project, latest["story"], page, panel, artwork, composition)
                 prompts.append(dict(key=key, page=page["page"], panel=panel["panel"], prompt=prompt))
             except ValueError as error:
                 warnings.append(f"{key}：{error}")

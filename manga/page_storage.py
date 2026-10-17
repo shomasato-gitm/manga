@@ -41,8 +41,10 @@ class PageStore:
                 if event["kind"] == "settings":
                     validate_settings(event["before"])
                 elif event["kind"] == "page":
+                    if type(event["page"]) is not int or not 1 <= event["page"] <= 100:raise ValueError
                     if event["before"] is not None:
                         validate_page(event["before"])
+                        if event["before"]["source_page"]["page"] != event["page"]:raise ValueError
                 else:
                     raise ValueError
             return data
@@ -92,3 +94,22 @@ class PageStore:
             data["pages"][key] = copy.deepcopy(config)
 
         self._update(operation, expected_revision)
+
+
+    def restore_page(self, page_number, history_index, *, story_version_id, expected_revision):
+        data = self.load()
+        if type(history_index) is not int or not 0 <= history_index < len(data["history"]):
+            raise ValueError("復元する編集履歴がありません。")
+        if type(page_number) is not int or not 1 <= page_number <= 100:raise ValueError("対象ページが不正です。")
+        event = data["history"][history_index]
+        if event["kind"] != "page" or event["page"] != page_number or event["before"] is None:
+            raise ValueError("このページの復元可能な編集履歴を選んでください。")
+        history = self.stories.load_history()
+        if not history or history[-1]["id"] != story_version_id:
+            raise StorageError("ストーリーが更新されました。最新の版を確認してください。")
+        config = copy.deepcopy(event["before"])
+        page = history[-1]["story"]["pages"][page_number-1]
+        if len(config["source_page"]["panels"]) != len(page["panels"]):
+            raise ValueError("履歴と現在のコマ数が異なります。元の履歴を保持しています。手動で調整してください。")
+        config.update(source_page=copy.deepcopy(page),source_version_id=story_version_id)
+        self.save_page(page_number,config,story_version_id=story_version_id,expected_revision=expected_revision)

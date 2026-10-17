@@ -1,6 +1,7 @@
 """右から左に読むコマ配置と、互換性を保つページ編集データ。座標は0〜1。"""
 
 import math
+import re
 from uuid import UUID, uuid5
 
 from manga.models import validate_id
@@ -101,6 +102,16 @@ def template_frames(template, count, settings):
     return validate_frames(frames, count)
 
 
+def pixel_frames(page, config, settings, width=None):
+    width, height = dimensions(settings, width)
+    margin = round(width * settings["margin"] / 100)
+    available_w, available_h = width - margin * 2, height - margin * 2
+    frames = config["frames"] or template_frames(config["template"], len(page["panels"]), settings)
+    return [dict(x=margin + round(frame["x"] * available_w), y=margin + round(frame["y"] * available_h),
+                 width=round(frame["width"] * available_w), height=round(frame["height"] * available_h)) for frame in frames]
+
+
+
 def default_bubble(project_id, page, panel, source, bubble_id=None):
     speech = source != "narration"
     return dict(
@@ -112,10 +123,13 @@ def default_bubble(project_id, page, panel, source, bubble_id=None):
     )
 
 
-def default_page(project_id, page, version_id):
-    return dict(template="hero_top", frames=None, source_page=page, source_version_id=version_id,
-                bubbles=[default_bubble(project_id, page["page"], panel["panel"], source)
-                         for panel in page["panels"] for source in ("dialogue", "narration")])
+def default_page(project_id, page, version_id, settings=None):
+    from manga.bubble_layout import proposed_bubbles
+    settings = settings or DEFAULT_SETTINGS
+    config = dict(template="hero_top", frames=None, source_page=page, source_version_id=version_id,
+                  editor_version=2, image_placements={str(p["panel"]):dict(mode="cover",x=.5,y=.5,zoom=1.0) for p in page["panels"]})
+    config["bubbles"], _ = proposed_bubbles(project_id,page,pixel_frames(page,config,settings),settings)
+    return config
 
 
 def validate_page(config):
@@ -131,6 +145,15 @@ def validate_page(config):
         validate_frames(config["frames"], len(source["panels"]))
     if not isinstance(config["bubbles"], list) or len(config["bubbles"]) > 60:
         raise ValueError("吹き出しは1ページ60個までです。")
+    if "editor_version" in config and (type(config["editor_version"]) is not int or config["editor_version"] != 2):
+        raise ValueError("ページ編集の拡張形式が不正です。")
+    placements = config.get("image_placements", {})
+    if not isinstance(placements, dict):raise ValueError("画像配置が不正です。")
+    for key, placement in placements.items():
+        if key not in {str(p["panel"]) for p in source["panels"]} or placement["mode"] not in ("cover","contain"):
+            raise ValueError("画像配置の対象コマ・表示方式が不正です。")
+        number(placement["x"],"画像の横位置",0,1);number(placement["y"],"画像の縦位置",0,1)
+        number(placement["zoom"],"画像の倍率",1,4)
     seen = set()
     for bubble in config["bubbles"]:
         validate_id(bubble["id"])
@@ -147,15 +170,31 @@ def validate_page(config):
             raise ValueError("自由文の吹き出しには本文を指定してください。")
         if type(bubble["visible"]) is not bool or type(bubble["tail"]) is not bool:
             raise ValueError("吹き出しの表示設定が不正です。")
+        for key in ("speaker", "source_text"):
+            if key in bubble and (not isinstance(bubble[key],str) or len(bubble[key]) > (200 if key == "speaker" else 4000)):
+                raise ValueError("話者または分割前の文章が不正です。")
+        if "kind" in bubble and bubble["kind"] not in ("speech","narration"):
+            raise ValueError("文章枠の種類が不正です。")
+        if "background" in bubble and (not isinstance(bubble["background"],str) or not re.fullmatch(r"#[0-9a-fA-F]{6}",bubble["background"])):
+            raise ValueError("背景色は#RRGGBBで指定してください。")
+        if "opacity" in bubble:number(bubble["opacity"],"背景の不透明度",0,1)
+        for field in ("outline","needs_review"):
+            if field in bubble and type(bubble[field]) is not bool:raise ValueError("文字枠の表示設定が不正です。")
+        if "text_layout" in bubble and bubble["text_layout"] != "japanese_v2":raise ValueError("文字配置形式が不正です。")
+        if "min_font_scale" in bubble:number(bubble["min_font_scale"],"最小文字サイズ",.012,.07)
         validate_rect(bubble["box"], "吹き出し", 0.10)
         number(bubble["font_scale"], "文字サイズ", 0.012, 0.07)
     return config
 
 
-def effective_page(saved, project_id, page, version_id):
+def effective_page(saved, project_id, page, version_id, settings=None):
     if saved and len(saved["source_page"]["panels"]) == len(page["panels"]):
         return saved
-    return default_page(project_id, page, version_id)
+    fallback=default_page(project_id,page,version_id,settings)
+    if saved:
+        # コマ数変更後の仮レイアウトでも、確認なしの新たなトリミングは避ける。
+        fallback.pop("image_placements",None)
+    return fallback
 
 
 def bubble_text(bubble, panel):

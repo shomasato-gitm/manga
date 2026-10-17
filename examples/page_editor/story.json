@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "title": "君が忘れた、最後の約束",
+  "summary": "卒業を控えた悠真と美咲。夕暮れの教室で、言えなかった思いと転校の知らせが交差する。",
+  "pages": [{
+    "page": 1,
+    "summary": "美咲の転校を知らされる。",
+    "panels": [
+      {"panel": 1, "description": "夕暮れの教室。悠真が窓際に座り、美咲を見つめる。", "dialogue": "", "narration": "卒業まで、あと7日。ずっと言えなかったことがある。"},
+      {"panel": 2, "description": "美咲が悠真の席へ近づく。", "dialogue": "悠真：「あのさ、美咲。今日の帰り――」\n美咲：「ねえ、悠真。先に話してもいい？」", "narration": ""},
+      {"panel": 3, "description": "美咲の表情アップ。", "dialogue": "美咲：「私ね……明日、転校するんだ」", "narration": ""}
+    ]
+  }]
+}

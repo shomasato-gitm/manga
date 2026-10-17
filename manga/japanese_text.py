@@ -88,7 +88,7 @@ def _automatic_font():
 
 def find_japanese_font(path=""):
     configured = path.strip() or os.environ.get("MANGA_FONT_PATH", "").strip()
-    return load_japanese_font(configured) if configured else _automatic_font()
+    return load_japanese_font(configured) if configured else load_japanese_font(_automatic_font().path)
 
 
 def normalized_text(text):
@@ -124,7 +124,7 @@ def _vertical_char(char, spec):
     return char, char in ROTATE or (char.isascii() and char.isalnum())
 
 
-def _text_plan(text, font, spec, width, height, flow):
+def _legacy_text_plan(text, font, spec, width, height, flow):
     if flow == "horizontal":
         lines, current = [], ""
         for cluster in _clusters(text):
@@ -167,7 +167,31 @@ def _text_plan(text, font, spec, width, height, flow):
     return (content, step) if len(content) <= columns else None
 
 
-def fit_text(text, width, height, flow, spec, requested_size, minimum_size):
+def _text_plan(text, font, spec, width, height, flow, kinsoku=True):
+    if not kinsoku:return _legacy_text_plan(text,font,spec,width,height,flow)
+    from manga.japanese_wrap import wrap_clusters
+    paragraphs = [_clusters(part) for part in text.split("\n")]
+    if flow == "horizontal":
+        lines=[]
+        for paragraph in paragraphs:
+            wrapped=wrap_clusters(paragraph,lambda cs: (lambda box: box[2]-box[0] <= width)(font.getbbox("".join(cs))),natural=True)
+            if wrapped is None:return None
+            lines.extend("".join(cs) for cs in wrapped)
+        step=max(round(font.size*1.25),max((font.getbbox(line)[3]-font.getbbox(line)[1] for line in lines),default=0))
+        return (lines,step) if len(lines)*step <= height else None
+    glyphs=[_vertical_char(c,spec)[0] for p in paragraphs for c in p]
+    step=max(round(font.size*1.2),max((max(font.getbbox(c)[2]-font.getbbox(c)[0],font.getbbox(c)[3]-font.getbbox(c)[1])+2 for c in glyphs),default=0))
+    rows, columns=height//max(1,step),width//max(1,step)
+    if not rows or not columns:return None
+    content=[]
+    for paragraph in paragraphs:
+        wrapped=wrap_clusters(paragraph,lambda cs: len(cs) <= rows)
+        if wrapped is None:return None
+        content.extend(wrapped)
+    return (content,step) if len(content) <= columns else None
+
+
+def fit_text(text, width, height, flow, spec, requested_size, minimum_size, *, kinsoku=True):
     """収まる最大サイズを探し、最小でも収まらなければ明示エラー。省略はしない。"""
     text = normalized_text(text)
     check_glyphs(text, spec)
@@ -176,7 +200,7 @@ def fit_text(text, width, height, flow, spec, requested_size, minimum_size):
     while low <= high:
         size = (low + high) // 2
         font = _pil_font(spec.path, spec.index, size, spec.signature)
-        plan = _text_plan(text, font, spec, width, height, flow)
+        plan = _text_plan(text, font, spec, width, height, flow, kinsoku)
         if plan:
             best = (font, plan)
             low = size + 1
@@ -187,9 +211,9 @@ def fit_text(text, width, height, flow, spec, requested_size, minimum_size):
     return text, best[0], best[1]
 
 
-def draw_fitted_text(size, text, flow, spec, requested_size, minimum_size):
+def draw_fitted_text(size, text, flow, spec, requested_size, minimum_size, *, kinsoku=True):
     width, height = size
-    _, font, (content, step) = fit_text(text, width, height, flow, spec, requested_size, minimum_size)
+    _, font, (content, step) = fit_text(text, width, height, flow, spec, requested_size, minimum_size, kinsoku=kinsoku)
     layer = Image.new("RGBA", size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(layer)
     if flow == "horizontal":

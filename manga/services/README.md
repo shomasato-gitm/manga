@@ -45,3 +45,8 @@ OpenAI APIや非公式API、ChatGPTのWeb画面の自動操作は使用しませ
 第6段階では `navigation.py` から選択した画面だけを呼びます。表示用データは `ui_data.py`、セッションの下書きと処理状態は `ui_runtime.py` へ分離しています。
 工程判定は `studio_workflow.py`、描画・出力の成功記録は独立した `studio.json`、容量計測は `storage_usage.py` を使います。
 保存処理のロック・競合検知・検証はキャッシュせず従来どおり実行し、画像や既存の保存履歴は変更・削除しません。
+
+第8段階の画像配置は `page_images.py`、話者分割は `page_dialogue.py`、初期文字枠は `bubble_layout.py`、描画は `bubble_render.py`、基本禁則は `japanese_wrap.py` に分けています。
+`page_editor*.py` は下書き・編集・確認適用・復元と出力に一致するプレビューを担当し、`page_canvas/` は依存ライブラリなしのローカルCanvasです。
+ブラウザ操作はPythonで対象・トークン・範囲を検証し、明示保存するまで確定データに反映しません。
+`composition.json` の任意項目を拡張し、旧ページでは従来のcontainと文字配置を維持します。PNG・PDFと縦読みは同じコマ合成結果を使います。

@@ -48,7 +48,7 @@ def test_edit_preview_export_and_reopen(workspace):
     button(app, "吹き出しを保存")
     assert store.load()["pages"]["1"]["bubbles"][0]["text"] == "月へ！"
     button(app, "ページをプレビュー・再描画")
-    assert not app.error
+    assert not app.error, [e.value for e in app.error]
     button(app, "出力ファイルを生成")
     export_key = f"composition_{store.project_id}_export"
     export = app.session_state[export_key]
@@ -80,7 +80,7 @@ def test_custom_frames_validation_and_bubble_addition(workspace):
     assert store.load()["pages"]["1"]["frames"]
     element(app, "selectbox", "追加する文章の種類").set_value("custom")
     button(app, "吹き出しを追加")
-    assert len(store.load()["pages"]["1"]["bubbles"]) == 7
+    assert len(store.load()["pages"]["1"]["bubbles"]) == 4  # 空のナレーションを初期生成しない
     last = store.load()["pages"]["1"]["bubbles"][-1]
     element(app, "selectbox", "編集する吹き出し").set_value(last["id"]).run()
     assert element(app, "checkbox", "この吹き出し専用の文章を使う").disabled

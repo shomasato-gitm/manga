@@ -51,7 +51,7 @@ def export_book(story, version_id, artwork, data, store, font, kind="pdf", cache
             raise ValueError("出力するページがありません。")
         if kind == "pdf":
             output = BytesIO()
-            frames[0].save(output, format="PDF", save_all=True, append_images=frames[1:], resolution=data["settings"]["dpi"])
+            frames[0].save(output, format="PDF", save_all=True, append_images=frames[1:], resolution=data["settings"]["dpi"],quality=95,subsampling=0)
             return output.getvalue(), tuple(dict.fromkeys(notes))
         return zip_files(files), tuple(dict.fromkeys(notes))
     finally:
@@ -75,13 +75,13 @@ def export_vertical(pages, version_id, artwork, data, store, font, width=1080, c
     gap = round(width * data["settings"]["gutter"] / 100)
     plans, pixels, notes = [], 0, []
     for page in pages:
-        config = effective_page(data["pages"].get(str(page["page"])), data["project_id"], page, version_id)
+        config = effective_page(data["pages"].get(str(page["page"])), data["project_id"], page, version_id, data["settings"])
         notes.extend(f"{page['page']}ページ：{note}" for note in layout_warnings(page, config, data))
         for panel, frame in zip(page["panels"], pixel_frames(page, config, data["settings"])):
             height = max(1, round(width * frame["height"] / frame["width"]))
             if height > SNS_MAX_HEIGHT:
                 raise ValueError("縦読みで1コマが8000pxを超えます。横幅を下げるか、コマの縦横比を調整してください。")
-            plans.append((page, panel, config, height))
+            plans.append((page, panel, config, height, frame))
             pixels += width * (height + gap)
     _budget(pixels)
     if not plans:
@@ -100,13 +100,14 @@ def export_vertical(pages, version_id, artwork, data, store, font, width=1080, c
     for index, (group, height) in enumerate(groups, 1):
         canvas = Image.new("RGB", (width, height), "white")
         y = 0
-        for page, panel, config, cell_height in group:
-            png, errors, warnings = render_cell(page["page"], panel, config, artwork, store, (width, cell_height), width, data["settings"], font, cache)
+        for page, panel, config, cell_height, frame in group:
+            png, errors, warnings = render_cell(page["page"], panel, config, artwork, store,
+                (frame["width"],frame["height"]),data["settings"]["width"],data["settings"],font,cache)
             _check_errors(errors)
             done+=1
             if progress:progress(done,len(plans))
             with Image.open(BytesIO(png)) as image:
-                canvas.paste(image, (0, y))
+                canvas.paste(image.resize((width,cell_height),Image.Resampling.LANCZOS), (0, y))
             notes.extend(f"{page['page']}ページ・{panel['panel']}コマ：{note}" for note in warnings)
             order.append(dict(file=f"vertical_{index:03d}.png", page=page["page"], panel=panel["panel"], y=y, height=cell_height))
             y += cell_height + gap

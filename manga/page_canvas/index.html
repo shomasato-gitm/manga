@@ -1,0 +1,50 @@
+<!doctype html><html lang="ja"><meta charset="utf-8">
+<style>body{margin:0;font:13px sans-serif;color:#31445a}canvas{display:block;width:auto;height:auto;max-width:100%;max-height:720px;margin:0 auto;touch-action:none;outline:1px solid #bbb}p{margin:5px 0}</style>
+<canvas id="page" tabindex="0" aria-label="漫画ページ。吹き出しをクリックして選択、ドラッグで移動、四隅と辺の青いハンドルでサイズ変更。代替のスライダー・数値編集も利用できます。"></canvas>
+<p id="hint">吹き出しをクリックして選択 → ドラッグで移動／青いハンドルでサイズ変更。操作は下書きです。</p>
+<script>
+'use strict';
+const canvas=document.getElementById('page'),ctx=canvas.getContext('2d');
+let args={},background=new Image(),boxes=[],selected=null,drag=null,serial=0;
+const send=(type,data={})=>parent.postMessage({isStreamlitMessage:true,type,...data},'*');
+function publish(type,item){send('streamlit:setComponentValue',{value:{type,id:item.id,box:item.box,token:args.token,event_id:Date.now()+':'+(++serial)},dataType:'json'});}
+function absolute(item){const f=item.frame,b=item.box;return {x:f.x+b.x*f.width,y:f.y+b.y*f.height,w:b.width*f.width,h:b.height*f.height};}
+function handles(r){return [[r.x,r.y,'nw'],[r.x+r.w/2,r.y,'n'],[r.x+r.w,r.y,'ne'],[r.x+r.w,r.y+r.h/2,'e'],[r.x+r.w,r.y+r.h,'se'],[r.x+r.w/2,r.y+r.h,'s'],[r.x,r.y+r.h,'sw'],[r.x,r.y+r.h/2,'w']];}
+function draw(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);if(background.complete&&background.naturalWidth)ctx.drawImage(background,0,0,canvas.width,canvas.height);
+ const scale=canvas.width/Math.max(300,canvas.getBoundingClientRect().width);
+ for(const item of boxes){const r=absolute(item);ctx.strokeStyle=item.id===selected?'#0673d5':'#517392';ctx.lineWidth=(item.id===selected?2:1)*scale;ctx.setLineDash([4*scale,3*scale]);ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.setLineDash([]);
+  if(item.id===selected){ctx.fillStyle='#0673d5';for(const [x,y] of handles(r))ctx.fillRect(x-4*scale,y-4*scale,8*scale,8*scale);}
+ }
+}
+function point(event){const r=canvas.getBoundingClientRect();return {x:(event.clientX-r.left)*canvas.width/r.width,y:(event.clientY-r.top)*canvas.height/r.height};}
+canvas.addEventListener('pointerdown',event=>{
+ const p=point(event),radius=10*canvas.width/canvas.getBoundingClientRect().width;
+ let hit=boxes.find(b=>b.id===selected),handle=null;
+ if(hit)handle=handles(absolute(hit)).find(([x,y])=>Math.abs(p.x-x)<=radius&&Math.abs(p.y-y)<=radius);
+ if(!handle)hit=[...boxes].reverse().find(b=>{const r=absolute(b);return p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h;});
+ if(!hit)return;selected=hit.id;drag={item:hit,start:p,box:{...hit.box},handle:handle?handle[2]:null,moved:false};canvas.setPointerCapture(event.pointerId);draw();
+});
+canvas.addEventListener('pointermove',event=>{
+ if(!drag)return;const p=point(event),f=drag.item.frame,b=drag.box,dx=(p.x-drag.start.x)/f.width,dy=(p.y-drag.start.y)/f.height;
+ let x=b.x,y=b.y,w=b.width,h=b.height;const handle=drag.handle;
+ if(!handle){x=Math.max(0,Math.min(1-w,b.x+dx));y=Math.max(0,Math.min(1-h,b.y+dy));}
+ else{
+  if(handle.includes('w')){x=Math.max(0,Math.min(b.x+b.width-.10,b.x+dx));w=b.width+b.x-x;}
+  if(handle.includes('e'))w=Math.max(.10,Math.min(1-b.x,b.width+dx));
+  if(handle.includes('n')){y=Math.max(0,Math.min(b.y+b.height-.10,b.y+dy));h=b.height+b.y-y;}
+  if(handle.includes('s'))h=Math.max(.10,Math.min(1-b.y,b.height+dy));
+ }
+ drag.item.box={x,y,width:w,height:h};drag.moved=drag.moved||Math.abs(dx)+Math.abs(dy)>.002;draw();
+});
+canvas.addEventListener('pointerup',event=>{if(!drag)return;const done=drag;drag=null;publish(done.moved?'move':'select',done.item);});
+canvas.addEventListener('pointercancel',()=>{if(drag){drag.item.box=drag.box;drag=null;draw();}});
+window.addEventListener('message',event=>{
+ if(event.source!==parent||!event.data||event.data.type!=='streamlit:render')return;
+ args=event.data.args;boxes=structuredCloneSafe(args.boxes);selected=args.selected;drag=null;
+ canvas.width=args.width;canvas.height=args.height;background=new Image();background.onload=()=>{draw();send('streamlit:setFrameHeight',{height:Math.ceil(canvas.getBoundingClientRect().height)+40});};background.src='data:image/png;base64,'+args.image;
+});
+function structuredCloneSafe(value){return JSON.parse(JSON.stringify(value));}
+window.addEventListener('resize',()=>{draw();send('streamlit:setFrameHeight',{height:Math.ceil(canvas.getBoundingClientRect().height)+40});});
+send('streamlit:componentReady',{apiVersion:1});send('streamlit:setFrameHeight',{height:600});
+</script></html>

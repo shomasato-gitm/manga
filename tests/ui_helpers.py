@@ -40,6 +40,10 @@ def element(app,kind,label):
     if found:return found
     target=route(label)
     if target:go(app,*target)
+    old_page_labels=("レイアウトテンプレート","コマの配置を手動調整","このページのコマ割りを保存","この吹き出し専用の文章を使う","吹き出しの本文","吹き出しを保存","編集する吹き出し","追加する文章の種類","吹き出しを追加","文字の方向")
+    if label in old_page_labels or label.startswith("吹き出し：") or "コマ：" in label:
+        method=next((r for r in app.radio if r.label=="編集方法"),None)
+        if method and method.value!="従来の数値編集":method.set_value("従来の数値編集").run(timeout=20)
     from manga.artwork_models import DIRECTION_FIELDS
     if label in (*DIRECTION_FIELDS.values(), "登場キャラクター", "このコマの作画指示を保存"):
         editing=next((c for c in app.checkbox if c.label=="作画指示を編集"),None)

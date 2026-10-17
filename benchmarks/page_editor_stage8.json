@@ -1,0 +1,100 @@
+{
+  "python": "3.12.14",
+  "platform": "Linux",
+  "size": "1080x1620から600x900へ縮小",
+  "conditions": "日本語フォント検出後のエンジン実測。保存済みテスト画像3枚。ブラウザ・操作・ファイル保存時間を含まない。",
+  "cold_ms": 171.1,
+  "cold_image_reads": 3,
+  "warm_median_ms": 45.4,
+  "warm_image_reads": 0,
+  "one_panel_edit_ms": 74.38,
+  "edited_panel_cache_misses": 1,
+  "edit_image_reads": 0,
+  "warm_samples_ms": [
+    45.89,
+    45.92,
+    45.73,
+    45.4,
+    45.68,
+    44.88,
+    44.81,
+    45.34,
+    44.68
+  ],
+  "browser_test": {
+    "passed": true,
+    "initial": {
+      "x": 0.47565694164989947,
+      "y": 0.025,
+      "width": 0.4993430583501005,
+      "height": 0.10205263157894735
+    },
+    "moved": {
+      "x": 0.395950463917106,
+      "y": 0.05909090909090909,
+      "width": 0.4993430583501005,
+      "height": 0.10205263157894735
+    },
+    "resized": {
+      "x": 0.395950463917106,
+      "y": 0.05909090909090909,
+      "width": 0.544889617054554,
+      "height": 0.14466626794258372
+    },
+    "saved": {
+      "x": 0.395950463917106,
+      "y": 0.05909090909090909,
+      "width": 0.544889617054554,
+      "height": 0.14466626794258372
+    },
+    "browser": "154.0.8037.57",
+    "externalRequests": "blocked",
+    "javascriptErrors": []
+  },
+  "legacy_bitmap_compatibility": {
+    "baseline_commit": "4152e5666c05fc872b5c3d7093d91a0cbe68ebe9",
+    "matched": true,
+    "size": [
+      1080,
+      1620
+    ],
+    "sha256_rgb": "20cabf28ae34c0beb743f0939c98328ddd2632d839e0424e62a53a59f47dd979",
+    "scope": "同じ1080pxの旧composition.json・保存画像・日本語フォントを用いた画素比較。"
+  },
+  "browser_test_python311": {
+    "passed": true,
+    "initial": {
+      "x": 0.47565694164989947,
+      "y": 0.025,
+      "width": 0.4993430583501005,
+      "height": 0.10205263157894735
+    },
+    "moved": {
+      "x": 0.395950463917106,
+      "y": 0.05909090909090909,
+      "width": 0.4993430583501005,
+      "height": 0.10205263157894735
+    },
+    "resized": {
+      "x": 0.395950463917106,
+      "y": 0.05909090909090909,
+      "width": 0.544889617054554,
+      "height": 0.14466626794258372
+    },
+    "saved": {
+      "x": 0.395950463917106,
+      "y": 0.05909090909090909,
+      "width": 0.544889617054554,
+      "height": 0.14466626794258372
+    },
+    "browser": "154.0.8037.57",
+    "externalRequests": "blocked",
+    "javascriptErrors": []
+  },
+  "tests": {
+    "python311": "344 passed",
+    "python312": "344 passed",
+    "browser": "Chromiumでドラッグ・リサイズ・明示保存を検証、JavaScriptエラーなし",
+    "mac": "実機・Safariでは未検証"
+  }
+}

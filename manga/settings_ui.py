@@ -28,11 +28,12 @@ def render_settings(project,directory):
     if st.button("セッションの下書きを破棄（保存済みデータは保持）"):
         st.session_state["_input_drafts"]={}
         st.session_state.pop("_panel_direction_drafts", None)
+        st.session_state.pop("_page_editor_drafts", None)
         st.success("保持用の下書きを破棄しました。現在表示中のウィジェットは次の画面移動後に反映されます。")
     with st.expander("開発者向け診断"):
         st.json(cache_stats())
         st.dataframe(st.session_state.get("_screen_timings",[]),use_container_width=True)
         st.dataframe(st.session_state.get("_timings",[]),use_container_width=True)
         if st.button("表示用キャッシュをクリア"):
-            clear_cache();st.session_state.pop("_page_previews",None);st.success("キャッシュをクリアしました。次回表示時に読み直します。")
+            clear_cache();st.session_state.pop("_page_previews",None);st.session_state.pop("_visual_previews",None);st.success("キャッシュをクリアしました。次回表示時に読み直します。")
         st.download_button("処理時間ログをJSONで取得",json.dumps(dict(screens=st.session_state.get("_screen_timings",[]),operations=st.session_state.get("_timings",[])),ensure_ascii=False,indent=2),file_name="manga_timings.json",mime="application/json")

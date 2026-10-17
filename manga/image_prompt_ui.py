@@ -11,7 +11,9 @@ from manga.storage import StorageError
 def render_image_prompts(project,directory):
     store=ArtworkStore(directory,project.id)
     try:
+        from manga.page_storage import PageStore
         art=read_store(store);history=read_store(store.story_store)
+        composition=read_store(PageStore(directory,project.id))
     except StorageError as error:
         st.error(str(error));return
     if not history:
@@ -22,15 +24,15 @@ def render_image_prompts(project,directory):
         st.subheader(f"{number}ページ・{panel['panel']}コマ")
         try:
             from manga.prompt_ui import prompt_tools
-            prompt_tools(panel_image_prompt(project,latest["story"],pages[number-1],panel,art),
+            prompt_tools(panel_image_prompt(project,latest["story"],pages[number-1],panel,art,composition),
                          f"image_prompts_{project.id}_{latest['id']}_{number}_{panel['panel']}", f"image_p{number}_c{panel['panel']}.txt", response_json=False)
         except ValueError as error:st.warning(str(error))
     key=f"image_prompts_{project.id}_all"
-    fingerprint=(latest["id"],art["revision"],json.dumps(project.to_dict(),ensure_ascii=False))
+    fingerprint=(latest["id"],art["revision"],composition["revision"],json.dumps(project.to_dict(),ensure_ascii=False))
     if st.session_state.get(key,{}).get("fingerprint") != fingerprint:st.session_state.pop(key,None)
     if st.button("全画像プロンプトをまとめて作成",key=f"{key}_create") and key not in st.session_state:
         with operation("全コマの画像プロンプトを作成しています"):
-            prompts,warnings,output=batch_image_prompts(project,latest,art)
+            prompts,warnings,output=batch_image_prompts(project,latest,art,composition)
             st.session_state[key]=dict(fingerprint=fingerprint,output=output,warnings=warnings,count=len(prompts))
     if key in st.session_state:
         result=st.session_state[key]

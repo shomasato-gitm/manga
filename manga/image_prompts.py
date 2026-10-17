@@ -38,7 +38,7 @@ def character_image_prompt(character, style, view, expression):
     )
 
 
-def panel_image_prompt(project, story, page, panel, artwork):
+def panel_image_prompt(project, story, page, panel, artwork, composition=None):
     entry = artwork["panels"].get(panel_key(page["page"], panel["panel"]))
     direction = entry["direction"] if entry else None
     if direction is None:
@@ -59,9 +59,13 @@ def panel_image_prompt(project, story, page, panel, artwork):
     }
     directions = "\n".join(f"{label}：{direction.get(key) or '未指定・必要なら確認'}" for key, label in DIRECTION_FIELDS.items())
     people = "\n\n".join(characters) if characters else "登場人物なし。背景や物を中心に描き、人物を追加しないでください。"
+    layout=""
+    if composition is not None:
+        from manga.page_prompt_hints import layout_hint
+        layout=layout_hint(page,composition,panel["panel"])+"\n\n"
     return (
         f"漫画の{page['page']}ページ・{panel['panel']}コマ目のイラストを1枚作成してください。ページ全体の合成は不要です。\n"
-        f"作風：{artwork['style']}\n\n物語の文脈：\n{json.dumps(context, ensure_ascii=False, indent=2)}\n\n"
+        + layout + f"作風：{artwork['style']}\n\n物語の文脈：\n{json.dumps(context, ensure_ascii=False, indent=2)}\n\n"
         f"作画指示：\n{directions}\n\n登場キャラクター：\n{people}\n\n{CONSISTENCY}\n"
         "セリフとナレーションは状況と感情を理解するためだけの情報です。\n" + NO_TEXT
     )
