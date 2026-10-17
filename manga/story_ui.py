@@ -5,10 +5,15 @@ import json
 
 import streamlit as st
 
-from manga.prompts import generation_prompt, improvement_prompt, story_template
+from manga.prompts import generation_prompt, story_template
 from manga.storage import StorageError
 from manga.story import decode_story_file, normalize_story, parse_story
 from manga.story_storage import StoryStore
+from manga.artwork_storage import ArtworkStore
+from manga.artwork_models import CHARACTER_FIELDS
+from manga.editorial_storage import EditorialStore, generation_references
+from manga.reference_ui import reference_management, reference_analysis
+from manga.editorial_ui import render_workflow, evaluation_and_improvement, compare_and_finalize
 
 
 def render_story_workspace(project, directory):
@@ -31,21 +36,46 @@ def render_story_workspace(project, directory):
     latest = history[-1] if history else None
     latest_id = latest["id"] if latest else None
     story = latest["story"] if latest else None
+    editorial_store = EditorialStore(directory, project.id)
+    try:
+        editorial = editorial_store.load()
+    except StorageError as error:
+        editorial = None
+        st.error(str(error))
+    try:
+        artwork = ArtworkStore(directory, project.id).load()
+        characters = [{key: item[key] for key in CHARACTER_FIELDS} for item in artwork["characters"] if not item["deleted_at"]]
+    except StorageError:
+        characters = None
+    prefix = f"editorial_{project.id}"
+    if editorial is not None:
+        render_workflow(editorial, history)
     if story and len(story["pages"]) != project.page_count:
         st.warning(f"保存済みストーリーは{len(story['pages'])}ページ、現在の設定は{project.page_count}ページです。再取り込み時は現在の設定に合わせてください。")
 
-    prompt_tab, import_tab, edit_tab, history_tab = st.tabs(["ChatGPT用プロンプト", "JSON取り込み", "ページ編集", "バージョン履歴"])
+    reference_tab, analysis_tab, prompt_tab, import_tab, edit_tab, history_tab, evaluation_tab, comparison_tab = st.tabs(
+        ["参考作品管理", "参考作品分析", "ChatGPT用プロンプト", "JSON取り込み", "ページ編集", "バージョン履歴", "AI評価・改善", "比較・脚本確定"])
+    with reference_tab:
+        if editorial is not None:
+            reference_management(editorial_store, editorial, prefix, notice_key)
+    with analysis_tab:
+        if editorial is not None:
+            reference_analysis(editorial_store, editorial, prefix, notice_key)
 
     with prompt_tab:
         st.subheader("ストーリー生成用プロンプト")
         st.caption("下の枠の右上にあるコピーボタン（重なった四角）で全文をコピーできます。")
-        st.code(generation_prompt(project), language="text", wrap_lines=True)
+        selected_references = []
+        if editorial is not None:
+            active_refs = {item["id"]: item for item in editorial["references"] if not item["deleted_at"]}
+            selected_ids = st.multiselect("ストーリー生成に使う参考作品（任意・3作品まで）", list(active_refs), format_func=lambda value: active_refs[value]["title"], max_selections=3, key=f"{prefix}_generation_references")
+            selected_references = generation_references(editorial, selected_ids)
+        if characters is not None:
+            st.code(generation_prompt(project, selected_references, characters), language="text", wrap_lines=True)
+        else:
+            st.error("キャラクター設定が不正です。設定を維持するため、作画設定のエラーを解消してください。")
         st.download_button("JSONひな形をダウンロード", json.dumps(story_template(project), ensure_ascii=False, indent=2), file_name="story_template.json", mime="application/json", key=f"template_{project.id}")
-        if story:
-            st.subheader("評価・改善用プロンプト")
-            request = st.text_area("改善してほしい点（任意）", max_chars=2000, key=f"improve_{project.id}")
-            st.caption("最後に保存したストーリーが対象です。改善版も「JSON取り込み」から保存してください。")
-            st.code(improvement_prompt(project, story, request), language="text", wrap_lines=True)
+        st.caption("評価と評価に基づく改善は「AI評価・改善」タブで行えます。参考作品を選ばなくても生成できます。")
 
     with import_tab:
         st.subheader("ChatGPTの返答を取り込む")
@@ -93,6 +123,13 @@ def render_story_workspace(project, directory):
                     st.rerun()
                 except (ValueError, StorageError) as error:
                     st.error(str(error))
+
+    with evaluation_tab:
+        if editorial is not None:
+            evaluation_and_improvement(project, editorial_store, editorial, history, characters, prefix, notice_key)
+    with comparison_tab:
+        if editorial is not None:
+            compare_and_finalize(editorial_store, editorial, history, prefix, notice_key)
 
 
 def _render_editor(project, store, latest, notice_key):

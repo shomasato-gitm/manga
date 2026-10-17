@@ -11,6 +11,8 @@ from uuid import uuid4
 from manga.models import now_iso, validate_id
 from manga.storage import StorageError, write_json_atomic
 from manga.story import normalize_story
+from manga.editorial_models import CRITERIA, MODES, normalize_targets, obj, text
+from manga.story_comparison import check_improvement_scope
 
 
 class StoryStore:
@@ -49,6 +51,8 @@ class StoryStore:
                 normalized = normalize_story(version["story"]).story
                 if normalized != version["story"]:
                     raise ValueError
+                if "revision_context" in version:
+                    self._validate_context(version["revision_context"], version["story"], versions[:len(seen)])
                 seen.add(version["id"])
             return versions
         except (ValueError, TypeError, KeyError, AttributeError, RecursionError) as error:
@@ -68,7 +72,21 @@ class StoryStore:
         except OSError as error:
             raise StorageError("ストーリーを保存できません。保存先の権限と空き容量を確認してください。") from error
 
-    def _append(self, history, story, action, expected_version_id, restored_from=None):
+    @staticmethod
+    def _validate_context(context, story, history):
+        obj(context, "改善情報")
+        base = next((item for item in history if item["id"] == context["base_version_id"]), None)
+        if base is None or context["mode"] not in MODES:
+            raise ValueError("改善元の版または改善方式が不正です。")
+        validate_id(context["evaluation_id"])
+        keys = context["criteria"]
+        if not isinstance(keys, list) or not keys or any(key not in CRITERIA for key in keys):
+            raise ValueError("改善項目が不正です。")
+        text(context["reason"], "改善理由", required=True)
+        targets = normalize_targets(context["targets"], base["story"], required=context["mode"] == MODES[1])
+        check_improvement_scope(base["story"], story, context["mode"], targets)
+
+    def _append(self, history, story, action, expected_version_id, restored_from=None, revision_context=None):
         latest_id = history[-1]["id"] if history else None
         if latest_id != expected_version_id:
             raise StorageError("別の保存で履歴が更新されました。画面を更新し、最新の内容を確認してから保存し直してください。")
@@ -79,14 +97,17 @@ class StoryStore:
             "restored_from": restored_from,
             "story": normalize_story(copy.deepcopy(story)).story,
         }
+        if revision_context is not None:
+            self._validate_context(revision_context, version["story"], history)
+            version["revision_context"] = copy.deepcopy(revision_context)
         write_json_atomic(self.path, {"schema_version": 1, "project_id": self.project_id, "versions": history + [version]})
         return version
 
-    def save(self, story: dict, *, expected_version_id, action="取り込み") -> dict:
+    def save(self, story: dict, *, expected_version_id, action="取り込み", revision_context=None) -> dict:
         if action not in ("取り込み", "ページ編集"):
             raise ValueError("保存の種類が不正です。")
         with self._lock():
-            return self._append(self.load_history(), story, action, expected_version_id)
+            return self._append(self.load_history(), story, action, expected_version_id, revision_context=revision_context)
 
     def restore(self, version_id: str, *, expected_version_id) -> dict:
         validate_id(version_id)

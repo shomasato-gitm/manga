@@ -11,6 +11,11 @@ OpenAI APIや非公式API、ChatGPTのWeb画面の自動操作は使用しませ
 - `story.py`：受け渡し用JSONの検証と表記揺れの正規化
 - `story_storage.py`：ストーリーのスナップショット保存と復元
 - `story_ui.py`：ストーリー制作画面
+- `editorial_models.py` と `editorial_storage.py`：参考作品・分析・評価・確定の検証と保存
+- `editorial_prompts.py` と `reference_ui.py`：参考分析・評価プロンプトと参考作品の画面
+- `editorial_ui.py` と `editorial_ui_common.py`：評価・改善・比較・確定と共通JSON入力
+- `editorial_workflow.py`：保存記録から制作状況を計算
+- `story_comparison.py`：JSON値に基づく差分と部分改善の範囲チェック
 - `artwork_models.py` と `artwork_storage.py`：作画設定・参照画像・候補画像のローカル保存
 - `images.py`：静止画の検証・向きの補正・PNG化
 - `image_prompts.py`：キャラクターとコマの画像生成用プロンプト（ユーザーが手動でChatGPTへ渡す）
@@ -21,3 +26,6 @@ OpenAI APIや非公式API、ChatGPTのWeb画面の自動操作は使用しませ
 ストーリーの履歴はプロジェクト別フォルダに独立して保存するため、既存の企画JSONはそのまま読み込めます。
 作画設定も独立した `artwork.json` に保存します。画像そのものは `images/` に保存し、JSONには相対パスを記録します。
 キャラクター削除は一覧からの非表示で、画像候補や登録時点の人物情報は保持します。
+参考作品と分析・評価は `editorial.json` に分離し、評価はUUIDで対象のストーリー版を指します。
+改善版は既存の検証処理で保存し、`story_history.json` の版メタデータに改善元・評価ID・理由を記録します。
+確定後の変更通知は保存した脚本と現在のJSON内容の実際の比較に基づき、画像・作画指示を自動変更しません。

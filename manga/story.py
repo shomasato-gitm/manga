@@ -41,7 +41,7 @@ def decode_story_file(content: bytes) -> str:
         raise StoryValidationError("ファイルをUTF-8形式で保存し直してください。") from None
 
 
-def parse_story(text: str, expected_pages: Optional[int] = None, default_title: str = "") -> StoryImport:
+def load_json_payload(text: str):
     """BOM・Markdownのコードフェンスと、フェンス前後の説明文を許可する。"""
     if not isinstance(text, str) or not text.strip():
         raise StoryValidationError("ChatGPTが出力したJSONを貼り付けてください。")
@@ -69,7 +69,11 @@ def parse_story(text: str, expected_pages: Optional[int] = None, default_title: 
         raise
     except ValueError:
         raise StoryValidationError("JSONに大きすぎる数値があります。ページ番号・コマ番号は小さな整数にしてください。") from None
-    return normalize_story(data, expected_pages, default_title)
+    return data
+
+
+def parse_story(text: str, expected_pages: Optional[int] = None, default_title: str = "") -> StoryImport:
+    return normalize_story(load_json_payload(text), expected_pages, default_title)
 
 
 def normalize_story(data: Any, expected_pages: Optional[int] = None, default_title: str = "") -> StoryImport:
