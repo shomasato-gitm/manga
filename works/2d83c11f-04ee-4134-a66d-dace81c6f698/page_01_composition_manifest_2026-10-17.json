@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "work_title": "君が忘れた、最後の約束",
+  "page": 1,
+  "status": "ローカルPNG合成済み・GitHubへのPNGアップロード未完了",
+  "sources": [
+    {
+      "panel": 1,
+      "file": "夕暮れの教室、交差する青春.png"
+    },
+    {
+      "panel": 2,
+      "file": "夕暮れの教室、二人の視線.png"
+    },
+    {
+      "panel": 3,
+      "file": "夕暮れの教室、涙色のまなざし.png"
+    }
+  ],
+  "story": "works/2d83c11f-04ee-4134-a66d-dace81c6f698/story_test_revision_2026-10-17.json",
+  "output": {
+    "recommended_repo_path": "works/2d83c11f-04ee-4134-a66d-dace81c6f698/pages/page_01_color_composed.png",
+    "local_filename": "kimi_ga_wasureta_page_01_color_composed.png",
+    "size": [
+      1600,
+      2350
+    ],
+    "sha256": "4b441f43194216707982dbbce4f123ab15b0c98c748f52fbc8c6cfaf0913cd03",
+    "uploaded_to_github": false
+  },
+  "dialogue": [
+    {
+      "panel": 1,
+      "narration": "卒業まで、あと7日。ずっと言えなかったことがある。"
+    },
+    {
+      "panel": 2,
+      "yuma": "あのさ、美咲。今日の帰り――",
+      "misaki": "ねえ、悠真。先に話してもいい？"
+    },
+    {
+      "panel": 3,
+      "misaki": "私ね……明日、転校するんだ"
+    }
+  ],
+  "notes": "既存の元画像は変更・削除していない。GitHubへの画像バイナリ保存は別途必要。"
+}
