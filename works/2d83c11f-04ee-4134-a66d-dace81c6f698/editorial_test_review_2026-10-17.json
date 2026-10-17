@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "title": "君が忘れた、最後の約束",
+  "source": "ChatGPT Library: 君が忘れた最後の約束_8ページ24コマ_ストーリー.json",
+  "source_status": "Library原稿を確認。GitHub上に確定脚本は未検出。今回の改善版は動作テスト候補であり、既存アプリ内での正式採用・確定を意味しない。",
+  "assessment_type": "編集者による主観的な参考評価",
+  "scale": "各項目10点満点",
+  "before": {
+    "opening": 8,
+    "development": 8,
+    "emotion": 8,
+    "dialogue": 8,
+    "continuity": 6
+  },
+  "after": {
+    "opening": 8,
+    "development": 8,
+    "emotion": 8,
+    "dialogue": 8,
+    "continuity": 9
+  },
+  "notes": [
+    {
+      "target": "5ページ2〜3コマ",
+      "issue": "通過電車の轟音と告白の可聴性が曖昧",
+      "change": "無言で電車をやり過ごして静寂の中で告白する演出に変更"
+    },
+    {
+      "target": "8ページ1〜2コマ",
+      "issue": "明日転校と当夜の乗車別れが時系列上曖昧",
+      "change": "前夜は改札で別れ、翌朝は美咲が引っ越した後のホームと明示"
+    },
+    {
+      "target": "8ページ3コマ",
+      "issue": "最終ページと前ページの構図の連続性が弱い",
+      "change": "ホームの柱とベンチを一致させ、同じ場所の空白で不在を示す"
+    }
+  ],
+  "verification": {
+    "schema_version": 1,
+    "pages": 8,
+    "panels": 24,
+    "original_preserved": true,
+    "automatic_app_import": false
+  },
+  "recommendation": "アプリで正式採用前に現在のストーリー版IDとキャラクター設定の照合を実施する"
+}
