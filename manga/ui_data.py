@@ -22,21 +22,22 @@ def signature(path):
         raise StorageError("保存先の状態を確認できません。権限とフォルダの場所を確認してください。") from error
 
 
-def cached_read(path, loader):
+def cached_read(path, loader, *, variant=""):
     path = str(Path(path).resolve())
     stamp = signature(path)
+    key = (path, variant)
     with _LOCK:
-        entry = _CACHE.get(path)
+        entry = _CACHE.get(key)
         if entry and entry[0] == stamp:
             _STATS["hits"] += 1
-            _CACHE.move_to_end(path)
+            _CACHE.move_to_end(key)
             return copy.deepcopy(entry[1])
     _STATS["misses"] += 1
     value = loader()
     # 読み込み中に更新された結果を別の版としてキャッシュしない。
     if signature(path) == stamp and (stamp is None or stamp[2] <= MAX_BYTES // 2):
         with _LOCK:
-            _CACHE[path] = (stamp, copy.deepcopy(value))
+            _CACHE[key] = (stamp, copy.deepcopy(value))
             while sum((item[0][2] if item[0] else 0) + 1024 for item in _CACHE.values()) > MAX_BYTES or len(_CACHE) > 32:
                 _CACHE.popitem(last=False)
     return value

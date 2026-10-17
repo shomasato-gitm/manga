@@ -36,7 +36,10 @@ def render_home(project,directory,navigate):
         st.info(f"{next_step['label']}：{next_step['state']}。{next_step['detail']}")
         if st.button("次の工程へ進む",type="primary"):navigate(next_step["menu"],next_step["section"])
     else:st.success("全工程の成果物がそろっています。書き出したファイルの保存を確認してください。")
-    st.dataframe([{"工程":r["label"],"状態":r["state"],"確認内容":r["detail"]} for r in rows],use_container_width=True,hide_index=True)
+    from manga.navigation import stage_overview
+    st.dataframe(stage_overview(rows), use_container_width=True, hide_index=True)
+    with st.expander("工程内の詳しい進行状況"):
+        st.dataframe([{"作業":r["label"],"状態":r["state"],"確認内容":r["detail"]} for r in rows],use_container_width=True,hide_index=True)
     skip=st.checkbox("任意の作画評価をスキップする",value=studio["skip_evaluation"],key=f"skip_evaluation_{project.id}_{studio['revision']}")
     if skip != studio["skip_evaluation"]:
         studio_store.update(lambda d:d.update(skip_evaluation=skip));st.rerun()

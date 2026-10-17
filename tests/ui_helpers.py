@@ -1,6 +1,8 @@
 """旧機能の回帰シナリオを、新しい実アプリのメニューを経由して操作する。"""
 
 def go(app, menu, section=None):
+    from manga.navigation import resolve_route
+    menu, section = resolve_route(menu, section)
     nav=next(r for r in app.radio if r.label=="制作メニュー")
     if nav.value != menu:nav.set_value(menu).run(timeout=20)
     if section:
@@ -38,6 +40,10 @@ def element(app,kind,label):
     if found:return found
     target=route(label)
     if target:go(app,*target)
+    from manga.artwork_models import DIRECTION_FIELDS
+    if label in (*DIRECTION_FIELDS.values(), "登場キャラクター", "このコマの作画指示を保存"):
+        editing=next((c for c in app.checkbox if c.label=="作画指示を編集"),None)
+        if editing and not editing.value:editing.check().run(timeout=20)
     if kind=="text_area" and label.endswith("を貼り付け"):
         radio_label="取り込み方法" if label=="ChatGPTのJSONを貼り付け" else label[:-len("を貼り付け")]+"の入力方法"
         r=next(r for r in app.radio if r.label==radio_label)

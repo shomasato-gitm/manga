@@ -21,7 +21,9 @@ def render_image_prompts(project,directory):
     for panel in pages[number-1]["panels"]:
         st.subheader(f"{number}ページ・{panel['panel']}コマ")
         try:
-            st.code(panel_image_prompt(project,latest["story"],pages[number-1],panel,art),language="text",wrap_lines=True)
+            from manga.prompt_ui import prompt_tools
+            prompt_tools(panel_image_prompt(project,latest["story"],pages[number-1],panel,art),
+                         f"image_prompts_{project.id}_{latest['id']}_{number}_{panel['panel']}", f"image_p{number}_c{panel['panel']}.txt", response_json=False)
         except ValueError as error:st.warning(str(error))
     key=f"image_prompts_{project.id}_all"
     fingerprint=(latest["id"],art["revision"],json.dumps(project.to_dict(),ensure_ascii=False))

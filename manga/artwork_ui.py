@@ -21,11 +21,11 @@ def _perform(action, message, notice_key, select_key=None):
         st.error(str(error))
 
 
-def _show_image(store, image, caption, key):
+def _show_image(store, image, caption, key, allow_download=True):
     try:
         from manga.gallery_ui import thumbnail
         st.image(thumbnail(store, image), caption=caption, use_container_width=True)
-        if st.checkbox("元画像のダウンロードを表示", key=f"{key}_original"):
+        if allow_download and st.checkbox("元画像のダウンロードを表示", key=f"{key}_original"):
             content = store.image_bytes(image)
             st.download_button("画像をダウンロード", content, file_name=f"{image['id']}.png", mime="image/png", key=key)
     except StorageError as error:
@@ -113,8 +113,8 @@ def _characters(store, data, prefix, notice_key, references=False):
     st.subheader("キャラクター基準画像の生成準備")
     view = st.selectbox("生成する向き・種類", ["正面", "斜め", "全身", "表情差分"], key=f"{key}_generate_view")
     expression = st.text_input("生成する表情", value="自然な表情", max_chars=200, key=f"{key}_generate_expression")
-    st.code(character_image_prompt(character, data["style"], view, expression), language="text", wrap_lines=True)
-    st.caption("右上のコピーボタンでコピーできます。参照画像は下からダウンロードし、ChatGPTへ手動で添付してください。")
+    from manga.prompt_ui import prompt_tools
+    prompt_tools(character_image_prompt(character, data["style"], view, expression), f"{key}_reference_prompt", "character_reference_prompt.txt", response_json=False)
 
     st.subheader("参照画像の登録")
     upload = st.file_uploader("キャラクターの参照画像", type=["png", "jpg", "jpeg", "webp"], key=f"{key}_reference_upload")
@@ -172,14 +172,14 @@ def _directions(project, store, data, latest, prefix, notice_key):
                  "作画指示をストーリーとは別に保存しました。", notice_key)
 
 
-def _gallery(store, entry, prefix, current_panel=None, inside_expander=False, current_artwork=None):
+def _gallery(store, entry, prefix, current_panel=None, inside_expander=False, current_artwork=None, allow_download=True):
     columns = st.columns(3)
     from manga.gallery_ui import page_items
     visible = page_items(entry["candidates"], f"{prefix}_gallery", "候補画像")
     for index, image in enumerate(visible):
         with columns[index % 3]:
             badge = "（採用）" if image["id"] == entry["selected_image_id"] else ""
-            _show_image(store, image, f"候補{index + 1}{badge} {image['original_name']}", f"{prefix}_{image['id']}")
+            _show_image(store, image, f"候補{index + 1}{badge} {image['original_name']}", f"{prefix}_{image['id']}", allow_download=allow_download)
             if current_panel is not None and image["source_panel"] != current_panel:
                 st.warning("以前のストーリー内容の候補です。")
             if current_artwork is not None and image_context_changed(image, entry, current_artwork):

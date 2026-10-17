@@ -19,4 +19,4 @@ def thumbnail(store, image):
         with Image.open(BytesIO(content)) as source:
             fitted = ImageOps.contain(source.convert("RGBA"), (360,360), Image.Resampling.LANCZOS)
             out=BytesIO();fitted.save(out,"PNG");return out.getvalue()
-    return cached_read(store.root/image["path"], load)
+    return cached_read(store.image_path(image), load)

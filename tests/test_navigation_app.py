@@ -37,7 +37,7 @@ def open_app():
 def test_navigation_calls_only_selected_screen_and_never_reads_hidden_images(workspace):
     with patch("manga.artwork_storage.ArtworkStore.image_bytes",side_effect=AssertionError("非表示画像を読んだ")),patch("manga.assistant_ui.render_assistant_workspace",side_effect=AssertionError("非表示AI画面を構築した")):
         app=open_app()
-        assert element(app,"radio","制作メニュー").value=="ホーム・進行状況"
+        assert element(app,"radio","制作メニュー").value=="企画・ストーリー"
         assert not any(x.label=="名前" for x in app.text_input)
         go(app,"プロジェクト管理")
         assert element(app,"text_input","タイトル").value==workspace[1].title
@@ -130,7 +130,7 @@ def test_storage_scan_is_on_demand_and_diagnostics_have_real_timings(workspace):
 
 def test_next_action_and_unfinished_panel_jump(workspace):
     app=open_app();button(app,"次の工程へ進む")
-    assert element(app,"radio","制作メニュー").value=="キャラクター設定"
+    assert element(app,"radio","制作メニュー").value=="キャラクター・作風"
     go(app,"画像制作・画像管理","コマ画像・採用一覧")
     element(app,"selectbox","未完了コマへ移動").set_value("2:3").run()
     button(app,"このコマの画像管理を開く")

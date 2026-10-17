@@ -6,7 +6,7 @@ from pathlib import Path
 from manga.ui_runtime import ui as st, scope, record_screen
 from manga.ui_data import project_list
 from manga.storage import ProjectStore, StorageError
-from manga.navigation import MENUS, dispatch
+from manga.navigation import MENUS, dispatch, resolve_route
 
 DEFAULT_DATA_DIR=Path(__file__).resolve().parent/"data"/"projects"
 
@@ -18,7 +18,7 @@ def set_form(project=None):
 
 
 def navigate(menu,section=None):
-    st.session_state["_navigation_pending"]=(menu,section)
+    st.session_state["_navigation_pending"]=resolve_route(menu,section)
     st.rerun()
 
 
@@ -49,7 +49,7 @@ def main():
             menu,section=pending
             st.session_state["navigation"]=menu
             if section:st.session_state[f"route_{menu}"]=section
-        menu=st.radio("制作メニュー",list(MENUS),index=1,key="navigation")
+        menu=st.radio("制作メニュー",list(MENUS),index=0,key="navigation")
         st.caption("入力後は欄外をクリックしてから画面を切り替えてください。下書きはセッション内に保持し、確定には保存・採用ボタンを押してください。")
     notice=st.empty()
     if "notice" in st.session_state:notice.success(st.session_state.pop("notice"))
@@ -58,7 +58,10 @@ def main():
     started=time.perf_counter()
     section=None
     with scope(f"{project.id if project else 'new'}:{menu}"):
-        if MENUS[menu]:section=st.selectbox("作業を選択",MENUS[menu],key=f"route_{menu}")
+        if MENUS[menu]:
+            if menu == "企画・ストーリー" and f"route_{menu}" not in st.session_state:
+                st.session_state[f"route_{menu}"] = "ホーム・進行状況" if project else "プロジェクト管理"
+            section=st.selectbox("作業を選択",MENUS[menu],key=f"route_{menu}")
         with scope(f"{project.id if project else 'new'}:{menu}:{section}"):
             dispatch(menu,section,project,store,navigate)
     record_screen(f"{menu} / {section or ''}",time.perf_counter()-started)

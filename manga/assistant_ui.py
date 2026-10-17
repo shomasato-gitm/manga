@@ -119,7 +119,23 @@ def _progress(data):
     st.table(rows)
 
 
-def render_assistant_workspace(project, directory, kind="characters"):
+def _adoption_link(project, store, data, latest, artwork, kind, navigate):
+    if kind in ("directions", "improvement") and navigate:
+        request_ids = {r["id"] for r in data["requests"] if r["kind"] == kind and r["story_version_id"] == latest["id"]}
+        adopted = [item for proposal in data["proposals"] if proposal["request_id"] in request_ids for item in proposal["payload"].get("items", [])
+                   if proposal["decisions"].get(item["id"]) == "採用済み" and "page" in item]
+        if adopted:
+            st.success("採用した作画指示で、次はコマのイラストを制作できます。AI評価・改善は任意です。")
+            if st.button("採用したコマのイラスト制作へ", type="primary"):
+                from manga.panel_workspace_ui import open_panel
+                from manga.studio_workflow import panel_states
+                states = {r["key"]: r for r in panel_states(latest["story"], artwork, store.artwork.root)}
+                unfinished = [i for i in adopted if (r := states.get(f"{i['page']}:{i['panel']}")) and (not r["selected"] or r["stale"])]
+                item = (unfinished or adopted)[0]
+                open_panel(project.id, item["page"], item["panel"], navigate)
+
+
+def render_assistant_workspace(project, directory, kind="characters", navigate=None):
     if kind == "images":
         from manga.image_prompt_ui import render_image_prompts
         render_image_prompts(project, directory)
@@ -166,6 +182,7 @@ def render_assistant_workspace(project, directory, kind="characters"):
     except ValueError as error:
         st.info(str(error))
         return
+    _adoption_link(project, store, data, latest, artwork, kind, navigate)
     theme = st.text_input("制作テーマ・補足（任意、不明なら空欄）", max_chars=2000, key=f"{prefix}_theme")
     if kind in ("evaluation", "improvement"):
         st.caption(SUBJECTIVE_NOTICE)

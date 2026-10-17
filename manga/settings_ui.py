@@ -27,6 +27,7 @@ def render_settings(project,directory):
     st.caption("入力内容はブラウザセッション内に保持します。ブラウザ終了・再起動で失われます。ファイル選択はメニュー復帰時に再選択が必要な場合があります。確定データは保存ボタンで保存してください。")
     if st.button("セッションの下書きを破棄（保存済みデータは保持）"):
         st.session_state["_input_drafts"]={}
+        st.session_state.pop("_panel_direction_drafts", None)
         st.success("保持用の下書きを破棄しました。現在表示中のウィジェットは次の画面移動後に反映されます。")
     with st.expander("開発者向け診断"):
         st.json(cache_stats())

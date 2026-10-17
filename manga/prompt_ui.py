@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 from manga.ui_runtime import ui as st
 
 
-def prompt_tools(prompt, key, filename="prompt.txt", request=None):
+def prompt_tools(prompt, key, filename="prompt.txt", request=None, *, response_json=True):
     st.subheader("次の操作：プロンプトを取得してChatGPTへ手動送信")
     if request:
         targets=request["targets"]
@@ -17,4 +17,7 @@ def prompt_tools(prompt, key, filename="prompt.txt", request=None):
 document.getElementById('copy').onclick=async()=>{try{await navigator.clipboard.writeText(t);document.getElementById('result').textContent='コピーしました';}catch(e){document.getElementById('result').textContent='コピーを利用できません。ダウンロードを使ってください。';}};</script>''',height=55)
     if st.checkbox("詳細を表示（プロンプト全文）",key=f"{key}_details"):
         st.code(prompt,language="text",wrap_lines=True)
-    st.info("ChatGPTの返答をJSONファイルとして保存し、続く取り込み欄から選択してください。貼り付けも選べます。")
+    if response_json:
+        st.info("ChatGPTの返答をJSONファイルとして保存し、続く取り込み欄から選択してください。貼り付けも選べます。")
+    else:
+        st.info("基準画像を必要に応じて添付し、ChatGPTで画像を生成してください。生成画像を保存して、下の画像登録欄から戻します。")

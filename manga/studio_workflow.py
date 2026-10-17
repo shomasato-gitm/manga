@@ -21,7 +21,7 @@ def panel_states(story, artwork, root=None):
                 image_stale=image_stale or not path.resolve().is_relative_to(Path(root).resolve()) or not path.is_file()
             deleted = {c["id"] for c in artwork["characters"] if c["deleted_at"]}
             direction_stale=direction_stale or bool(direction and set(direction["character_ids"]) & deleted)
-            rows.append(dict(page=page["page"], panel=panel["panel"], key=key, status=state, stale=direction_stale or image_stale, direction_stale=direction_stale, image_stale=image_stale, direction=bool(direction), selected=bool(image)))
+            rows.append(dict(page=page["page"], panel=panel["panel"], key=key, status=state, stale=direction_stale or image_stale, direction_stale=direction_stale, image_stale=image_stale, direction=bool(direction), selected=bool(image), candidates=len(entry.get("candidates", []))))
     return rows
 
 

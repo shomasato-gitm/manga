@@ -190,8 +190,10 @@ class ArtworkStore:
 
         return self._add_image(content, filename, "panels", operation, expected_revision)
 
-    def select_panel_image(self, page, panel, image_id, *, expected_revision):
+    def select_panel_image(self, page, panel, image_id, *, expected_revision, story_version_id=None):
         def operation(data):
+            if story_version_id is not None:
+                self._current_panel(page, panel, story_version_id)
             entry = data["panels"].get(panel_key(page, panel))
             if entry is None or image_id not in {image["id"] for image in entry["candidates"]}:
                 raise ValueError("選択した候補画像がこのコマにありません。")
@@ -201,8 +203,8 @@ class ArtworkStore:
 
         return self._update(operation, expected_revision)
 
-    def image_bytes(self, image):
-        # メタデータの相対パスをそのまま信用せず、保存領域の内側であることを確認する。
+    def image_path(self, image):
+        # キャッシュ利用前にも保存領域の内側であることを確認する。
         relative = image["path"]
         expected = {f"images/{category}/{validate_id(image['id'])}.png" for category in ("references", "panels")}
         if relative not in expected:
@@ -210,6 +212,10 @@ class ArtworkStore:
         path = self.root / relative
         if not path.resolve().is_relative_to(self.root.resolve()):
             raise StorageError("画像の保存先がプロジェクトの外側です。")
+        return path
+
+    def image_bytes(self, image):
+        path = self.image_path(image)
         try:
             return path.read_bytes()
         except OSError as error:

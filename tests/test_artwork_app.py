@@ -60,6 +60,7 @@ def test_character_reference_direction_and_candidate_workflow(workspace):
     character = store.load()["characters"][0]
     assert element(app, "selectbox", "編集するキャラクター").value == character["id"]
     element(app, "selectbox", "生成する向き・種類").set_value("全身").run()
+    element(app, "checkbox", "詳細を表示（プロンプト全文）").check().run()
     assert any("向き・種類：全身" in item.value and "銀色" in item.value for item in app.code)
 
     uploads["キャラクターの参照画像"] = Upload(png())
@@ -78,6 +79,7 @@ def test_character_reference_direction_and_candidate_workflow(workspace):
     element(app, "text_area", "カメラ角度").set_value("ローアングル")
     button(app, "このコマの作画指示を保存")
     go(app,"画像制作・画像管理","画像プロンプト一括出力")
+    element(app, "checkbox", "詳細を表示（プロンプト全文）").check().run()
     assert any("時計塔" in item.value and "ローアングル" in item.value and "吹き出し" in item.value for item in app.code)
 
     uploads["このコマの候補画像"] = Upload(png())
