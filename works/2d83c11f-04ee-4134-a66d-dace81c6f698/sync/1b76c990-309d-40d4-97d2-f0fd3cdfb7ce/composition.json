@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "project_id": "2d83c11f-04ee-4134-a66d-dace81c6f698",
+  "revision": 1,
+  "settings": {
+    "width": 600,
+    "aspect": "portrait",
+    "margin": 4.0,
+    "gutter": 2.0,
+    "border": 0.3,
+    "font_path": "",
+    "dpi": 150
+  },
+  "pages": {},
+  "history": [
+    {
+      "kind": "settings",
+      "saved_at": "2026-10-17T15:32:06.030189+00:00",
+      "before": {
+        "width": 1080,
+        "aspect": "portrait",
+        "margin": 4.0,
+        "gutter": 2.0,
+        "border": 0.3,
+        "font_path": "",
+        "dpi": 150
+      }
+    }
+  ]
+}

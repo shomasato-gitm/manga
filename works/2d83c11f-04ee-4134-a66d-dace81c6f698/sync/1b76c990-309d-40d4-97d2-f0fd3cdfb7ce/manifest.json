@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "format": "manga-studio-sync",
+  "project_id": "2d83c11f-04ee-4134-a66d-dace81c6f698",
+  "snapshot_id": "1b76c990-309d-40d4-97d2-f0fd3cdfb7ce",
+  "created_at": "2026-10-17T15:32:10.387549+00:00",
+  "story_version_id": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7",
+  "source_commit": "1dc4b932c0d873e02791b9ee1addc745f1e167f0",
+  "settings_versions": {
+    "artwork": 1,
+    "composition": 1
+  },
+  "characters": [
+    {
+      "id": "b8ed8ac7-60f1-4b8c-94d0-442ea3338740",
+      "primary_reference_id": null,
+      "references": []
+    },
+    {
+      "id": "33e85a7a-5ce1-4897-8dad-6240c491663d",
+      "primary_reference_id": null,
+      "references": []
+    }
+  ],
+  "adoptions": [
+    {
+      "page": 1,
+      "panel": 1,
+      "image_id": "f0620f48-6aed-51dd-8343-e7ce5dca0f1f",
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 1,
+      "panel": 2,
+      "image_id": "3b4601ac-dc96-5478-b93a-d1d36abf383a",
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 1,
+      "panel": 3,
+      "image_id": "ce0ef2a0-814e-557f-8805-7bf12173adb7",
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 2,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 2,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 2,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 3,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 3,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 3,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 4,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 4,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 4,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 5,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 5,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 5,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 6,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 6,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 6,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 7,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 7,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 7,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 8,
+      "panel": 1,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 8,
+      "panel": 2,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    },
+    {
+      "page": 8,
+      "panel": 3,
+      "image_id": null,
+      "direction_version": "6f955d59-de0d-56f7-9e3e-6b4efebdafa7"
+    }
+  ],
+  "files": [
+    {
+      "path": "artwork.json",
+      "size": 74717,
+      "sha256": "dd1562586eabe76a862233c69478d8fa716b30e6de3903cbd9937dc7c0f6fe36"
+    },
+    {
+      "path": "composition.json",
+      "size": 576,
+      "sha256": "dabcd3f6828211ad3dd090ca8eb85c5f253ef4a0e5f4706f514d6e206ee3ccdf"
+    },
+    {
+      "path": "exports/book.pdf",
+      "size": 804408,
+      "sha256": "7cf6e8487292e744efd7e3b5d076c6a26af8c8769020c437a770f0d5b7cb5811"
+    },
+    {
+      "path": "exports/page_001.png",
+      "size": 683463,
+      "sha256": "51c5bd35ee8569febf101722739c7de97fcaf2d60a56bd7dde67fbe69605737d"
+    },
+    {
+      "path": "images/panels/3b4601ac-dc96-5478-b93a-d1d36abf383a.png",
+      "size": 2003017,
+      "sha256": "647640263de146cf4fce90af5058cffffa93503b3088398b36e83693d78148e3"
+    },
+    {
+      "path": "images/panels/ce0ef2a0-814e-557f-8805-7bf12173adb7.png",
+      "size": 1963096,
+      "sha256": "82d0c5cf7bc16425d39cb7aa052adb23591f1a7f74b0f611bbd41b6319600bde"
+    },
+    {
+      "path": "images/panels/f0620f48-6aed-51dd-8343-e7ce5dca0f1f.png",
+      "size": 2022450,
+      "sha256": "e8e909d94d44808934dcf3a17e4ef83d92075b91ff337489ebee33e929dd579d"
+    },
+    {
+      "path": "pdca.json",
+      "size": 170,
+      "sha256": "2ecffbd98ceaf95d2f2b987582dbacce440d85f237104c694af7e3b039c0c2cb"
+    },
+    {
+      "path": "project.json",
+      "size": 1092,
+      "sha256": "00d1b60b08234b2a5c1d4e8537895eefb173ca912189c56ab36727dd6246f1a1"
+    },
+    {
+      "path": "story.json",
+      "size": 15619,
+      "sha256": "18511e2097c8d5b0e42cd4d1166dcf1881bfeb3451c42ef52771a33c619483a0"
+    },
+    {
+      "path": "story_history.json",
+      "size": 17104,
+      "sha256": "90c51996799201a57c18ff2e2a5cd05a7503c5ec8ae23c4c8a755a9c077506cc"
+    }
+  ]
+}
