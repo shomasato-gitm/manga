@@ -22,6 +22,10 @@ OpenAI APIやChatGPTの自動呼び出しは追加していません。通常の
 
 設定、指定作品の取り込み例、競合・失敗時の再開、容量制限は **[GitHub半自動連携の操作ガイド](docs/github-studio-sync.md)** を参照してください。
 
+PRと対象ブランチの更新時は、GitHub Actionsの **Python tests** がPython 3.11／3.12で全pytest（Streamlit画面テストを含む）を実行します。
+日本語描画用のNotoフォントをCIに導入し、各PythonのJUnit結果を14日間保存します。テストにGitHubトークンやOpenAI APIキーは不要です。
+GitHubの実通信を伴う作品送信はCIでは実行しません。
+
 ## 6工程の画面構成（第7段階）
 
 左サイドバーの「制作メニュー」を6工程に整理しました。各工程の「作業を選択」で必要な詳細画面だけを開きます。

@@ -20,10 +20,10 @@ def record_iteration(service,candidate_id,*,expected_revision,score=None,confirm
     if score is not None and (isinstance(score,bool) or not isinstance(score,(float,int)) or not math.isfinite(score) or not 0<=score<=100):raise ValueError('点数は未入力または0〜100で指定してください。')
     if type(confirmed) is not bool or not isinstance(stop_reason,str) or len(stop_reason)>2000:raise ValueError('確認状態・停止理由が不正です。')
     store=service.store
-    with store.locked():
+    with store.locked(production=True):
         data=store.checked(expected_revision);candidate=service._candidate(data,candidate_id)
         if len(data['iterations'])>=data['policy']['max_iterations']:raise ValueError('改善回数の上限に達しました。自動継続はしません。設定を確認してください。')
-        context=load_context(service.directory,service.project_id)
+        context=load_context(service.directory,service.project_id,cached=False)
         quality=summary(context,ReviewStore(service.directory,service.project_id).load())
         ready=bool(quality['pages'] and quality['finals']==quality['pages'] and not quality['tasks'] and not quality['unconfirmed_ai'])
         current=context.latest and candidate['manifest']['story_version_id']==context.latest['id']

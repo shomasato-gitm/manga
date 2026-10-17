@@ -26,7 +26,7 @@ class SyncStore:
         self.root.mkdir(parents=True,exist_ok=True)
         with ExitStack() as stack:
             # AssistantRepositoryと同順。既存のストーリー・作画・ページ保存を横断して保護する。
-            names=['story','artwork','editorial','assistant','composition','review','studio','github_sync'] if production else ['github_sync']
+            names=['project','story','artwork','editorial','assistant','composition','review','studio','sync_outputs','github_sync'] if production else ['github_sync']
             for name in names:
                 file=stack.enter_context((self.root/f'.{name}.lock').open('a'))
                 fcntl.flock(file,fcntl.LOCK_EX);stack.callback(fcntl.flock,file,fcntl.LOCK_UN)
@@ -91,7 +91,7 @@ class SyncStore:
             if data['status']=='done':return None
             for item in data['files']:
                 safe_path(item['name'])
-                if item['name'] not in ('project.json','github_sync.json') and not (item['name'].endswith('.json') and '/' not in item['name']) and not item['name'].startswith('images/'):raise ValueError
+                if item['name'] not in ('project.json','github_sync.json') and not (item['name'].endswith('.json') and '/' not in item['name']) and not item['name'].startswith(('images/','sync_outputs/')):raise ValueError
                 if item['after_hash']!=sha256(self.transaction_file(data['id'],item['name']).read_bytes()):raise ValueError
             return data if data['status']=='pending' else None
         except (OSError,ValueError,KeyError,TypeError) as error:raise StorageError('同期の採用途中記録が不正です。上書きせずバックアップを確認してください。') from error
@@ -100,6 +100,7 @@ class SyncStore:
         safe_path(name)
         path=self.directory/f'{self.project_id}.json' if name=='project.json' else self.root/name
         if not path.resolve().is_relative_to(self.directory.resolve()):raise StorageError('保存先が領域を外れます。')
+        if name!='project.json' and not path.resolve().is_relative_to(self.root.resolve()):raise StorageError('保存先が別の作品領域を参照しています。上書きせず停止しました。')
         return path
 
     def transaction_file(self,identifier,name):
@@ -127,18 +128,22 @@ class SyncStore:
         for entry in journal['files']:
             target=self.target(entry['name']);current=sha256(target.read_bytes()) if target.exists() else None
             if current not in (entry['before_hash'],entry['after_hash']):raise SyncConflict('採用途中に別の編集がありました。バックアップと差分を確認してください。')
-        for entry in journal['files']:
+        # 画像を完成させてから、それを参照するJSONと同期完了記録を確定する。
+        ordered=sorted(journal['files'],key=lambda e:(e['name']=='github_sync.json',e['name'].endswith('.json')))
+        for entry in ordered:
             target=self.target(entry['name']);content=self.transaction_file(journal['id'],entry['name']).read_bytes()
             if target.exists() and sha256(target.read_bytes())==entry['after_hash']:continue
             target.parent.mkdir(parents=True,exist_ok=True)
-            if entry['name'].endswith('.json'):write_json_atomic(target,json.loads(content))
+            if entry['name'].endswith('.json') and entry['before_hash'] is not None:write_json_atomic(target,json.loads(content))
             else:
                 # 完成した一時ファイルを排他的にリンクする。容量不足でも途中の画像を残さない。
                 temporary=None
                 try:
                     with NamedTemporaryFile(dir=target.parent,delete=False,suffix='.tmp') as file:
                         temporary=Path(file.name);file.write(content);file.flush();os.fsync(file.fileno())
-                    os.link(temporary,target)
+                    try:os.link(temporary,target)
+                    except FileExistsError as error:
+                        raise SyncConflict('保存先に別のファイルが作成されました。上書きせず停止しました。差分を確認してください。') from error
                 finally:
                     if temporary is not None:temporary.unlink(missing_ok=True)
         write_json_atomic(self.journal,dict(journal,status='done'))

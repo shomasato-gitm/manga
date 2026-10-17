@@ -1,15 +1,15 @@
 """完成PNG/PDFを明示的に保持する。元画像・過去の完成ファイルを削除しない。"""
-import fcntl
 import json
-import os
 from pathlib import Path
 from uuid import uuid4
 from manga.models import now_iso,validate_id
-from manga.storage import StorageError,write_json_atomic
+from manga.storage import StorageError
 from manga.sync_manifest import sha256,MAX_FILE_BYTES,MAX_TOTAL_BYTES,safe_path
 from manga.review_context import load_context
 from manga.studio_assets import production_fingerprint
 from manga.page_render import decode_image
+from manga.sync_storage import SyncStore
+from manga.sync_manifest import json_bytes
 
 
 def output_index(directory,project_id):
@@ -38,25 +38,27 @@ def save_output(directory,project_id,filename,content,expected_fingerprint):
         with decode_image(content):pass
     elif not content.startswith(b'%PDF-') or b'%%EOF' not in content[-1024:]:raise ValueError('PDFの形式が不正です。')
     root=Path(directory)/validate_id(project_id);root.mkdir(parents=True,exist_ok=True)
-    with (root/'.sync_outputs.lock').open('a') as lock:
-        fcntl.flock(lock,fcntl.LOCK_EX)
-        try:
-            if current_output_fingerprint(directory,project_id)!=expected_fingerprint:raise ValueError('生成後に制作データが変わりました。最新状態で出力し直してください。')
-            data=output_index(directory,project_id)
-            if any(i['sha256']==sha256(content) and i['source_fingerprint']==expected_fingerprint for i in data['items']):raise ValueError('この完成ファイルは保存済みです。')
-            if sum(i['size'] for i in data['items'])+len(content)>MAX_TOTAL_BYTES:raise ValueError('完成ファイル保存は作品ごとに100MiBまでです。自動削除せず保存を停止しました。')
-            identifier=str(uuid4());path=root/'sync_outputs'/f'{identifier}{Path(filename).suffix}'
-            path.parent.mkdir(parents=True,exist_ok=True)
-            if not path.resolve().is_relative_to(root.resolve()):raise StorageError('完成ファイルの保存先が領域外です。')
-            with path.open('xb') as file:file.write(content);file.flush();os.fsync(file.fileno())
-            item=dict(id=identifier,filename=filename,path=path.relative_to(root).as_posix(),size=len(content),sha256=sha256(content),saved_at=now_iso(),source_fingerprint=expected_fingerprint)
-            data['items'].append(item);write_json_atomic(root/'sync_outputs.json',data);return item
-        finally:fcntl.flock(lock,fcntl.LOCK_UN)
+    store=SyncStore(directory,project_id)
+    with store.locked(production=True):
+        store.checked(store.load()['revision'])
+        if current_output_fingerprint(directory,project_id)!=expected_fingerprint:raise ValueError('生成後に制作データが変わりました。最新状態で出力し直してください。')
+        data=output_index(directory,project_id)
+        if any(i['sha256']==sha256(content) and i['source_fingerprint']==expected_fingerprint for i in data['items']):raise ValueError('この完成ファイルは保存済みです。')
+        if sum(i['size'] for i in data['items'])+len(content)>MAX_TOTAL_BYTES:raise ValueError('完成ファイル保存は作品ごとに100MiBまでです。自動削除せず保存を停止しました。')
+        identifier=str(uuid4());path=root/'sync_outputs'/f'{identifier}{Path(filename).suffix}'
+        path.parent.mkdir(parents=True,exist_ok=True)
+        if not path.resolve().is_relative_to(root.resolve()):raise StorageError('完成ファイルの保存先が領域外です。')
+        item=dict(id=identifier,filename=filename,path=path.relative_to(root).as_posix(),size=len(content),sha256=sha256(content),saved_at=now_iso(),source_fingerprint=expected_fingerprint)
+        index=root/'sync_outputs.json';before=index.read_bytes() if index.exists() else None
+        data['items'].append(item)
+        store.commit({item['path']:None,'sync_outputs.json':before},{item['path']:content,'sync_outputs.json':json_bytes(data)})
+        return item
 
 
 def read_output(directory,project_id,item):
     root=Path(directory)/validate_id(project_id);safe_path(item['path']);path=root/item['path']
     if not path.resolve().is_relative_to(root.resolve()):raise StorageError('完成ファイルの保存先が領域外です。')
+    if type(item['size']) is not int or not 0<=item['size']<=MAX_FILE_BYTES or path.stat().st_size!=item['size']:raise StorageError('完成ファイルの容量が一致しません。保存先を確認してください。')
     content=path.read_bytes()
     if len(content)!=item['size'] or sha256(content)!=item['sha256']:raise StorageError('完成ファイルのハッシュが一致しません。保存先を確認してください。')
     return content

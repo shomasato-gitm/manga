@@ -42,7 +42,9 @@ class GitRemote:
         with self._environment() as env:
             env.update(extra_env or {})
             try:
-                result=subprocess.run(['git','-c','core.hooksPath='+os.devnull,'-C',str(self.cache),*args],input=content,capture_output=True,timeout=120,env=env)
+                # 明示トークンはaskpass限定。既存helperによる認証情報の保存も止める。
+                options=['-c','credential.helper='] if self.token else []
+                result=subprocess.run(['git','-c','core.hooksPath='+os.devnull,*options,'-C',str(self.cache),*args],input=content,capture_output=True,timeout=120,env=env)
             except (OSError,subprocess.TimeoutExpired) as error:raise StorageError('Gitを実行できないか通信がタイムアウトしました。Gitのインストール・接続を確認してください。') from error
             if result.returncode:
                 # stderrには認証ヘルパーの出力が含まれうるためUIや保存ファイルへ流さない。
@@ -81,6 +83,10 @@ class GitRemote:
 
     def read(self,commit,path):
         commit_id(commit);safe_path(path)
+        entries=self._run('ls-tree','-z',commit,'--',path).split(b'\0')
+        exact=[entry for entry in entries if entry and entry.split(b'\t',1)[1].decode('utf-8')==path]
+        if len(exact)!=1 or exact[0].split(b' ',1)[0] not in (b'100644',b'100755'):
+            raise ValueError('取得対象は存在する通常ファイルにしてください。リンク・フォルダは取得できません。')
         size=int(self._run('cat-file','-s',f'{commit}:{path}'))
         if size>MAX_FILE_BYTES:raise ValueError('取得ファイルが10MiBを超えています。')
         return self._run('show',f'{commit}:{path}')

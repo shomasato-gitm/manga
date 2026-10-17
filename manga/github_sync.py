@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import uuid4
 from manga.models import now_iso,validate_id
 from manga.storage import StorageError
-from manga.sync_manifest import (SyncConflict,safe_path,commit_id,json_bytes,decode_json,sha256,build_manifest,validate_manifest,validate_bundle,compare_files,check_limits)
+from manga.sync_manifest import (SyncConflict,safe_path,commit_id,json_bytes,decode_json,sha256,build_manifest,validate_manifest,validate_bundle,compare_files,check_limits,MAX_FILES,MAX_TOTAL_BYTES)
 from manga.sync_local import collect_local,fingerprint,manifest_context
 from manga.sync_storage import SyncStore
 from manga.sync_legacy import legacy_bundle
@@ -65,18 +65,26 @@ class SyncService:
             self.store.save(data);return copy.deepcopy(record)
 
     def fetch_legacy(self,branch,story_path,*,artwork_path=None,images=None,attachments=None,expected_revision):
+        images=list(images or []);attachments=list(attachments or [])
+        if 1+bool(artwork_path)+len(images)+len(attachments)>MAX_FILES:raise ValueError('同期は1〜300ファイルまでです。取得対象を減らしてください。')
         commit=self.remote.head(branch)
         if not commit:raise ValueError('対象のGitHubブランチがありません。')
-        story=self.remote.read(commit,self._remote_path(story_path))
-        art=self.remote.read(commit,self._remote_path(artwork_path)) if artwork_path else None
+        total=0
+        def read(path):
+            nonlocal total
+            content=self.remote.read(commit,self._remote_path(path));total+=len(content)
+            if total>MAX_TOTAL_BYTES:raise ValueError('1回の同期は100MiB以内にしてください。')
+            return content
+        story=read(story_path)
+        art=read(artwork_path) if artwork_path else None
         targets=[]
-        for item in images or []:
-            targets.append(dict(item,content=self.remote.read(commit,self._remote_path(item['path']))))
+        for item in images:
+            targets.append(dict(item,content=read(item['path'])))
         files,version=legacy_bundle(self.project_id,commit,story,art,targets)
-        for index,path in enumerate(attachments or []):
+        for index,path in enumerate(attachments):
             self._remote_path(path)
             if not path.endswith('.json'):raise ValueError('参考資料はJSONで指定してください。')
-            content=self.remote.read(commit,path);decode_json(content)
+            content=read(path);decode_json(content)
             files[f'attachments/{index}_{path.split("/")[-1]}']=content
         return self._stage(branch,commit,files,version,expected_revision)
 
@@ -90,7 +98,12 @@ class SyncService:
         manifest=validate_manifest(decode_json(self.remote.read(commit,path)),self.project_id)
         root=path[:-len('manifest.json')]
         if root!=self.prefix+f'sync/{manifest["snapshot_id"]}/':raise ValueError('スナップショットIDと保存先が一致しません。')
-        files={e['path']:self.remote.read(commit,root+e['path']) for e in manifest['files']}
+        files={}
+        for entry in manifest['files']:
+            content=self.remote.read(commit,root+entry['path'])
+            # 偽の小容量manifestで大量の実体をメモリへ蓄積させない。
+            if len(content)!=entry['size'] or sha256(content)!=entry['sha256']:raise ValueError('取得ファイルの容量・ハッシュがmanifestと一致しません。同期を停止しました。')
+            files[entry['path']]=content
         return self._stage(branch,commit,files,manifest['story_version_id'],expected_revision,manifest)
 
     def diff(self,candidate_id):
@@ -131,13 +144,16 @@ class SyncService:
             self.store.commit(base,updates)
             return copy.deepcopy(candidate)
 
-    def prepare_export(self,branch,*,expected_revision,outputs=None,source_branch='main'):
+    def prepare_export(self,branch,*,expected_revision,outputs=None,source_branch='main',output_fingerprint=None):
         self.remote.branch(branch)
         if branch in ('main','master'):raise ValueError('作品保存用の別ブランチを指定してください。mainには書き込みません。')
         target=self.remote.head(branch);parent=target or self.remote.head(source_branch)
         with self.store.locked(production=True):
             data=self.store.checked(expected_revision);files=collect_local(self.directory,self.project_id)
             if 'story.json' not in files:raise ValueError('採用済みのストーリーがありません。')
+            if outputs and output_fingerprint is not None:
+                from manga.sync_outputs import current_output_fingerprint
+                if current_output_fingerprint(self.directory,self.project_id)!=output_fingerprint:raise SyncConflict('送信計画の作成前に完成ファイルの生成元が変わりました。最新状態で出力し直してください。')
             local_fingerprint=fingerprint(files)
             for name,content in (outputs or {}).items():
                 safe_path(name)

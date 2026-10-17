@@ -81,7 +81,9 @@ def candidate_view(service,data,prefix,perform,navigate):
             content=service._files(candidate)
             for path in files:
                 if path.endswith('.json') or path.startswith('exports/'):st.download_button(path,content[path],file_name=path.split('/')[-1],key=f'{prefix}_{selected}_{path}')
-    if st.button('採用した作品の品質チェックを開く'):
+    registered=(service.directory/f'{service.project_id}.json').is_file()
+    if not registered:st.caption('品質チェックへ進むには、先にストーリーを選んで作品を明示採用してください。')
+    if st.button('採用した作品の品質チェックを開く',disabled=not registered):
         project=ProjectStore(service.directory).load(service.project_id);st.session_state['active_project']=project
         navigate('完成・書き出し','品質チェック・修正管理')
 
@@ -97,11 +99,12 @@ def publish_view(service,data,source_branch,prefix,perform):
     if st.button('送信対象と容量を確認する計画を作成'):
         def action():
             outputs={}
+            source_fingerprint=current_output_fingerprint(service.directory,service.project_id) if selected else None
             for identifier in selected:
                 item=options[identifier]
-                if item['source_fingerprint']!=current_output_fingerprint(service.directory,service.project_id):raise ValueError('古い制作データの完成ファイルが選択されています。最新の作品で出力し直してください。')
+                if item['source_fingerprint']!=source_fingerprint:raise ValueError('古い制作データの完成ファイルが選択されています。最新の作品で出力し直してください。')
                 outputs[f'{identifier}_{item["filename"]}']=read_output(service.directory,service.project_id,item)
-            service.prepare_export(branch,expected_revision=data['revision'],outputs=outputs,source_branch=source_branch)
+            service.prepare_export(branch,expected_revision=data['revision'],outputs=outputs,source_branch=source_branch,output_fingerprint=source_fingerprint)
         perform(action,'作品の送信計画を保存しました。対象と容量を確認してから送信してください。')
     pending=[r for r in reversed(data['exports']) if r['status']=='確認待ち' and r['branch']==branch]
     if pending:

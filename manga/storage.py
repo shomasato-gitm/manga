@@ -2,6 +2,8 @@
 
 import json
 import os
+import fcntl
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -40,11 +42,27 @@ class ProjectStore:
     def _path(self, project_id: str) -> Path:
         return self.directory / f"{validate_id(project_id)}.json"
 
+    @contextmanager
+    def _lock(self, project_id: str):
+        """同期による初回登録と既存画面のプロジェクト保存を直列化する。"""
+        root = self.directory / validate_id(project_id)
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+            with (root / ".project.lock").open("a") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(lock, fcntl.LOCK_UN)
+        except OSError as error:
+            raise StorageError("プロジェクトを保存できません。権限・空き容量を確認してください。") from error
+
     def save(self, project: Project) -> Project:
         """一時ファイルから置き換え、書き込み失敗時は元のJSONを守る。"""
         saved = replace(project, updated_at=now_iso())
         path = self._path(saved.id)
-        write_json_atomic(path, saved.to_dict())
+        with self._lock(saved.id):
+            write_json_atomic(path, saved.to_dict())
         return saved
 
     def load(self, project_id: str) -> Project:
