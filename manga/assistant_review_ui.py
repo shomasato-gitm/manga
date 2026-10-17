@@ -3,7 +3,8 @@
 import copy
 import json
 
-import streamlit as st
+from manga.ui_runtime import ui as st, operation
+from manga.ui_data import read_store
 
 from manga.artwork_models import CHARACTER_ALL_FIELDS, DIRECTION_FIELDS, panel_key
 from manga.assistant_changes import differences, display_differences, item_before, name_key, reference_values
@@ -60,8 +61,10 @@ def review_proposal(store, data, proposal, request, artwork, editorial, key, run
     items = proposal["payload"]["items"]
     labels = {item["id"]: item_label(kind, item) for item in items}
     st.subheader("提案一覧と既存内容の比較")
+    from manga.gallery_ui import page_items
+    visible = page_items(items, f"{key}_proposal_page", "提案一覧", size=12)
     rows = []
-    for item in items:
+    for item in visible:
         before, after = item_before(kind, item, artwork, editorial), after_fields(kind, item)
         rows.append({"対象": labels[item["id"]], "状態": proposal["decisions"][item["id"]], "既存値": json.dumps(before, ensure_ascii=False),
                      "提案値": json.dumps(after, ensure_ascii=False), "変更項目": "、".join(d["field"] for d in differences(before, after)),
@@ -103,17 +106,23 @@ def review_proposal(store, data, proposal, request, artwork, editorial, key, run
             selected_ids = []
             columns = st.columns(3)
             # 部分採用後も同じ位置に状態を残し、前のチェック欄を残さない。
-            max_items = max(len(p["payload"].get("items", [])) for p in data["proposals"] if p["request_id"] == proposal["request_id"])
+            max_items = 12
+            if all_selected:
+                selected_ids = list(pending)
+                st.caption(f"全{len(pending)}件を選択中（表示ページ以外も含みます）。")
             for index in range(max_items):
-                if index >= len(items):
+                if index >= len(visible):
                     columns[index % 3].empty()
                     continue
-                item_id = items[index]["id"]
+                item_id = visible[index]["id"]
                 available = item_id in pending
                 suffix = "" if available else f"（{proposal['decisions'][item_id]}）"
                 checked = columns[index % 3].checkbox(f"採用候補：{labels[item_id]}{suffix}", value=all_selected if available else False, disabled=not available, key=f"{key}_{data['revision']}_{all_selected}_{item_id}_check")
-                if checked and available:
-                    selected_ids.append(item_id)
+                if available:
+                    if checked and item_id not in selected_ids:
+                        selected_ids.append(item_id)
+                    if not checked and item_id in selected_ids:
+                        selected_ids.remove(item_id)
             duplicate_ok = False
             if kind in ("characters", "references"):
                 duplicate_ok = st.checkbox("同名候補がある場合も別の人物・作品として登録する", key=f"{key}_duplicate")
@@ -131,5 +140,5 @@ def review_proposal(store, data, proposal, request, artwork, editorial, key, run
             restore = st.multiselect("確認待ちに戻す見送り提案", rejected, format_func=lambda value: labels[value], key=f"{key}_restore")
             if st.button("見送りを確認待ちに戻す", disabled=not restore, key=f"{key}_restore_button"):
                 run(lambda: store.decide(proposal["id"], restore, "確認待ち", expected_revision=data["revision"]), "確認待ちに戻しました。")
-    with st.expander("提案の原案・編集履歴・採用記録"):
+    if st.checkbox("提案の原案・編集履歴・採用記録を表示", key=f"{key}_audit"):
         st.json(dict(original=proposal["original_payload"], edits=proposal["edits"], adoptions=[item for item in data["adoptions"] if item["proposal_id"] == proposal["id"]]))

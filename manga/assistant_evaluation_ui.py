@@ -1,6 +1,7 @@
 """保存済みの作画評価の表示と、評価時点の実際の設定差分。"""
 
-import streamlit as st
+from manga.ui_runtime import ui as st, operation
+from manga.ui_data import read_store
 
 from manga.artwork_models import direction_fields, panel_key
 from manga.assistant_changes import differences, display_differences

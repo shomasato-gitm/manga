@@ -25,13 +25,7 @@ def png(color="red"):
     return output.getvalue()
 
 
-def button(app, label):
-    next(item for item in app.button if item.label == label).click().run()
-    assert not app.exception
-
-
-def element(app, kind, label):
-    return next(item for item in getattr(app, kind) if item.label == label)
+from ui_helpers import element, button, go
 
 
 @pytest.fixture
@@ -83,6 +77,7 @@ def test_character_reference_direction_and_candidate_workflow(workspace):
     element(app, "text_area", "表情").set_value("驚き")
     element(app, "text_area", "カメラ角度").set_value("ローアングル")
     button(app, "このコマの作画指示を保存")
+    go(app,"画像制作・画像管理","画像プロンプト一括出力")
     assert any("時計塔" in item.value and "ローアングル" in item.value and "吹き出し" in item.value for item in app.code)
 
     uploads["このコマの候補画像"] = Upload(png())
@@ -143,7 +138,9 @@ def test_story_changes_warn_without_discarding_candidates(workspace, story):
     store.story_store.save(story, expected_version_id=version["id"])
     app.run()
     assert not app.exception
+    go(app,"作画指示・AI評価改善","コマごとの編集")
     assert any("以前の作画指示" in item.value for item in app.warning)
+    go(app,"画像制作・画像管理","コマ画像・採用一覧")
     assert any("以前のストーリー" in item.value for item in app.warning)
     assert len(store.load()["panels"]["1:1"]["candidates"]) == 1
 

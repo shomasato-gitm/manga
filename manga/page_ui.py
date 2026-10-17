@@ -3,7 +3,8 @@
 import copy
 from uuid import uuid4
 
-import streamlit as st
+from manga.ui_runtime import ui as st, operation
+from manga.ui_data import read_store
 
 from manga.artwork_storage import ArtworkStore
 from manga.japanese_text import TextLayoutError, find_japanese_font
@@ -19,7 +20,8 @@ SOURCES = {"dialogue": "セリフ", "narration": "ナレーション", "custom":
 
 def _save(action, notice):
     try:
-        action()
+        with operation("ページ編集を保存しています", invalidate_actions=True):
+            action()
         st.session_state[notice] = "ページ編集を保存しました。"
         st.rerun()
     except (ValueError, StorageError) as error:
@@ -100,15 +102,31 @@ def _bubbles(config, page, project_id, key, save):
             save(updated)
 
 
-def _render_and_export(page, latest, artwork, data, images, prefix):
+def _preview(page, latest, artwork, data, images, prefix):
     cache = st.session_state.setdefault("composition_render_cache", RenderCache())
     preview_key = f"{prefix}_preview"
-    if st.button("ページをプレビュー・再描画", key=f"{prefix}_preview_button"):
+    force = st.button("ページをプレビュー・再描画", key=f"{prefix}_preview_button")
+    if force:
         st.session_state[preview_key] = True
     if st.session_state.get(preview_key):
         try:
             font = find_japanese_font(data["settings"]["font_path"])
-            rendered = render_page(page, latest["id"], artwork, data, images, font, cache, width=min(600, data["settings"]["width"]))
+            from manga.studio_assets import production_fingerprint
+            from manga.studio_storage import StudioStore
+            fingerprint=production_fingerprint(latest,artwork,data,images.root)
+            preview_cache=st.session_state.setdefault("_page_previews",{})
+            cache_key=(prefix,page["page"])
+            entry=preview_cache.get(cache_key)
+            if force or entry is None or entry["fingerprint"] != fingerprint or entry["font"] != font.signature:
+                with operation("ページプレビューを描画しています"):
+                    rendered=render_page(page, latest["id"], artwork, data, images, font, cache, width=min(600, data["settings"]["width"]))
+                preview_cache[cache_key]=dict(fingerprint=fingerprint,font=font.signature,rendered=rendered)
+                while len(preview_cache)>8 or sum(len(v["rendered"].png) for v in preview_cache.values())>8*1024*1024:
+                    preview_cache.pop(next(iter(preview_cache)))
+                if not rendered.errors:
+                    StudioStore(images.root.parent,data["project_id"]).record_render(page["page"],fingerprint)
+            else:
+                rendered=entry["rendered"]
             st.image(rendered.png, caption=f"{page['page']}ページ（プレビューは最大600px。出力は設定したサイズ）", use_container_width=True)
             st.caption(f"日本語フォント：{font.name} ｜ 変更のないコマはキャッシュから再利用します。")
             for error in rendered.errors:
@@ -117,6 +135,12 @@ def _render_and_export(page, latest, artwork, data, images, prefix):
                 st.warning(warning)
         except (TextLayoutError, ValueError, StorageError, OSError) as error:
             st.error(str(error))
+
+
+def _export(page, latest, artwork, data, images, prefix):
+    from manga.studio_assets import production_fingerprint
+    from manga.studio_storage import StudioStore
+    cache=st.session_state.setdefault("composition_render_cache", RenderCache())
     with st.expander("PNG・PDF・縦読みSNSへ出力", expanded=True):
         kind = st.selectbox("出力形式", ("page", "png_zip", "pdf", "sns"), format_func=lambda value: {"page": "表示中ページのPNG", "png_zip": "全ページのPNG（ZIP）", "pdf": "全ページのPDF", "sns": "縦読みSNS画像（ZIP）"}[value], key=f"{prefix}_kind")
         sns_width = 1080
@@ -126,24 +150,32 @@ def _render_and_export(page, latest, artwork, data, images, prefix):
             if st.checkbox("縦読みは表示中のページだけ出力", key=f"{prefix}_sns_current"):
                 pages = [page]
         st.caption("保存済みの編集内容を出力します。欠けた画像はプレースホルダーになります。縦読みはコマ番号順で、8000px以内のPNGに分割します。")
-        fingerprint = (latest["id"], data["revision"], artwork["revision"], page["page"], kind, sns_width, len(pages))
+        state_fingerprint=production_fingerprint(latest,artwork,data,images.root)
+        fingerprint = (state_fingerprint, page["page"], kind, sns_width, len(pages))
         export_key = f"{prefix}_export"
         if st.session_state.get(export_key, {}).get("fingerprint") != fingerprint:
             st.session_state.pop(export_key, None)
-        if st.button("出力ファイルを生成", key=f"{prefix}_generate"):
+        if st.button("出力ファイルを生成", key=f"{prefix}_generate") and export_key not in st.session_state:
             try:
                 font = find_japanese_font(data["settings"]["font_path"])
-                with st.spinner("保存済みの画像を合成しています…"):
+                meter=st.progress(0,text="出力対象を確認しています")
+                def advance(done,total):
+                    meter.progress(done/total,text=f"描画済み {done}/{total}件")
+                with operation("保存済みの画像から出力を生成しています"):
                     if kind == "page":
                         rendered = render_page(page, latest["id"], artwork, data, images, font, cache)
                         content, notes = page_png(rendered), rendered.warnings
                         filename, mime = f"page_{page['page']:03d}.png", "image/png"
                     elif kind == "sns":
-                        content, notes = export_vertical(pages, latest["id"], artwork, data, images, font, sns_width, cache)
+                        content, notes = export_vertical(pages, latest["id"], artwork, data, images, font, sns_width, cache, progress=advance)
                         filename, mime = "manga_vertical.zip", "application/zip"
                     else:
-                        content, notes = export_book(latest["story"], latest["id"], artwork, data, images, font, kind, cache)
+                        content, notes = export_book(latest["story"], latest["id"], artwork, data, images, font, kind, cache, progress=advance)
                         filename, mime = ("manga.pdf", "application/pdf") if kind == "pdf" else ("manga_pages.zip", "application/zip")
+                output_pages=[page["page"]] if kind=="page" else [p["page"] for p in pages]
+                studio=StudioStore(images.root.parent,data["project_id"])
+                studio.record_export(dict(fingerprint=state_fingerprint,pages=output_pages,kind=kind,filename=filename))
+                meter.empty()
                 st.session_state[export_key] = dict(fingerprint=fingerprint, content=content, filename=filename, mime=mime, notes=notes)
             except (TextLayoutError, ValueError, StorageError, OSError) as error:
                 st.error(str(error))
@@ -154,9 +186,9 @@ def _render_and_export(page, latest, artwork, data, images, prefix):
             st.download_button("完成ファイルをダウンロード", result["content"], file_name=result["filename"], mime=result["mime"], key=f"{prefix}_download")
 
 
-def render_page_workspace(project, directory):
+def render_page_workspace(project, directory, mode="editor"):
     st.divider()
-    st.header("漫画ページ編集・出力")
+    st.header("漫画ページ編集" if mode=="editor" else "PNG・PDF書き出し")
     prefix = f"composition_{project.id}"
     notice = f"{prefix}_notice"
     notice_slot = st.empty()
@@ -164,8 +196,8 @@ def render_page_workspace(project, directory):
         notice_slot.success(st.session_state.pop(notice))
     store, images = PageStore(directory, project.id), ArtworkStore(directory, project.id)
     try:
-        data, artwork = store.load(), images.load()
-        history = store.stories.load_history()
+        data, artwork = read_store(store), read_store(images)
+        history = read_store(store.stories)
     except StorageError as error:
         st.error(str(error))
         return
@@ -173,8 +205,9 @@ def render_page_workspace(project, directory):
         st.info("ストーリーJSONを保存すると、採用したコマ画像から漫画ページを作れます。")
         return
     latest = history[-1]
-    _settings(store, data, prefix, notice)
-    number = st.selectbox("合成するページ", [page["page"] for page in latest["story"]["pages"]], key=f"{prefix}_page")
+    if mode == "export":
+        _settings(store, data, prefix, notice)
+    number = st.selectbox("合成するページ" if mode=="editor" else "出力するページ", [page["page"] for page in latest["story"]["pages"]], key=f"{prefix}_{mode}_page")
     page = latest["story"]["pages"][number - 1]
     saved = data["pages"].get(str(number))
     config = effective_page(saved, project.id, page, latest["id"])
@@ -186,7 +219,11 @@ def render_page_workspace(project, directory):
         updated = dict(updated, source_page=copy.deepcopy(page), source_version_id=latest["id"])
         _save(lambda: store.save_page(number, updated, story_version_id=latest["id"], expected_revision=data["revision"]), notice)
 
-    _layout(config, data["settings"], key, save)
-    _bubbles(config, page, project.id, key, save)
-    st.caption("未保存の変更はプレビューへ反映されません。元画像は変更せず、編集前の設定をcomposition.jsonのhistoryに残します。")
-    _render_and_export(page, latest, artwork, data, images, prefix)
+    if mode == "editor":
+        st.caption("出力サイズ・余白・枠線・フォントは「PNG・PDF書き出し」で設定します。")
+        _layout(config, data["settings"], key, save)
+        _bubbles(config, page, project.id, key, save)
+        st.caption("保存済みの内容をプレビューします。入力の下書きはこのブラウザセッション内に保持します。")
+        _preview(page, latest, artwork, data, images, prefix)
+    else:
+        _export(page, latest, artwork, data, images, prefix)

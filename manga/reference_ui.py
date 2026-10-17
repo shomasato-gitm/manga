@@ -1,6 +1,7 @@
 """参考作品の追加・編集・削除と、手動で受け取る分析JSONの管理。"""
 
-import streamlit as st
+from manga.ui_runtime import ui as st, operation
+from manga.ui_data import read_store
 
 from manga.editorial_models import ANALYSIS_ASPECTS, REFERENCE_FIELDS
 from manga.editorial_prompts import analysis_prompt
@@ -27,11 +28,13 @@ def reference_management(store, data, prefix, notice_key):
         submitted = st.form_submit_button("参考作品を保存")
     if submitted:
         perform(lambda: store.save_reference(fields, reference_id=reference_id, expected_revision=data["revision"]), "参考作品を保存しました。", notice_key, select_key)
+    reference_controls=st.empty()
     if reference:
-        st.caption("作品名・媒体は必須です。編集後は新しい登録内容を分析し直してください。過去の分析は保持します。")
-        confirm = st.checkbox("この参考作品を一覧から削除する", key=f"{prefix}_{reference_id}_delete_confirm")
-        if st.button("参考作品を削除", disabled=not confirm, key=f"{prefix}_delete_reference"):
-            perform(lambda: store.delete_reference(reference_id, expected_revision=data["revision"]), "参考作品を一覧から削除しました。過去の分析は残しています。", notice_key, select_key)
+        with reference_controls.container():
+            st.caption("作品名・媒体は必須です。編集後は新しい登録内容を分析し直してください。過去の分析は保持します。")
+            confirm = st.checkbox("この参考作品を一覧から削除する", key=f"{prefix}_{reference_id}_delete_confirm")
+            if st.button("参考作品を削除", disabled=not confirm, key=f"{prefix}_delete_reference"):
+                perform(lambda: store.delete_reference(reference_id, expected_revision=data["revision"]), "参考作品を一覧から削除しました。過去の分析は残しています。", notice_key, select_key)
 
 
 def reference_analysis(store, data, prefix, notice_key):

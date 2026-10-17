@@ -29,7 +29,7 @@ def page_png(rendered):
     return rendered.png
 
 
-def export_book(story, version_id, artwork, data, store, font, kind="pdf", cache=None):
+def export_book(story, version_id, artwork, data, store, font, kind="pdf", cache=None, progress=None):
     if kind not in ("pdf", "png_zip"):
         raise ValueError("出力形式が不正です。")
     width, height = dimensions(data["settings"])
@@ -37,9 +37,10 @@ def export_book(story, version_id, artwork, data, store, font, kind="pdf", cache
     cache = cache if cache is not None else RenderCache()
     frames, files, notes = [], [], []
     try:
-        for page in story["pages"]:
+        for done, page in enumerate(story["pages"],1):
             rendered = render_page(page, version_id, artwork, data, store, font, cache)
             _check_errors(rendered.errors)
+            if progress:progress(done,len(story["pages"]))
             notes.extend(f"{page['page']}ページ：{note}" for note in rendered.warnings)
             if kind == "pdf":
                 with Image.open(BytesIO(rendered.png)) as image:
@@ -66,7 +67,7 @@ def zip_files(files):
     return output.getvalue()
 
 
-def export_vertical(pages, version_id, artwork, data, store, font, width=1080, cache=None):
+def export_vertical(pages, version_id, artwork, data, store, font, width=1080, cache=None, progress=None):
     """ページ順・コマ番号順に1列へ。8000px以内でコマを切らずに分割する。"""
     if width not in (600, 1080):
         raise ValueError("縦読みの横幅は600または1080pxにしてください。")
@@ -95,12 +96,15 @@ def export_vertical(pages, version_id, artwork, data, store, font, width=1080, c
         current.append(plan)
     groups.append((current, height))
     files, order = [], []
+    done=0
     for index, (group, height) in enumerate(groups, 1):
         canvas = Image.new("RGB", (width, height), "white")
         y = 0
         for page, panel, config, cell_height in group:
             png, errors, warnings = render_cell(page["page"], panel, config, artwork, store, (width, cell_height), width, data["settings"], font, cache)
             _check_errors(errors)
+            done+=1
+            if progress:progress(done,len(plans))
             with Image.open(BytesIO(png)) as image:
                 canvas.paste(image, (0, y))
             notes.extend(f"{page['page']}ページ・{panel['panel']}コマ：{note}" for note in warnings)

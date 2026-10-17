@@ -15,13 +15,7 @@ from manga.story_storage import StoryStore
 APP = Path(__file__).resolve().parents[1] / "app.py"
 
 
-def element(app, kind, label):
-    return next(item for item in getattr(app, kind) if item.label == label)
-
-
-def button(app, label):
-    element(app, "button", label).click().run(timeout=15)
-    assert not app.exception
+from ui_helpers import element, button, go
 
 
 @pytest.fixture
@@ -65,7 +59,7 @@ def test_edit_preview_export_and_reopen(workspace):
     element(app, "selectbox", "出力形式").set_value("pdf").run()
     button(app, "出力ファイルを生成")
     assert app.session_state[export_key]["content"].startswith(b"%PDF")
-    element(app, "selectbox", "合成するページ").set_value(2).run()
+    element(app, "selectbox", "出力するページ").set_value(2).run()
     assert not any(item.label == "完成ファイルをダウンロード" for item in app.get("download_button"))
     fresh = AppTest.from_file(str(APP)).run()
     button(fresh, "選択したプロジェクトを開く")

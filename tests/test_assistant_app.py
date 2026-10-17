@@ -15,13 +15,7 @@ from manga.story_storage import StoryStore
 APP = Path(__file__).resolve().parents[1] / "app.py"
 
 
-def element(app, kind, label):
-    return next(item for item in getattr(app,kind) if item.label == label)
-
-
-def button(app,label):
-    element(app,"button",label).click().run(timeout=20)
-    assert not app.exception
+from ui_helpers import element, button, go
 
 
 @pytest.fixture
@@ -52,8 +46,7 @@ def approve(app,key_fragment,one_label=None):
     if one_label:
         next(item for item in candidates if item.label==one_label).check().run()
     else:
-        for item in candidates:item.check()
-        app.run()
+        next(item for item in app.checkbox if key_fragment in (item.key or "") and item.label=="確認待ちをまとめて選択").check().run()
     next(item for item in app.checkbox if key_fragment in (item.key or "") and item.label=="確認事項と差分を確認し、選択した提案の保存を承認する").check().run()
     next(item for item in app.button if key_fragment in (item.key or "") and item.label=="選択した提案を採用").click().run(timeout=20)
     assert not app.exception
@@ -63,7 +56,9 @@ def test_character_prompt_import_edit_approve_and_reopen(workspace):
     app,store=workspace
     assert not store.path.exists() and not store.artwork.path.exists()
     button(app,"キャラクター一括生成の依頼を作成")
+    element(app,"checkbox","詳細を表示（プロンプト全文）").check().run()
     assert any("事実" in block.value and "request_id" in block.value for block in app.code)
+    element(app,"checkbox","返答形式・サンプルJSONを表示").check().run()
     assert any(item.label=="動作確認用の返答サンプルJSON" for item in app.get("download_button"))
     p=import_response(app,store,"characters","キャラクター提案JSON")
     assert not store.artwork.path.exists()
@@ -76,6 +71,7 @@ def test_character_prompt_import_edit_approve_and_reopen(workspace):
     assert store.load()["proposals"][0]["decisions"][next(iter(p["decisions"]))]=="採用済み"
     fresh=AppTest.from_file(str(APP)).run()
     button(fresh,"選択したプロジェクトを開く")
+    go(fresh,"キャラクター設定","AI一括生成・採用")
     assert any("採用済み" in str(item.value) for item in fresh.info)
     assert len(store.artwork.load()["characters"])==1
 
@@ -87,11 +83,14 @@ def test_directions_evaluation_improvement_and_batch_prompt_workflow(workspace):
     assert len(p["decisions"])==24 and not store.artwork.path.exists()
     approve(app,"_directions_")
     assert len(store.artwork.load()["panels"])==24
+    go(app,"画像制作・画像管理","画像プロンプト一括出力")
+    button(app,"全画像プロンプトをまとめて作成")
     assert any(item.label=="全画像プロンプトをテキストでダウンロード" for item in app.get("download_button"))
     button(app,"作画評価の依頼を作成")
     import_response(app,store,"evaluation","作画評価JSON")
     assert any("主観的" in item.value for item in app.caption)
     # 改善を1コマだけに限定する。
+    go(app,"作画指示・AI評価改善","AI改善")
     scope=next(item for item in app.selectbox if (item.key or "").endswith("_improvement_scope"))
     scope.set_value("指定コマ").run()
     button(app,"作画改善の依頼を作成")
@@ -156,7 +155,9 @@ def test_pending_write_has_explicit_resume_screen(workspace):
     with patch("manga.assistant_repository.write_json_atomic",side_effect=fail):
         with pytest.raises(StorageError):
             store.adopt(p["id"],list(p["decisions"]),expected_revision=2,expected_artwork_revision=0,expected_editorial_revision=0)
-    app.run()
+    go(app,"ホーム・進行状況")
+    assert any("採用保存の再開" in item.value for item in app.info)
+    button(app,"次の工程へ進む")
     assert any("途中で停止" in item.value for item in app.warning)
     button(app,"採用保存を再開")
     assert store.pending() is None and len(store.artwork.load()["characters"])==1

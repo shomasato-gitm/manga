@@ -41,3 +41,7 @@ OpenAI APIや非公式API、ChatGPTのWeb画面の自動操作は使用しませ
 提案は `assistant.json` へ保存し、採用対象だけを既存の作画設定・参考作品へ反映します。
 複数JSONの採用保存は `assistant_pending.json` に変更前後を先に記録し、途中失敗後は明示操作で完了できます。
 従来の人物ID・参照画像・候補画像は保持し、画像生成・ChatGPTへの送信は自動化しません。
+
+第6段階では `navigation.py` から選択した画面だけを呼びます。表示用データは `ui_data.py`、セッションの下書きと処理状態は `ui_runtime.py` へ分離しています。
+工程判定は `studio_workflow.py`、描画・出力の成功記録は独立した `studio.json`、容量計測は `storage_usage.py` を使います。
+保存処理のロック・競合検知・検証はキャッシュせず従来どおり実行し、画像や既存の保存履歴は変更・削除しません。

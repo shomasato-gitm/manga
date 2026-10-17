@@ -2,7 +2,8 @@
 
 import json
 
-import streamlit as st
+from manga.ui_runtime import ui as st, operation
+from manga.ui_data import read_store, cached_read
 
 from manga.assistant_evaluation_ui import evaluation_report, evaluations
 from manga.assistant_models import KINDS, targets_for
@@ -80,11 +81,9 @@ def _workspace_content(project, store, data, latest, artwork, editorial, kind, t
     stale_slot = st.empty()
     if stale:
         stale_slot.warning("この依頼は古いストーリー版です。履歴の閲覧はできますが、取り込み・採用には最新の依頼が必要です。")
-    with st.expander("ChatGPTへ渡すプロンプト", expanded=True):
-        st.code(request["prompt"], language="text", wrap_lines=True)
-        st.caption("枠右上のコピーを使ってChatGPTへ貼り付けてください。送信は自動では行いません。")
-        st.download_button("依頼プロンプトをダウンロード", request["prompt"], file_name=f"assistant_{kind}_{request_id[:8]}.txt", mime="text/plain", key=f"{key}_prompt_download")
-    with st.expander("返答形式を確認"):
+    from manga.prompt_ui import prompt_tools
+    prompt_tools(request["prompt"], f"{key}_prompt", f"assistant_{kind}_{request_id[:8]}.txt", request)
+    if st.checkbox("返答形式・サンプルJSONを表示", key=f"{key}_sample_details"):
         st.json(response_template(request))
         st.download_button("動作確認用の返答サンプルJSON", json.dumps(sample_response(request), ensure_ascii=False, indent=2), file_name=f"sample_{kind}.json", mime="application/json", key=f"{key}_sample")
         st.caption("サンプルは実際のAI返答ではありません。現在の依頼IDに対応するため、そのまま取り込んで差分確認まで試せます。採用する場合は内容を修正してください。")
@@ -120,7 +119,11 @@ def _progress(data):
     st.table(rows)
 
 
-def render_assistant_workspace(project, directory):
+def render_assistant_workspace(project, directory, kind="characters"):
+    if kind == "images":
+        from manga.image_prompt_ui import render_image_prompts
+        render_image_prompts(project, directory)
+        return
     st.divider()
     st.header("AI制作アシスタント")
     st.caption("依頼作成 → ChatGPTへ手動コピー → JSON取り込み → 差分確認・編集 → 選択した提案だけ採用。APIキー・API接続は不要です。")
@@ -133,7 +136,8 @@ def render_assistant_workspace(project, directory):
 
     def run(action, message, selection_key=None):
         try:
-            result = action()
+            with operation("制作提案の検証・保存を実行しています", invalidate_actions=True):
+                result = action()
             if selection_key:
                 st.session_state[f"{selection_key}_pending"] = result["id"]
             st.session_state[notice_key] = message
@@ -144,14 +148,18 @@ def render_assistant_workspace(project, directory):
                 st.caption("採用保存が途中の場合は、画面を更新して「採用保存を再開」を押してください。")
 
     try:
-        data = store.load()
-        if store.pending():
+        data = read_store(store)
+        if cached_read(store.journal_path, store.pending):
             st.warning("採用保存が途中で停止しました。変更前後のJSONは再開記録に残っています。再開が完了するまで他の編集を避けてください。")
             if st.button("採用保存を再開", key=f"{prefix}_resume"):
                 run(store.resume, "採用保存を完了しました。")
             return
-        latest = store.latest()
-        artwork, editorial = store.artwork.load(), store.editorial.load()
+        history = read_store(store.stories)
+        if not history:
+            st.info("先にストーリーJSONを登録してください。")
+            return
+        latest = history[-1]
+        artwork, editorial = read_store(store.artwork), read_store(store.editorial)
     except StorageError as error:
         st.error(str(error))
         return
@@ -159,28 +167,6 @@ def render_assistant_workspace(project, directory):
         st.info(str(error))
         return
     theme = st.text_input("制作テーマ・補足（任意、不明なら空欄）", max_chars=2000, key=f"{prefix}_theme")
-    _progress(data)
-    tabs = st.tabs(["A：キャラクター一括生成", "B：参考作品候補", "C：作画指示一括生成", "D：作画評価・改善", "E：画像プロンプト一括出力"])
-    for tab, kind in zip(tabs[:3], ("characters", "references", "directions")):
-        with tab:
-            _workspace(project, store, data, latest, artwork, editorial, kind, theme, prefix, run)
-    with tabs[3]:
+    if kind in ("evaluation", "improvement"):
         st.caption(SUBJECTIVE_NOTICE)
-        st.subheader("作画を評価する")
-        _workspace(project, store, data, latest, artwork, editorial, "evaluation", theme, prefix, run)
-        st.subheader("評価をもとに改善する")
-        _workspace(project, store, data, latest, artwork, editorial, "improvement", theme, prefix, run)
-    with tabs[4]:
-        prompts, warnings, output = batch_image_prompts(project, latest, artwork)
-        st.caption("各枠の右上から1コマずつコピーできます。記載された参照画像はご自身でChatGPTへ添付してください。")
-        if warnings:
-            st.warning(f"画像プロンプトを作れないコマが{len(warnings)}件あります。未設定・変更済みの指示を確認してください。")
-            with st.expander("不足情報・確認事項の一覧"):
-                st.table([{"対象と必要な操作": warning} for warning in warnings])
-        for item in prompts:
-            with st.expander(f"{item['page']}ページ・{item['panel']}コマの画像プロンプト"):
-                st.code(item["prompt"], language="text", wrap_lines=True)
-        if prompts:
-            st.download_button("全画像プロンプトをテキストでダウンロード", output, file_name="manga_image_prompts.txt", mime="text/plain", key=f"{prefix}_image_download")
-        else:
-            st.info("採用・保存済みの作画指示がありません。Cで提案を採用するか、既存の作画画面で保存してください。")
+    _workspace(project, store, data, latest, artwork, editorial, kind, theme, prefix, run)

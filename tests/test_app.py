@@ -3,6 +3,7 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 from manga.storage import ProjectStore
+from ui_helpers import go
 
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
@@ -39,6 +40,7 @@ def test_create_edit_and_reload_in_new_session(tmp_path, monkeypatch):
     # セッションを破棄してもディスク上のJSONから再読み込みできる。
     fresh = AppTest.from_file(str(APP)).run()
     click(fresh, "選択したプロジェクトを開く")
+    go(fresh,"プロジェクト管理")
     assert fresh.text_input(key="title").value == "月の図書館 第二稿"
     assert fresh.text_area(key="synopsis").value == original.synopsis
     assert fresh.number_input(key="page_count").value == 12

@@ -1,0 +1,98 @@
+{
+  "environment": {
+    "os": "Linux",
+    "python": "3.12.14",
+    "streamlit": "1.40.2"
+  },
+  "fixture": {
+    "pages": 8,
+    "panels": 24,
+    "candidate_images": 72,
+    "repeats": 5,
+    "preview_initially_enabled": false
+  },
+  "baseline_commit": "1bd2704",
+  "method": "AppTest・キャッシュ準備後の画面再実行。変更前は全機能、変更後は選択画面。ブラウザ描画・通信時間を含まない。",
+  "before": {
+    "全機能の縦長画面": {
+      "median_ms": 93.05,
+      "json_reads": 14,
+      "image_reads": 6,
+      "widgets": 174,
+      "samples_ms": [
+        98.25,
+        86.34,
+        93.05,
+        85.03,
+        99.61
+      ]
+    }
+  },
+  "after": {
+    "ホーム・進行状況": {
+      "median_ms": 15.18,
+      "json_reads": 0,
+      "image_reads": 0,
+      "widgets": 7,
+      "samples_ms": [
+        15.18,
+        15.45,
+        14.76,
+        16.0,
+        14.99
+      ]
+    },
+    "キャラクター設定": {
+      "median_ms": 11.13,
+      "json_reads": 0,
+      "image_reads": 0,
+      "widgets": 8,
+      "samples_ms": [
+        11.13,
+        11.13,
+        11.82,
+        11.22,
+        10.31
+      ]
+    },
+    "キャラクター設定（手動）": {
+      "median_ms": 9.11,
+      "json_reads": 0,
+      "image_reads": 0,
+      "widgets": 21,
+      "samples_ms": [
+        9.53,
+        9.09,
+        8.98,
+        9.28,
+        9.11
+      ]
+    },
+    "漫画ページ編集": {
+      "median_ms": 11.16,
+      "json_reads": 0,
+      "image_reads": 0,
+      "widgets": 26,
+      "samples_ms": [
+        10.8,
+        11.52,
+        10.95,
+        11.16,
+        11.26
+      ]
+    },
+    "漫画ページ編集（プレビュー後）": {
+      "median_ms": 18.88,
+      "json_reads": 0,
+      "image_reads": 0,
+      "widgets": 26,
+      "samples_ms": [
+        19.12,
+        18.69,
+        18.59,
+        19.21,
+        18.88
+      ]
+    }
+  }
+}

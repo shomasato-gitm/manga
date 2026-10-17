@@ -1,6 +1,7 @@
 """キャラクター設定、作画指示、ローカル画像管理のStreamlit画面。"""
 
-import streamlit as st
+from manga.ui_runtime import ui as st, operation
+from manga.ui_data import read_store
 
 from manga.artwork_models import CHARACTER_ALL_FIELDS as CHARACTER_FIELDS, DIRECTION_FIELDS, image_context_changed, panel_key
 from manga.artwork_storage import ArtworkStore
@@ -10,7 +11,8 @@ from manga.storage import StorageError
 
 def _perform(action, message, notice_key, select_key=None):
     try:
-        result = action()
+        with operation("設定・画像の保存を実行しています", invalidate_actions=True):
+            result = action()
         if select_key:
             st.session_state[f"{select_key}_pending"] = None if result["deleted_at"] else result["id"]
         st.session_state[notice_key] = message
@@ -21,9 +23,11 @@ def _perform(action, message, notice_key, select_key=None):
 
 def _show_image(store, image, caption, key):
     try:
-        content = store.image_bytes(image)
-        st.image(content, caption=caption, use_container_width=True)
-        st.download_button("画像をダウンロード", content, file_name=f"{image['id']}.png", mime="image/png", key=key)
+        from manga.gallery_ui import thumbnail
+        st.image(thumbnail(store, image), caption=caption, use_container_width=True)
+        if st.checkbox("元画像のダウンロードを表示", key=f"{key}_original"):
+            content = store.image_bytes(image)
+            st.download_button("画像をダウンロード", content, file_name=f"{image['id']}.png", mime="image/png", key=key)
     except StorageError as error:
         st.warning(str(error))
 
@@ -34,80 +38,78 @@ def _upload_bytes(upload):
     return upload.getvalue()
 
 
-def render_artwork_workspace(project, directory):
-    st.divider()
-    st.header("キャラクター・作画・画像管理")
-    st.caption("ChatGPTでの生成は手動で行います。プロンプト枠の右上からコピーし、参照画像もご自身で添付してください。")
+def render_artwork_workspace(project, directory, section="characters"):
     prefix = f"art_{project.id}"
     notice_key = f"{prefix}_notice"
+    notice_slot = st.empty()
     if notice_key in st.session_state:
-        st.success(st.session_state.pop(notice_key))
+        notice_slot.success(st.session_state.pop(notice_key))
     store = ArtworkStore(directory, project.id)
     try:
-        data = store.load()
+        data = read_store(store)
     except StorageError as error:
         st.error(str(error))
         return
-    with st.form(f"{prefix}_{data['revision']}_style_form"):
-        style = st.text_area("プロジェクトの作風", value=data["style"], max_chars=2000)
-        save_style = st.form_submit_button("作風を保存")
-    if save_style:
-        _perform(lambda: store.save_style(style, expected_revision=data["revision"]), "作風を保存しました。", notice_key)
-    st.caption("設定やコマを切り替える前に保存してください。プロンプトは保存済みの設定から作成します。")
-    character_tab, direction_tab, image_tab = st.tabs(["キャラクター設定", "コマの作画指示", "生成画像・採用一覧"])
-    with character_tab:
-        _characters(store, data, prefix, notice_key)
+    if section == "references":
+        with st.form(f"{prefix}_{data['revision']}_style_form"):
+            style = st.text_area("プロジェクトの作風", value=data["style"], max_chars=2000)
+            save_style = st.form_submit_button("作風を保存")
+        if save_style:
+            _perform(lambda: store.save_style(style, expected_revision=data["revision"]), "作風を保存しました。", notice_key)
+    if section in ("characters", "references"):
+        _characters(store, data, prefix, notice_key, references=section == "references")
+        return
     try:
-        history = store.story_store.load_history()
+        history = read_store(store.story_store)
     except StorageError as error:
-        with direction_tab:
-            st.error(str(error))
-        with image_tab:
-            st.error(str(error))
+        st.error(str(error))
         return
     if not history:
-        with direction_tab:
-            st.info("第2段階のJSON取り込みでストーリーを保存すると、コマごとに作画指示を登録できます。")
-        with image_tab:
-            st.info("ストーリーを保存すると、各コマの候補画像を登録できます。")
+        st.info("ストーリーを保存すると、コマの作画指示と画像を管理できます。")
         return
-    latest = history[-1]
-    with direction_tab:
-        _directions(project, store, data, latest, prefix, notice_key)
-    with image_tab:
-        _panel_images(store, data, latest, prefix, notice_key)
+    if section == "directions":
+        _directions(project, store, data, history[-1], prefix, notice_key)
+    else:
+        from manga.image_overview_ui import image_overview
+        image_overview(data, history[-1]["story"], prefix,store.root)
+        _panel_images(store, data, history[-1], prefix, notice_key)
 
 
-def _characters(store, data, prefix, notice_key):
+def _characters(store, data, prefix, notice_key, references=False):
     active = {item["id"]: item for item in data["characters"] if not item["deleted_at"]}
-    select_key = f"{prefix}_character"
+    select_key = f"{prefix}_reference_character" if references else f"{prefix}_character"
     if f"{select_key}_pending" in st.session_state:
         st.session_state[select_key] = st.session_state.pop(f"{select_key}_pending")
-    selected_id = st.selectbox("編集するキャラクター", [None] + list(active),
+    if references and not active:
+        st.info("先にキャラクター設定で人物を登録してください。")
+        return
+    selected_id = st.selectbox("参照画像のキャラクター" if references else "編集するキャラクター", list(active) if references else [None] + list(active),
                                format_func=lambda value: "新規キャラクター" if value is None else active[value]["name"], key=select_key)
     character = active.get(selected_id)
     key = f"{prefix}_{data['revision']}_{selected_id or 'new'}"
-    with st.form(f"{key}_character_form"):
-        values = {}
-        for field, label in CHARACTER_FIELDS.items():
-            value = character.get(field, "") if character else ""
-            if field in ("clothing", "personality", "features"):
-                values[field] = st.text_area(label, value=value, max_chars=2000, key=f"{key}_{field}")
-            else:
-                values[field] = st.text_input(label, value=value, max_chars=100 if field == "name" else 2000, key=f"{key}_{field}")
-        submitted = st.form_submit_button("キャラクターを保存")
-    if submitted:
-        _perform(lambda: store.save_character(values, character_id=selected_id, expected_revision=data["revision"]),
-                 "キャラクターを保存しました。", notice_key, select_key)
-    if not character:
-        return
-    with st.expander("キャラクターを削除"):
-        confirmed = st.checkbox(f"「{character['name']}」をキャラクター一覧から削除する", key=f"{key}_delete_confirm")
-        st.caption("参照画像と過去の画像候補は保持します。この人物を使う作画指示は、削除後に選び直してください。")
-        if st.button("このキャラクターを削除", disabled=not confirmed, key=f"{key}_delete"):
-            _perform(lambda: store.delete_character(selected_id, expected_revision=data["revision"]),
-                     "キャラクターを一覧から削除しました。", notice_key, select_key)
+    if not references:
+        with st.form(f"{key}_character_form"):
+            values = {}
+            for field, label in CHARACTER_FIELDS.items():
+                value = character.get(field, "") if character else ""
+                if field in ("clothing", "personality", "features"):
+                    values[field] = st.text_area(label, value=value, max_chars=2000, key=f"{key}_{field}")
+                else:
+                    values[field] = st.text_input(label, value=value, max_chars=100 if field == "name" else 2000, key=f"{key}_{field}")
+            submitted = st.form_submit_button("キャラクターを保存")
+        if submitted:
+            _perform(lambda: store.save_character(values, character_id=selected_id, expected_revision=data["revision"]),
+                     "キャラクターを保存しました。", notice_key, select_key)
+        if not character:
+            return
+        with st.expander("キャラクターを削除"):
+            confirmed = st.checkbox(f"「{character['name']}」をキャラクター一覧から削除する", key=f"{key}_delete_confirm")
+            st.caption("参照画像と過去の画像候補は保持します。この人物を使う作画指示は、削除後に選び直してください。")
+            if st.button("このキャラクターを削除", disabled=not confirmed, key=f"{key}_delete"):
+                _perform(lambda: store.delete_character(selected_id, expected_revision=data["revision"]),
+                         "キャラクターを一覧から削除しました。", notice_key, select_key)
 
+        return
     st.subheader("キャラクター基準画像の生成準備")
     view = st.selectbox("生成する向き・種類", ["正面", "斜め", "全身", "表情差分"], key=f"{key}_generate_view")
     expression = st.text_input("生成する表情", value="自然な表情", max_chars=200, key=f"{key}_generate_expression")
@@ -129,8 +131,10 @@ def _characters(store, data, prefix, notice_key):
                                format_func=lambda value: f"{by_id[value]['view']} / {by_id[value]['original_name']} / {by_id[value]['saved_at']}", key=f"{key}_primary")
         if st.button("基準画像を選択", key=f"{key}_select_primary"):
             _perform(lambda: store.select_reference(selected_id, primary, expected_revision=data["revision"]), "基準画像を変更しました。", notice_key)
+        from manga.gallery_ui import page_items
+        visible = page_items(references, f"{prefix}_reference_gallery", "参照画像")
         columns = st.columns(3)
-        for index, image in enumerate(references):
+        for index, image in enumerate(visible):
             with columns[index % 3]:
                 badge = "（基準画像）" if image["id"] == character["primary_reference_id"] else ""
                 _show_image(store, image, f"{image['view']}{badge} {image['note']}", f"{prefix}_reference_{image['id']}")
@@ -166,19 +170,13 @@ def _directions(project, store, data, latest, prefix, notice_key):
     if submitted:
         _perform(lambda: store.save_direction(page["page"], panel["panel"], fields, story_version_id=latest["id"], expected_revision=data["revision"]),
                  "作画指示をストーリーとは別に保存しました。", notice_key)
-    if direction:
-        st.subheader("このコマの画像生成プロンプト")
-        try:
-            prompt = panel_image_prompt(project, story, page, panel, data)
-            st.code(prompt, language="text", wrap_lines=True)
-            st.caption("右上からコピーし、参照画像もChatGPTへ手動で添付してください。画像中にはセリフ・吹き出しを描かない指示です。")
-        except ValueError as error:
-            st.warning(str(error))
 
 
 def _gallery(store, entry, prefix, current_panel=None, inside_expander=False, current_artwork=None):
     columns = st.columns(3)
-    for index, image in enumerate(entry["candidates"]):
+    from manga.gallery_ui import page_items
+    visible = page_items(entry["candidates"], f"{prefix}_gallery", "候補画像")
+    for index, image in enumerate(visible):
         with columns[index % 3]:
             badge = "（採用）" if image["id"] == entry["selected_image_id"] else ""
             _show_image(store, image, f"候補{index + 1}{badge} {image['original_name']}", f"{prefix}_{image['id']}")
@@ -202,6 +200,10 @@ def _gallery(store, entry, prefix, current_panel=None, inside_expander=False, cu
 
 def _panel_images(store, data, latest, prefix, notice_key):
     story = latest["story"]
+    jump = st.session_state.pop(f"{prefix}_image_jump", None)
+    if jump:
+        st.session_state[f"{prefix}_{latest['id']}_images_page"] = jump["page"] - 1
+        st.session_state[f"{prefix}_{latest['id']}_images_{jump['page']-1}_panel"] = jump["panel"] - 1
     page, panel = _choose_panel(story, f"{prefix}_{latest['id']}_images", "画像を確認するページ", "画像を管理するコマ")
     key = f"{prefix}_{data['revision']}_{page['page']}_{panel['panel']}_images"
     st.write(f"描写：{panel['description']}")
@@ -240,4 +242,5 @@ def _panel_images(store, data, latest, prefix, notice_key):
     if old_entries:
         with st.expander("現在のストーリーにないコマの画像履歴"):
             old = st.selectbox("過去のコマ", list(old_entries), format_func=lambda value: value.replace(":", "ページ・") + "コマ", key=f"{prefix}_old_panel")
-            _gallery(store, old_entries[old], f"{prefix}_old", inside_expander=True)
+            if st.checkbox("過去の候補画像を表示", key=f"{prefix}_old_images"):
+                _gallery(store, old_entries[old], f"{prefix}_old", inside_expander=True)

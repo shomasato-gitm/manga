@@ -18,13 +18,7 @@ from manga.story_storage import StoryStore
 APP = Path(__file__).resolve().parents[1] / "app.py"
 
 
-def element(app, kind, label):
-    return next(item for item in getattr(app, kind) if item.label == label)
-
-
-def button(app, label):
-    element(app, "button", label).click().run()
-    assert not app.exception
+from ui_helpers import element, button, go
 
 
 @pytest.fixture
@@ -56,6 +50,7 @@ def evaluate_via_ui(app, version, points=5):
 def test_reference_analysis_evaluation_improvement_reevaluation_and_adoption(workspace, story):
     app, store, original, artwork = workspace
     art_before = artwork.path.read_bytes()
+    go(app,"ストーリー制作","ストーリー評価・改善")
     assert any(SUBJECTIVE_NOTICE in item.value for item in app.info)
     element(app, "text_input", "作品名").set_value("架空の参考作品")
     element(app, "text_input", "媒体").set_value("小説")
@@ -66,6 +61,7 @@ def test_reference_analysis_evaluation_improvement_reevaluation_and_adoption(wor
     element(app, "text_area", "参考作品の分析JSONを貼り付け").set_value(json.dumps(payload))
     button(app, "分析JSONを検証して保存")
     element(app, "multiselect", "ストーリー生成に使う参考作品（任意・3作品まで）").set_value([reference["id"]]).run()
+    element(app,"checkbox","詳細を表示（プロンプト全文）").check().run()
     assert any("導入で小さな謎を置く" in item.value and "オリジナル" in item.value for item in app.code)
     evaluate_via_ui(app, original)
     element(app, "radio", "改善方式").set_value(MODES[1]).run()
@@ -81,6 +77,7 @@ def test_reference_analysis_evaluation_improvement_reevaluation_and_adoption(wor
     assert current["revision_context"]["reason"] == "セリフの情報量を減らす"
     assert element(app, "selectbox", "評価・改善する版").value == current["id"]
     evaluate_via_ui(app, current, 8)
+    go(app,"ストーリー制作","比較・脚本確定")
     differences = next(item.value for item in app.table if "差（比較先−比較元）" in item.value.columns)
     assert differences["差（比較先−比較元）"].tolist() == [3] * 8
     actual = next(item.value for item in app.table if "変更前" in item.value.columns)
@@ -91,6 +88,7 @@ def test_reference_analysis_evaluation_improvement_reevaluation_and_adoption(wor
     assert workflow_status(store.load(), store.stories.load_history())[2]
     element(app, "text_area", "1コマ目の描写").set_value("確定後に描写を修正した。")
     button(app, "このページを保存")
+    go(app,"ストーリー制作","比較・脚本確定")
     assert any("脚本確定後" in item.value for item in app.warning)
     element(app, "selectbox", "採用する脚本の版").set_value(original["id"]).run()
     button(app, "この版を脚本として採用")
@@ -100,6 +98,7 @@ def test_reference_analysis_evaluation_improvement_reevaluation_and_adoption(wor
     fresh = AppTest.from_file(str(APP)).run()
     button(fresh, "選択したプロジェクトを開く")
     assert not fresh.exception
+    go(fresh,"ストーリー制作","比較・脚本確定")
     versions = next(item.value for item in fresh.table if "評価の対応" in item.value.columns)
     assert "同一JSONの採用元版の評価" in versions["評価の対応"].tolist()
 
@@ -127,6 +126,8 @@ def test_selected_reference_can_be_deleted_without_breaking_generation(workspace
     element(app, "checkbox", "この参考作品を一覧から削除する").check().run()
     button(app, "参考作品を削除")
     assert store.load()["references"][0]["deleted_at"]
+    go(app,"ストーリー制作","生成・取り込み")
+    element(app,"checkbox","詳細を表示（プロンプト全文）").check().run()
     assert any(item.value.startswith("あなたは日本語の漫画脚本家") for item in app.code)
 
 

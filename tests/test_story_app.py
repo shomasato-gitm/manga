@@ -10,13 +10,11 @@ from manga.story_storage import StoryStore
 APP = Path(__file__).resolve().parents[1] / "app.py"
 
 
-def button(app, label):
-    next(item for item in app.button if item.label == label).click().run()
-    assert not app.exception
+from ui_helpers import element, button, go
 
 
-def textarea(app, label):
-    return next(item for item in app.text_area if item.label == label)
+def textarea(app,label):
+    return element(app,"text_area",label)
 
 
 def start_app(tmp_path, monkeypatch, manga_project):
@@ -24,6 +22,7 @@ def start_app(tmp_path, monkeypatch, manga_project):
     ProjectStore(tmp_path).save(manga_project)
     app = AppTest.from_file(str(APP)).run()
     button(app, "選択したプロジェクトを開く")
+    go(app,"ストーリー制作","生成・取り込み")
     return app
 
 
@@ -36,15 +35,17 @@ def test_offline_import_edit_restore_and_restart(tmp_path, monkeypatch, manga_pr
 
     monkeypatch.setattr(socket, "create_connection", no_network)
     app = start_app(tmp_path, monkeypatch, manga_project)
+    element(app,"checkbox","詳細を表示（プロンプト全文）").check().run()
     assert manga_project.synopsis in app.code[0].value
     textarea(app, "ChatGPTのJSONを貼り付け").set_value("```json\n" + json.dumps(story, ensure_ascii=False) + "\n```")
     button(app, "検証してストーリーを保存")
     assert app.success
     store = StoryStore(tmp_path, manga_project.id)
     original = store.load_history()[0]
-    assert "現在のストーリー" in app.code[1].value
+    go(app,"ストーリー制作","ページ編集")
+    assert store.load_history()[-1]["story"]==story
 
-    next(item for item in app.selectbox if item.label == "編集するページ").set_value(1).run()
+    element(app,"selectbox","編集するページ").set_value(1).run()
     textarea(app, "1コマ目の描写").set_value("司書が空に浮かぶ。")
     textarea(app, "このページの概要").set_value("司書が月の外へ出る。")
     button(app, "このページを保存")
@@ -53,7 +54,7 @@ def test_offline_import_edit_restore_and_restart(tmp_path, monkeypatch, manga_pr
     assert history[-1]["story"]["pages"][1]["panels"][0]["description"] == "司書が空に浮かぶ。"
     assert history[-1]["story"]["pages"][0] == story["pages"][0]
 
-    next(item for item in app.selectbox if item.label == "復元するバージョン").set_value(original["id"]).run()
+    element(app,"selectbox","復元するバージョン").set_value(original["id"]).run()
     button(app, "このバージョンを復元")
     assert len(store.load_history()) == 3
     assert store.load_history()[-1]["story"] == story
@@ -79,7 +80,7 @@ def test_bad_import_and_edit_do_not_change_history(tmp_path, monkeypatch, manga_
 
 def test_upload_requires_file(tmp_path, monkeypatch, manga_project):
     app = start_app(tmp_path, monkeypatch, manga_project)
-    app.radio[0].set_value("JSONファイル").run()
+    element(app,"radio","取り込み方法").set_value("JSONファイル").run()
     assert len(app.get("file_uploader")) == 1
     button(app, "検証してストーリーを保存")
     assert "ファイルを選択" in app.error[0].value
@@ -95,10 +96,11 @@ def test_project_switch_does_not_mix_stories(tmp_path, monkeypatch, manga_projec
     app = start_app(tmp_path, monkeypatch, manga_project)
     next(item for item in app.selectbox if item.label == "プロジェクトを選択").set_value(manga_project.id).run()
     button(app, "選択したプロジェクトを開く")
-    assert len(app.code) == 2
+    go(app,"ストーリー制作","ページ編集")
+    assert element(app,"text_area","1コマ目の描写").value==story["pages"][0]["panels"][0]["description"]
     next(item for item in app.selectbox if item.label == "プロジェクトを選択").set_value(other.id).run()
     button(app, "選択したプロジェクトを開く")
-    assert len(app.code) == 1
+    go(app,"ストーリー制作","ページ編集")
     assert not any(item.label == "編集するページ" for item in app.selectbox)
 
 
@@ -106,10 +108,12 @@ def test_project_edit_preserves_story_and_warns_page_mismatch(tmp_path, monkeypa
     store = StoryStore(tmp_path, manga_project.id)
     original = store.save(story, expected_version_id=None)
     app = start_app(tmp_path, monkeypatch, manga_project)
+    go(app,"プロジェクト管理")
     app.number_input(key="page_count").set_value(12)
     button(app, "プロジェクトを保存")
     assert ProjectStore(tmp_path).load(manga_project.id).page_count == 12
     assert store.load_history() == [original]
+    go(app,"ストーリー制作","生成・取り込み")
     assert any("8ページ" in item.value and "12ページ" in item.value for item in app.warning)
     textarea(app, "ChatGPTのJSONを貼り付け").set_value(json.dumps(story))
     button(app, "検証してストーリーを保存")

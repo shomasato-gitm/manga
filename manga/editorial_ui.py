@@ -2,7 +2,8 @@
 
 import json
 
-import streamlit as st
+from manga.ui_runtime import ui as st, operation
+from manga.ui_data import read_store
 
 from manga.editorial_models import CRITERIA, MODES, SUBJECTIVE_NOTICE, normalize_targets
 from manga.editorial_prompts import evaluation_prompt
@@ -58,38 +59,40 @@ def evaluation_and_improvement(project, store, data, history, characters, prefix
     if st.button("評価JSONを検証して保存", key=f"{prefix}_save_evaluation"):
         perform(lambda: store.save_evaluation(version_id, input_text(values), expected_revision=data["revision"]), "対象版の評価を新しい履歴として保存しました。", notice_key)
     evaluations = [item for item in data["evaluations"] if item["payload"]["story_version_id"] == version_id and item["source_story"] == version["story"]]
+    improvement_area=st.empty()
     if not evaluations:
-        st.info("この版の評価JSONを保存すると、評価に基づく改善プロンプトを作成できます。")
+        improvement_area.info("この版の評価JSONを保存すると、評価に基づく改善プロンプトを作成できます。")
         return
-    by_id = {item["id"]: item for item in evaluations}
-    evaluation_id = st.selectbox("使用する評価履歴", list(reversed(by_id)), format_func=lambda value: f"{by_id[value]['saved_at']} / {by_id[value]['payload']['total_score']:g}点", key=f"{prefix}_{version_id}_evaluation_history")
-    evaluation = by_id[evaluation_id]
-    _evaluation_details(evaluation["payload"])
-    st.subheader("評価に基づく改善")
-    mode = st.radio("改善方式", MODES, key=f"{prefix}_{version_id}_mode")
-    criteria = st.multiselect("改善したい評価項目", list(CRITERIA), default=list(CRITERIA), format_func=CRITERIA.get, key=f"{prefix}_{evaluation_id}_criteria")
-    targets = []
-    if mode == MODES[1]:
-        choices = {}
-        for page in version["story"]["pages"]:
-            choices[f"{page['page']}ページ全体"] = {"page": page["page"], "panel": None}
-            for panel in page["panels"]:
-                choices[f"{page['page']}ページ・{panel['panel']}コマ"] = {"page": page["page"], "panel": panel["panel"]}
-        selected = st.multiselect("改善するページ・コマ", list(choices), key=f"{prefix}_{evaluation_id}_targets")
-        targets = [choices[value] for value in selected]
-    request = st.text_area("改善してほしい点（任意）", max_chars=2000, key=f"{prefix}_{evaluation_id}_request")
-    default_reason = "\n".join(f"{CRITERIA[key]}：{evaluation['payload']['criteria'][key]['reason']}" for key in criteria)
-    reason = st.text_area("今回の改善理由・メモ", value=default_reason[:4000], max_chars=4000, key=f"{prefix}_{evaluation_id}_{mode}_{'-'.join(criteria)}_reason")
-    if not criteria or (mode == MODES[1] and not targets):
-        st.info("改善項目と、部分改善の場合は対象ページ・コマを選んでください。")
-        return
-    targets = normalize_targets(targets, version["story"], required=mode == MODES[1])
-    st.code(improvement_prompt(project, version["story"], request, evaluation=evaluation["payload"], mode=mode, criteria=criteria, targets=targets, characters=characters), language="text", wrap_lines=True)
-    st.caption("改善版も全ページを含む既存のストーリーJSONで受け取ります。以下から保存すると、改善元・評価・理由を履歴に記録します。通常のJSON取り込みも利用できますが、改善との対応は記録されません。")
-    improved_values = json_input("改善版ストーリーJSON", f"{prefix}_{evaluation_id}_{mode}_improved")
-    if st.button("改善版を検証して新しい版に保存", key=f"{prefix}_save_improved"):
-        perform(lambda: store.save_improvement(input_text(improved_values), version_id, evaluation_id, mode, criteria, targets, reason,
-                                               expected_version_id=history[-1]["id"]), "改善版を保存しました。この新しい版の評価JSONを取り込み、必要なら改善を繰り返してください。", notice_key)
+    with improvement_area.container():
+        by_id = {item["id"]: item for item in evaluations}
+        evaluation_id = st.selectbox("使用する評価履歴", list(reversed(by_id)), format_func=lambda value: f"{by_id[value]['saved_at']} / {by_id[value]['payload']['total_score']:g}点", key=f"{prefix}_{version_id}_evaluation_history")
+        evaluation = by_id[evaluation_id]
+        _evaluation_details(evaluation["payload"])
+        st.subheader("評価に基づく改善")
+        mode = st.radio("改善方式", MODES, key=f"{prefix}_{version_id}_mode")
+        criteria = st.multiselect("改善したい評価項目", list(CRITERIA), default=list(CRITERIA), format_func=CRITERIA.get, key=f"{prefix}_{evaluation_id}_criteria")
+        targets = []
+        if mode == MODES[1]:
+            choices = {}
+            for page in version["story"]["pages"]:
+                choices[f"{page['page']}ページ全体"] = {"page": page["page"], "panel": None}
+                for panel in page["panels"]:
+                    choices[f"{page['page']}ページ・{panel['panel']}コマ"] = {"page": page["page"], "panel": panel["panel"]}
+            selected = st.multiselect("改善するページ・コマ", list(choices), key=f"{prefix}_{evaluation_id}_targets")
+            targets = [choices[value] for value in selected]
+        request = st.text_area("改善してほしい点（任意）", max_chars=2000, key=f"{prefix}_{evaluation_id}_request")
+        default_reason = "\n".join(f"{CRITERIA[key]}：{evaluation['payload']['criteria'][key]['reason']}" for key in criteria)
+        reason = st.text_area("今回の改善理由・メモ", value=default_reason[:4000], max_chars=4000, key=f"{prefix}_{evaluation_id}_{mode}_{'-'.join(criteria)}_reason")
+        if not criteria or (mode == MODES[1] and not targets):
+            st.info("改善項目と、部分改善の場合は対象ページ・コマを選んでください。")
+            return
+        targets = normalize_targets(targets, version["story"], required=mode == MODES[1])
+        st.code(improvement_prompt(project, version["story"], request, evaluation=evaluation["payload"], mode=mode, criteria=criteria, targets=targets, characters=characters), language="text", wrap_lines=True)
+        st.caption("改善版も全ページを含む既存のストーリーJSONで受け取ります。以下から保存すると、改善元・評価・理由を履歴に記録します。通常のJSON取り込みも利用できますが、改善との対応は記録されません。")
+        improved_values = json_input("改善版ストーリーJSON", f"{prefix}_{evaluation_id}_{mode}_improved")
+        if st.button("改善版を検証して新しい版に保存", key=f"{prefix}_save_improved"):
+            perform(lambda: store.save_improvement(input_text(improved_values), version_id, evaluation_id, mode, criteria, targets, reason,
+                                                   expected_version_id=history[-1]["id"]), "改善版を保存しました。この新しい版の評価JSONを取り込み、必要なら改善を繰り返してください。", notice_key)
 
 
 def compare_and_finalize(store, data, history, prefix, notice_key):

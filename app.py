@@ -1,107 +1,68 @@
-"""実行: python -m streamlit run app.py"""
-
-import json
+"""実行: python -m streamlit run app.py。選択した画面だけを実行する。"""
 import os
-from dataclasses import replace
+import time
 from pathlib import Path
 
-import streamlit as st
-
-from manga.models import Project
+from manga.ui_runtime import ui as st, scope, record_screen
+from manga.ui_data import project_list
 from manga.storage import ProjectStore, StorageError
-from manga.story_ui import render_story_workspace
-from manga.artwork_ui import render_artwork_workspace
-from manga.page_ui import render_page_workspace
-from manga.assistant_ui import render_assistant_workspace
+from manga.navigation import MENUS, dispatch
 
-
-DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data" / "projects"
+DEFAULT_DATA_DIR=Path(__file__).resolve().parent/"data"/"projects"
 
 
 def set_form(project=None):
-    """ウィジェットを作る前に値を設定して、読み込んだ内容をフォームへ反映する。"""
-    st.session_state["active_project"] = project
-    for name, default in (("title", ""), ("genre", ""), ("synopsis", ""), ("page_count", 8)):
-        st.session_state[name] = getattr(project, name) if project else default
+    st.session_state["active_project"]=project
+    for name,default in (("title",""),("genre",""),("synopsis",""),("page_count",8)):
+        st.session_state[name]=getattr(project,name) if project else default
+
+
+def navigate(menu,section=None):
+    st.session_state["_navigation_pending"]=(menu,section)
+    st.rerun()
 
 
 def main():
-    st.set_page_config(page_title="AI漫画スタジオ", page_icon="📖", layout="centered")
+    st.set_page_config(page_title="AI漫画スタジオ",page_icon="📖",layout="wide")
     st.title("📖 AI漫画スタジオ")
-    st.caption("漫画の企画・ストーリー・キャラクターと画像を、ChatGPTとの手動連携で管理します。")
-    store = ProjectStore(Path(os.environ.get("MANGA_DATA_DIR", str(DEFAULT_DATA_DIR))).expanduser())
-    if "active_project" not in st.session_state:
-        set_form()
-
+    store=ProjectStore(Path(os.environ.get("MANGA_DATA_DIR",str(DEFAULT_DATA_DIR))).expanduser().resolve())
+    if "active_project" not in st.session_state:set_form()
     with st.sidebar:
         st.header("保存済みプロジェクト")
         st.button("一覧を更新")
-        try:
-            projects, warnings = store.list_projects()
-        except StorageError as error:
-            projects, warnings = [], [str(error)]
-        for warning in warnings:
-            st.warning(warning)
-        by_id = {project.id: project for project in projects}
-        if projects:
-            selection = st.selectbox(
-                "プロジェクトを選択",
-                options=list(by_id),
-                format_func=lambda key: f"{by_id[key].title} / {by_id[key].genre} / {key[:8]}",
-            )
+        try:projects,warnings=project_list(store)
+        except StorageError as error:projects,warnings=[],[str(error)]
+        for warning in warnings:st.warning(warning)
+        by_id={p.id:p for p in projects}
+        if by_id:
+            selected=st.selectbox("プロジェクトを選択",list(by_id),format_func=lambda key:f"{by_id[key].title} / {by_id[key].genre} / {key[:8]}",key="sidebar_project")
             if st.button("選択したプロジェクトを開く"):
                 try:
-                    set_form(store.load(selection))
-                    st.session_state["notice"] = "プロジェクトを読み込みました。"
-                except StorageError as error:
-                    st.error(str(error))
-        else:
-            st.info("保存済みプロジェクトはありません。")
-        st.button("新規プロジェクト", on_click=set_form)
-        st.caption("開く・新規作成を選ぶと、編集中の未保存内容は置き換わります。")
-
-    notice_slot = st.empty()
-    if "notice" in st.session_state:
-        notice_slot.success(st.session_state.pop("notice"))
-    active = st.session_state["active_project"]
-    st.subheader("プロジェクトを編集" if active else "プロジェクトを作成")
-    with st.form("project_form"):
-        st.text_input("タイトル", key="title", max_chars=100)
-        st.text_input("ジャンル", key="genre", max_chars=50, placeholder="例：ファンタジー、日常、SF")
-        st.text_area("あらすじ", key="synopsis", max_chars=5000, height=180)
-        st.number_input("ページ数", min_value=1, max_value=100, step=1, key="page_count")
-        submitted = st.form_submit_button("プロジェクトを保存", type="primary")
-
-    if submitted:
-        try:
-            fields = {name: st.session_state[name] for name in ("title", "genre", "synopsis", "page_count")}
-            project = replace(active, **fields) if active else Project(**fields)
-            st.session_state["active_project"] = store.save(project)
-            st.session_state["notice"] = "プロジェクトを保存しました。"
-            st.rerun()
-        except (ValueError, StorageError) as error:
-            st.error(str(error))
-
-    if active:
-        st.caption(f"ID: {active.id} ｜ 最終保存: {active.updated_at}")
-        st.download_button(
-            "保存済みJSONをダウンロード",
-            data=json.dumps(active.to_dict(), ensure_ascii=False, indent=2),
-            file_name=f"{active.id}.json",
-            mime="application/json",
-        )
-        with st.container():
-            render_story_workspace(active, store.directory)
-        with st.container():
-            render_artwork_workspace(active, store.directory)
-        with st.container():
-            render_page_workspace(active, store.directory)
-        with st.container():
-            render_assistant_workspace(active, store.directory)
-    else:
-        st.info("プロジェクトを保存すると、ストーリー制作を始められます。")
-    st.caption("OpenAI APIは使用しません。APIキーは不要で、このアプリによるAPI課金は発生しません。")
+                    set_form(store.load(selected))
+                    st.session_state["notice"]="プロジェクトを読み込みました。"
+                    navigate("ホーム・進行状況")
+                except StorageError as error:st.error(str(error))
+        if st.button("新規プロジェクト"):
+            set_form();navigate("プロジェクト管理")
+        pending=st.session_state.pop("_navigation_pending",None)
+        if pending:
+            menu,section=pending
+            st.session_state["navigation"]=menu
+            if section:st.session_state[f"route_{menu}"]=section
+        menu=st.radio("制作メニュー",list(MENUS),index=1,key="navigation")
+        st.caption("入力後は欄外をクリックしてから画面を切り替えてください。下書きはセッション内に保持し、確定には保存・採用ボタンを押してください。")
+    notice=st.empty()
+    if "notice" in st.session_state:notice.success(st.session_state.pop("notice"))
+    project=st.session_state["active_project"]
+    if project:st.caption(f"現在のプロジェクト：{project.title} ｜ ID：{project.id}")
+    started=time.perf_counter()
+    section=None
+    with scope(f"{project.id if project else 'new'}:{menu}"):
+        if MENUS[menu]:section=st.selectbox("作業を選択",MENUS[menu],key=f"route_{menu}")
+        with scope(f"{project.id if project else 'new'}:{menu}:{section}"):
+            dispatch(menu,section,project,store,navigate)
+    record_screen(f"{menu} / {section or ''}",time.perf_counter()-started)
+    st.caption("ChatGPTとの連携は手動です。APIキー・OpenAI API・Web画面の自動操作は使用しません。")
 
 
-if __name__ == "__main__":
-    main()
+if __name__=="__main__":main()
