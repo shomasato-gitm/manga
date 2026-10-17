@@ -31,7 +31,7 @@ class ArtworkStore:
         try:
             return validate_artwork(json.loads(raw), self.project_id)
         except (ValueError, TypeError, KeyError, AttributeError, RecursionError) as error:
-            raise StorageError("作画設定の形式が不正です。既存のJSONや画像を上書きせず、バックアップから確認してください。") from error
+            raise StorageError("作画設定の形式が不正です。既存のJSONや画像を上書きせず、バックアップから確認してください。 " + str(error)) from error
 
     def _update(self, operation, expected_revision):
         try:

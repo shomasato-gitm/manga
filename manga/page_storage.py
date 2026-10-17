@@ -49,7 +49,7 @@ class PageStore:
                     raise ValueError
             return data
         except (ValueError, TypeError, KeyError, AttributeError, RecursionError) as error:
-            raise StorageError("ページ編集JSONの形式が不正です。上書きせず、バックアップを確認してください。") from error
+            raise StorageError("ページ編集JSONの形式が不正です。上書きせず、バックアップを確認してください。 " + str(error)) from error
 
     def _update(self, operation, expected_revision):
         try:

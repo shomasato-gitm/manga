@@ -44,3 +44,8 @@ def render_home(project,directory,navigate):
     if skip != studio["skip_evaluation"]:
         studio_store.update(lambda d:d.update(skip_evaluation=skip));st.rerun()
     st.caption("参考作品登録・分析と作画評価は任意です。未実施でも次の必須工程へ進めます。完了は保存データと描画・出力の実績から判定します。")
+
+    st.subheader("完成前の品質確認")
+    st.caption("自動検査・目視レビュー・修正タスクは「完成・書き出し」で管理します。生成済みファイルがあっても、品質確認済みとは限りません。")
+    if st.button("品質チェック・修正管理を開く"):
+        navigate("完成・書き出し", "品質チェック・修正管理")

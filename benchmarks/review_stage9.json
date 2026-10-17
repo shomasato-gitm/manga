@@ -1,0 +1,42 @@
+{
+  "stage": 9,
+  "date": "2026-10-17",
+  "environment": {
+    "platform": "Linux x86_64",
+    "python": "3.11.17",
+    "streamlit": "1.40.2",
+    "page_width": 600,
+    "font": "Noto Sans CJK JP"
+  },
+  "fixture": {
+    "title": "君が忘れた、最後の約束",
+    "pages": 8,
+    "panels": 24,
+    "images": "ローカル図形・元画像900×1000px。ユーザーデータやAI生成画像ではない"
+  },
+  "measurement": "単一実行の参考値。Mac実機の速度・従来工程との速度比較ではない。フォント検出後の処理時間。",
+  "timings_ms": {
+    "scan_8_pages_24_panels_ms": 1173.66,
+    "create_8_thumbnails_ms": 115.49,
+    "reuse_8_thumbnails_ms": 0.88,
+    "reuse_thumbnail_generation_ms": 0.06
+  },
+  "thumbnail_reuse_original_reads": 0,
+  "render_errors": [],
+  "browser": {
+    "passed": true,
+    "browser": "154.0.8037.57",
+    "checks": [
+      "8ページ検査",
+      "8サムネイル",
+      "目視回答保存",
+      "1ページ2コマへの直接移動",
+      "品質画面へ戻る",
+      "修正後の再確認・完了",
+      "未確認を警告してPNG生成",
+      "制作JSONの保護"
+    ],
+    "externalRequests": "blocked",
+    "javascriptErrors": []
+  }
+}

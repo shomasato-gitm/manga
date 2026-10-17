@@ -64,21 +64,29 @@ def adopted_image(artwork, page, panel):
     return next((image for image in entry["candidates"] if image["id"] == entry["selected_image_id"]), None) if entry else None
 
 
+def decode_image(content):
+    """描画と品質チェックが同じ形式・画素数・EXIFの規則を使う。返却画像は呼出側が閉じる。"""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", Image.DecompressionBombWarning)
+        try:
+            with Image.open(BytesIO(content)) as source:
+                if source.format not in ("PNG", "JPEG", "WEBP") or source.width*source.height > 24_000_000 or getattr(source,"is_animated",False):
+                    raise ValueError("画像の形式・サイズに対応していません。")
+                return ImageOps.exif_transpose(source).convert("RGBA")
+        except (Image.DecompressionBombWarning, Image.DecompressionBombError) as error:
+            raise ValueError("安全に読み込める画像サイズを超えています。") from error
+
+
 def _render_cell(panel, content, bubbles, width, height, page_width, border, font, placement):
     image = Image.new("RGB", (width, height), "white")
     notes, errors = [], []
     loaded = False
     if content:
         try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("error", Image.DecompressionBombWarning)
-                with Image.open(BytesIO(content)) as source:
-                    if source.format not in ("PNG", "JPEG", "WEBP") or source.width * source.height > 24_000_000 or getattr(source, "is_animated", False):
-                        raise ValueError
-                    source = ImageOps.exif_transpose(source).convert("RGBA")
-                    fitted, (fx,fy) = place_image(source,(max(1,width-border*2),max(1,height-border*2)),placement)
-                    image.paste(fitted, (border+fx,border+fy), fitted)
-                    loaded = True
+            with decode_image(content) as source:
+                fitted, (fx,fy) = place_image(source,(max(1,width-border*2),max(1,height-border*2)),placement)
+                image.paste(fitted, (border+fx,border+fy), fitted)
+                loaded = True
         except (OSError, ValueError, UnidentifiedImageError, Image.DecompressionBombError, Image.DecompressionBombWarning):
             notes.append("採用画像を解読できないためプレースホルダーを表示します。")
     if not loaded:

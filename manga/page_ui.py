@@ -158,6 +158,8 @@ def _export(page, latest, artwork, data, images, prefix):
             if st.checkbox("縦読みは表示中のページだけ出力", key=f"{prefix}_sns_current"):
                 pages = [page]
         st.caption("保存済みの編集内容を出力します。欠けた画像はプレースホルダーになります。縦読みはコマ番号順で、8000px以内のPNGに分割します。")
+        from manga.review_export_ui import export_notice
+        export_notice(images.root.parent, data["project_id"], [page["page"]] if kind == "page" else [p["page"] for p in pages], sns_width=sns_width if kind == "sns" else None)
         state_fingerprint=production_fingerprint(latest,artwork,data,images.root)
         fingerprint = (state_fingerprint, page["page"], kind, sns_width, len(pages), 2)
         export_key = f"{prefix}_export"
@@ -215,6 +217,9 @@ def render_page_workspace(project, directory, mode="editor"):
     if mode == "export":
         _settings(store, data, prefix, notice)
     if mode == "editor":
+        jump = st.session_state.pop(f"{prefix}_page_jump", None)
+        if jump in [p["page"] for p in latest["story"]["pages"]]:
+            st.session_state[f"{prefix}_editor_page"] = jump
         page_column,method_column=st.columns([1,2])
         with page_column:
             number=st.selectbox("合成するページ",[p["page"] for p in latest["story"]["pages"]],key=f"{prefix}_{mode}_page")

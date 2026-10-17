@@ -58,12 +58,22 @@ def main():
     started=time.perf_counter()
     section=None
     with scope(f"{project.id if project else 'new'}:{menu}"):
+        section_area = st.empty()
         if MENUS[menu]:
             if menu == "企画・ストーリー" and f"route_{menu}" not in st.session_state:
                 st.session_state[f"route_{menu}"] = "ホーム・進行状況" if project else "プロジェクト管理"
-            section=st.selectbox("作業を選択",MENUS[menu],key=f"route_{menu}")
+            with section_area.container():
+                section=st.selectbox("作業を選択",MENUS[menu],key=f"route_{menu}")
         with scope(f"{project.id if project else 'new'}:{menu}:{section}"):
-            dispatch(menu,section,project,store,navigate)
+            return_area = st.empty()
+            if st.session_state.get("_review_return"):
+                with return_area.container():
+                    from manga.review_ui_common import return_link
+                    return_link(project,menu,section,navigate)
+            # 長い品質画面と短い出力画面の切替で旧ウィジェットを残さない固定領域。
+            quality_area, production_area = st.empty(), st.empty()
+            with (quality_area if section == "品質チェック・修正管理" else production_area).container():
+                dispatch(menu,section,project,store,navigate)
     record_screen(f"{menu} / {section or ''}",time.perf_counter()-started)
     st.caption("ChatGPTとの連携は手動です。APIキー・OpenAI API・Web画面の自動操作は使用しません。")
 

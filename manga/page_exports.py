@@ -29,11 +29,16 @@ def page_png(rendered):
     return rendered.png
 
 
+def validate_book_plan(pages, settings):
+    width,height = dimensions(settings)
+    _budget(width*height*len(pages))
+
+
 def export_book(story, version_id, artwork, data, store, font, kind="pdf", cache=None, progress=None):
     if kind not in ("pdf", "png_zip"):
         raise ValueError("出力形式が不正です。")
     width, height = dimensions(data["settings"])
-    _budget(width * height * len(story["pages"]))
+    validate_book_plan(story["pages"], data["settings"])
     cache = cache if cache is not None else RenderCache()
     frames, files, notes = [], [], []
     try:
@@ -67,11 +72,9 @@ def zip_files(files):
     return output.getvalue()
 
 
-def export_vertical(pages, version_id, artwork, data, store, font, width=1080, cache=None, progress=None):
-    """ページ順・コマ番号順に1列へ。8000px以内でコマを切らずに分割する。"""
-    if width not in (600, 1080):
-        raise ValueError("縦読みの横幅は600または1080pxにしてください。")
-    cache = cache if cache is not None else RenderCache()
+def vertical_plan(pages, version_id, data, width):
+    """品質チェックと実出力で共有する出力寸法・容量の事前検証。"""
+    if width not in (600,1080): raise ValueError("縦読みの横幅は600または1080pxにしてください。")
     gap = round(width * data["settings"]["gutter"] / 100)
     plans, pixels, notes = [], 0, []
     for page in pages:
@@ -86,6 +89,15 @@ def export_vertical(pages, version_id, artwork, data, store, font, width=1080, c
     _budget(pixels)
     if not plans:
         raise ValueError("出力するコマがありません。")
+    return gap, plans, notes
+
+
+def export_vertical(pages, version_id, artwork, data, store, font, width=1080, cache=None, progress=None):
+    """ページ順・コマ番号順に1列へ。8000px以内でコマを切らずに分割する。"""
+    if width not in (600, 1080):
+        raise ValueError("縦読みの横幅は600または1080pxにしてください。")
+    cache = cache if cache is not None else RenderCache()
+    gap, plans, notes = vertical_plan(pages, version_id, data, width)
     groups, current, height = [], [], 0
     for plan in plans:
         required = plan[3] + (gap if current else 0)

@@ -5,7 +5,7 @@ MENUS = {
     "絵コンテ・作画指示": ["AI一括生成・採用", "コマ一覧・制作へ", "AI評価", "AI改善", "制作提案の履歴"],
     "イラスト制作": ["コマ制作ワークスペース", "画像プロンプト一括出力", "画像履歴"],
     "漫画ページ編集": [],
-    "完成・書き出し": ["PNG・PDF書き出し", "保存先・容量・診断"],
+    "完成・書き出し": ["品質チェック・修正管理", "PNG・PDF書き出し", "保存先・容量・診断"],
 }
 
 
@@ -48,6 +48,9 @@ def dispatch(menu, section, project, store, navigate):
     elif menu == "企画・ストーリー" and section != "参考作品のAI候補":
         from manga.story_ui import render_story_workspace
         render_story_workspace(project, store.directory, section)
+    elif section == "品質チェック・修正管理":
+        from manga.review_ui import render_review
+        render_review(project, store.directory, navigate)
     elif menu in ("漫画ページ編集", "完成・書き出し"):
         from manga.page_ui import render_page_workspace
         render_page_workspace(project, store.directory, "editor" if menu == "漫画ページ編集" else "export")
