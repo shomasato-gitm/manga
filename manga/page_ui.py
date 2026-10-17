@@ -194,6 +194,15 @@ def _export(page, latest, artwork, data, images, prefix):
             for note in result["notes"]:
                 st.warning(note)
             st.download_button("完成ファイルをダウンロード", result["content"], file_name=result["filename"], mime=result["mime"], key=f"{prefix}_download")
+            if result["filename"].endswith((".png", ".pdf")):
+                if st.button("この完成ファイルをGitHub同期用にローカル保存", key=f"{prefix}_save_sync_output"):
+                    try:
+                        from manga.sync_outputs import save_output
+                        with operation("完成ファイルを同期用に保存しています"):
+                            save_output(images.root.parent,data["project_id"],result["filename"],result["content"],state_fingerprint)
+                        st.success("保存しました。「完成・書き出し → GitHub作品同期」で対象を選んで公開できます。まだGitHubへ送信していません。")
+                    except (ValueError,OSError,StorageError) as error: st.error(str(error))
+
 
 
 def render_page_workspace(project, directory, mode="editor"):
