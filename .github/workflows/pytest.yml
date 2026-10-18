@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feature/github-studio-sync]
+    branches: [main, feature/github-studio-sync, feature/story-production-studio]
   workflow_dispatch:
 
 permissions:
@@ -132,4 +132,72 @@ jobs:
               core.info(`PR report: ${comment.data.html_url}`);
             } catch (error) {
               core.warning(`PRコメントを書き込めませんでした (HTTP ${error.status || 'unknown'})。このジョブのSummaryをPRへ転記してください。`);
+            }
+
+  studio-draft-pr:
+    name: Create story studio draft PR
+    needs: pytest
+    if: >-
+      github.event_name == 'push' && needs.pytest.result == 'success' &&
+      github.ref == 'refs/heads/feature/story-production-studio' &&
+      github.repository == 'shomasato-gitm/manga'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      # 利用者が依頼したレビュー用PRだけを作成。コードをcheckout・実行しない。
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pytest-python-*
+          path: test-results
+      - name: Prepare reviewable PR with actual CI results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = [];
+            for (const version of ['3.11', '3.12']) {
+              const data = JSON.parse(fs.readFileSync(`test-results/pytest-python-${version}/summary.json`, 'utf8'));
+              if (!['tests','failures','errors','skipped'].every(k => Number.isSafeInteger(data[k]) && data[k] >= 0)) {
+                throw new Error('Invalid test result');
+              }
+              results.push(`- Python ${version}: 成功 ${data.tests-data.failures-data.errors-data.skipped}、失敗 ${data.failures}、エラー ${data.errors}、スキップ ${data.skipped}`);
+            }
+            const branch = 'feature/story-production-studio';
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const guide = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/blob/${context.sha}/docs/story-production-studio.md`;
+            const body = [
+              '参考技法を使った概要3案の比較・採用から、詳細脚本の評価・改善・再評価・最終確認までを「ストーリー制作スタジオ」にまとめます。従来の編集・参考作品・履歴・画像制作は維持します。',
+              '',
+              '- story_concepts.jsonで依頼ID、概要候補、技法の出典と分析版、生成元、受信箱、PDCA設定を保存。脚本本体は既存schema_version: 1を維持。',
+              '- 最新版・最新評価を照合し、実際のJSON差分、8項目・総合点の変化、改善理由、点数低下とAI指摘を表示。初期目標85点・改善目安3回、追加改善と確定は人間が承認。',
+              '- 既存のsave_evaluation・save_improvement・check_improvement_scopeと、ロック・変更前後保全・再開処理を再利用。既存作品JSON・画像・履歴を削除しない。',
+              '- 概要段階からGitHubへ同期可能。回答は確認待ちの受信箱へ登録し、正式保存・概要採用を別操作にする。OpenAI API・非公式API・ChatGPT自動操作なし。',
+              '',
+              `検証対象: \`${context.sha}\`。変更前は452件成功。追加後の[GitHub Actions実績](${run}):`,
+              ...results,
+              '',
+              '概要3案の選択、8ページ24コマの保存、評価改善3サイクル、最新評価の照合、画面再読み込み・復元、同期往復、競合と中断復旧、元データ保護を自動テストしています。',
+              '',
+              '既知の制約: 意味上の独自性や矛盾は自動保証しません。AI評価は主観的な参考値で人間の最終確認が必要です。古い分析からの新規概要・詳細作成は再作成を案内します。新しい同期種別は同期先アプリも更新が必要です。Intel Mac実機・突然の電源断は未検証で、中断時は他画面で編集せず再開してください。',
+              '',
+              `[日本語の操作・更新ガイド](${guide})。mainへのマージは利用者が判断してください。このワークフローはマージしません。`
+            ].join('\n');
+            await core.summary.addRaw(body).write();
+            try {
+              const list = await github.rest.pulls.list({...context.repo, state:'open', base:'main', head:`${context.repo.owner}:${branch}`});
+              if (list.data.length) {
+                const comment = await github.rest.issues.createComment({...context.repo, issue_number:list.data[0].number, body});
+                core.info(`PR: ${list.data[0].html_url}; verification: ${comment.data.html_url}`);
+              } else {
+                const pr = await github.rest.pulls.create({...context.repo, base:'main', head:branch, draft:true,
+                  title:'ストーリー制作スタジオ：概要3案・参考技法・評価改善PDCAを統合', body});
+                core.info(`PR: ${pr.data.html_url}`);
+              }
+            } catch (error) {
+              core.warning(`PR作成・記載が拒否されました (HTTP ${error.status || 'unknown'})。Summaryを使い、GitHubの比較画面から手動作成してください。`);
+              await core.summary.addLink('PR作成画面', `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/compare/main...${branch}?expand=1`).write();
             }

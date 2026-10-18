@@ -9,6 +9,7 @@ from manga.editorial_storage import EditorialStore
 from manga.assistant_repository import AssistantRepository
 from manga.review_storage import ReviewStore
 from manga.studio_storage import StudioStore
+from manga.story_concept_storage import ConceptStore
 from manga.sync_manifest import check_limits,json_bytes,decode_json,sha256,MAX_FILE_BYTES,MAX_TOTAL_BYTES
 
 
@@ -17,7 +18,7 @@ def collect_local(directory,project_id):
     project_path=directory/f'{project_id}.json'
     if project_path.exists():files['project.json']=json_bytes(ProjectStore(directory).load(project_id).to_dict())
     stores=[StoryStore(directory,project_id),ArtworkStore(directory,project_id),PageStore(directory,project_id),
-            EditorialStore(directory,project_id),AssistantRepository(directory,project_id),ReviewStore(directory,project_id),StudioStore(directory,project_id)]
+            EditorialStore(directory,project_id),AssistantRepository(directory,project_id),ReviewStore(directory,project_id),StudioStore(directory,project_id),ConceptStore(directory,project_id)]
     for store in stores:
         if store.path.exists():
             (store.load_history if isinstance(store,StoryStore) else store.load)()
@@ -43,7 +44,7 @@ def fingerprint(files):
 def manifest_context(files):
     art=decode_json(files['artwork.json']) if 'artwork.json' in files else None
     versions={}
-    for name in ('artwork','composition','editorial','assistant','review','studio'):
+    for name in ('artwork','composition','editorial','assistant','review','studio','story_concepts'):
         if f'{name}.json' in files:versions[name]=decode_json(files[f'{name}.json'])['revision']
     characters=[];adoptions=[]
     if art:

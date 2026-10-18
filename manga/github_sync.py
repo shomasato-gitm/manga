@@ -39,7 +39,7 @@ class SyncService:
         return files
 
     def _stage(self,branch,commit,files,version,expected_revision,manifest=None):
-        manifest=manifest or build_manifest(self.project_id,files,story_version_id=version,source_commit=commit,**manifest_context(files))
+        manifest=manifest or build_manifest(self.project_id,files,story_version_id=version,source_commit=commit,content_kind='story' if 'story.json' in files else 'concepts',**manifest_context(files))
         validate_bundle(manifest,files,self.project_id)
         with self.store.locked(production=True):
             data=self.store.checked(expected_revision);local=collect_local(self.directory,self.project_id)
@@ -129,9 +129,11 @@ class SyncService:
             updates=adoption_plan(self.directory,self.project_id,local,files,candidate['manifest'],scopes,adopt_selections)
             future=dict(local,**updates)
             if 'story_history.json' in future:future['story.json']=json_bytes(decode_json(future['story_history.json'])['versions'][-1]['story'])
-            validate_bundle(build_manifest(self.project_id,future,story_version_id=candidate['manifest']['story_version_id'],source_commit=candidate['source_commit'],**manifest_context(future)),future,self.project_id)
+            future_version=decode_json(future['story_history.json'])['versions'][-1]['id'] if 'story_history.json' in future else None
+            validate_bundle(build_manifest(self.project_id,future,story_version_id=future_version,content_kind='story' if 'story.json' in future else 'concepts',source_commit=candidate['source_commit'],**manifest_context(future)),future,self.project_id)
             candidate['adopted_scopes']=sorted(set(candidate['adopted_scopes'])|set(scopes))
-            candidate['status']='採用済み' if {'story','settings','images'}<=set(candidate['adopted_scopes']) else '一部採用'
+            available=({'story'} if 'story.json' in files else set())|({'settings','images'} if 'artwork.json' in files else set())|({'composition'} if 'composition.json' in files else set())|({'concepts'} if 'story_concepts.json' in files else set())
+            candidate['status']='採用済み' if available<=set(candidate['adopted_scopes']) else '一部採用'
             candidate['local_fingerprint']=fingerprint(future)
             data['bindings'][f'{self.remote.repository}:{candidate["source_branch"]}']=dict(candidate_id=candidate_id,source_commit=candidate['source_commit'])
             self.store.event(data,'adopt',candidate_id=candidate_id,scopes=scopes,adopt_selections=adopt_selections,source_commit=candidate['source_commit'])
@@ -150,7 +152,7 @@ class SyncService:
         target=self.remote.head(branch);parent=target or self.remote.head(source_branch)
         with self.store.locked(production=True):
             data=self.store.checked(expected_revision);files=collect_local(self.directory,self.project_id)
-            if 'story.json' not in files:raise ValueError('採用済みのストーリーがありません。')
+            if 'story.json' not in files and 'story_concepts.json' not in files:raise ValueError('採用済みのストーリーまたは概要・制作依頼がありません。')
             if outputs and output_fingerprint is not None:
                 from manga.sync_outputs import current_output_fingerprint
                 if current_output_fingerprint(self.directory,self.project_id)!=output_fingerprint:raise SyncConflict('送信計画の作成前に完成ファイルの生成元が変わりました。最新状態で出力し直してください。')
@@ -160,8 +162,8 @@ class SyncService:
                 if '/' in name or not name.endswith(('.png','.pdf')):raise ValueError('完成ファイル名はPNGまたはPDFで指定してください。')
                 files['exports/'+name]=content
             files['pdca.json']=json_bytes(dict(schema_version=1,project_id=self.project_id,policy=data['policy'],iterations=data['iterations']))
-            version=decode_json(files['story_history.json'])['versions'][-1]['id']
-            manifest=build_manifest(self.project_id,files,story_version_id=version,source_commit=parent,**manifest_context(files))
+            version=decode_json(files['story_history.json'])['versions'][-1]['id'] if 'story_history.json' in files else None
+            manifest=build_manifest(self.project_id,files,story_version_id=version,content_kind='story' if 'story.json' in files else 'concepts',source_commit=parent,**manifest_context(files))
             validate_bundle(manifest,files,self.project_id)
             record=dict(id=str(uuid4()),saved_at=now_iso(),branch=branch,parent=parent,expected_head=target,manifest=manifest,
                         local_fingerprint=local_fingerprint,repository=self.remote.repository,status='確認待ち')

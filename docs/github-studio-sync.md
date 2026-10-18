@@ -133,6 +133,9 @@ GitHubから得た完成ファイルは候補の詳細欄からダウンロー�
 - `github_sync/transactions/`：ローカル変更前後の保全
 - `github_sync/git/`：Gitキャッシュ
 - `sync_outputs.json` と `sync_outputs/`：利用者が保存した完成PNG・PDF
+- `story_concepts.json`：概要3案・選択・生成元・ストーリーPDCA・未採用回答。概要のみの同期にも対応します。
+
+ストーリー制作スタジオの依頼・回答の受け渡しと明示採用は [専用ガイド](story-production-studio.md#githubによる受け渡し) を参照してください。
 
 `manga/github_sync.py` が取得・差分・明示採用・公開を調整し、`sync_manifest.py` が契約・容量・ハッシュ・実差分、`git_transport.py` が通信を担当します。
 ローカル保存、既存バリデータへの接続、旧資料変換、採用、AI返答、PDCA、完成ファイル、UIは `sync_*.py` に分割しています。

@@ -181,10 +181,25 @@ class EditorialStore:
         return self._update(operation, expected_revision)
 
     def save_improvement(self, raw, base_id, evaluation_id, mode, criteria, targets, reason, *, expected_version_id):
+        # 旧画面でも評価の更新と改善保存を同じロック順で保護する。
+        with self.stories._lock():
+            with (self.root/'.editorial.lock').open('a') as lock:
+                fcntl.flock(lock,fcntl.LOCK_EX)
+                try:
+                    return self._improve_locked(raw,base_id,evaluation_id,mode,criteria,targets,reason,expected_version_id)
+                finally:fcntl.flock(lock,fcntl.LOCK_UN)
+
+    def _improve_locked(self, raw, base_id, evaluation_id, mode, criteria, targets, reason, expected_version_id):
+        if base_id != expected_version_id:
+            raise ValueError('最新のストーリー版だけを改善できます。過去版は先に復元して再評価してください。')
         base = self.version(base_id)
-        evaluation = next((item for item in self.load()["evaluations"] if item["id"] == evaluation_id), None)
+        evaluations = self.load()['evaluations']
+        evaluation = next((item for item in evaluations if item["id"] == evaluation_id), None)
         if evaluation is None or evaluation["payload"]["story_version_id"] != base_id or evaluation["source_story"] != base["story"]:
             raise ValueError("評価と改善元のストーリー版が一致しません。対象の版を評価してください。")
+        latest_evaluation = next((item for item in reversed(evaluations) if item['payload']['story_version_id'] == base_id and item['source_story'] == base['story']), None)
+        if latest_evaluation is None or latest_evaluation['id'] != evaluation_id:
+            raise ValueError('改善元の評価が古いため、最新の評価を使用してください。')
         if mode not in MODES or not isinstance(criteria, list) or not criteria or any(key not in CRITERIA for key in criteria):
             raise ValueError("改善方式と改善する評価項目を選択してください。")
         targets = normalize_targets(targets, base["story"], required=mode == MODES[1])
@@ -193,7 +208,7 @@ class EditorialStore:
         reason = text(reason, "改善理由", required=True)
         context = dict(base_version_id=base_id, evaluation_id=evaluation_id, mode=mode,
                        criteria=criteria, targets=targets, reason=reason)
-        version = self.stories.save(improved.story, expected_version_id=expected_version_id, revision_context=context)
+        version = self.stories._append(self.stories.load_history(),improved.story,'取り込み',expected_version_id,revision_context=context)
         return version, improved.warnings
 
     def finalize(self, *, expected_version_id, expected_revision):

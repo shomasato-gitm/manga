@@ -13,8 +13,9 @@ from manga.review_models import validate_review
 from manga.studio_storage import StudioStore
 from manga.models import Project
 from manga.page_render import decode_image
+from manga.story_concept_storage import ConceptStore
 
-STORES=('story_history.json','artwork.json','composition.json','editorial.json','assistant.json','review.json','studio.json')
+STORES=('story_history.json','artwork.json','composition.json','editorial.json','assistant.json','review.json','studio.json','story_concepts.json')
 
 
 def _validate_payload(files,project_id,manifest):
@@ -28,9 +29,14 @@ def _validate_payload(files,project_id,manifest):
         elif path.startswith('exports/') and path.endswith('.pdf'):
             if not content.startswith(b'%PDF-') or b'%%EOF' not in content[-1024:]:raise ValueError('完成PDFの形式が不正です。')
         else:raise ValueError('同期するバイナリはPNG・PDFに限定しています。')
-    if 'story.json' not in decoded:raise ValueError('互換形式のstory.jsonが必要です。')
-    normalized=normalize_story(decoded['story.json']).story
-    if decoded['story.json'].get('schema_version')!=1 or normalized!=decoded['story.json']:raise ValueError('story.jsonは既存のschema_version: 1の正規形式にしてください。')
+    concepts_only=manifest.get('content_kind')=='concepts'
+    normalized=None
+    if concepts_only:
+        if 'story_concepts.json' not in decoded or 'story.json' in decoded or 'story_history.json' in decoded:raise ValueError('概要同期にはstory_concepts.jsonが必要です。脚本は通常の同期で取得してください。')
+    else:
+        if 'story.json' not in decoded:raise ValueError('互換形式のstory.jsonが必要です。')
+        normalized=normalize_story(decoded['story.json']).story
+        if decoded['story.json'].get('schema_version')!=1 or normalized!=decoded['story.json']:raise ValueError('story.jsonは既存のschema_version: 1の正規形式にしてください。')
     with tempfile.TemporaryDirectory(prefix='manga-sync-validation-') as temp:
         directory=Path(temp);root=directory/project_id;root.mkdir()
         for name in STORES:
@@ -45,7 +51,13 @@ def _validate_payload(files,project_id,manifest):
         if 'assistant.json' in decoded:validate_assistant(decoded['assistant.json'],project_id)
         if 'review.json' in decoded:validate_review(decoded['review.json'],project_id)
         if 'studio.json' in decoded:StudioStore(directory,project_id).load()
+        if 'story_concepts.json' in decoded:
+            concepts=ConceptStore(directory,project_id).load()
+            from manga.sync_concepts import check_story_links,check_editorial_links
+            check_story_links(concepts,history)
+            check_editorial_links(concepts,EditorialStore(directory,project_id).load())
     if art:
+        if concepts_only and art['panels']:raise ValueError('概要のみの同期に脚本のないコマ画像・作画指示は含められません。')
         images=[i for c in art['characters'] for i in c['references']]+[i for e in art['panels'].values() for i in e['candidates']]
         declared={i['path'] for i in images}
         if {p for p in files if p.startswith('images/')}!=declared:raise ValueError('人物参照・候補画像と保存ファイルの対応が一致しません。')

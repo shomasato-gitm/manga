@@ -32,6 +32,8 @@ def render_home(project,directory,navigate):
     except StorageError as error:
         st.error(str(error));return
     st.subheader("次にやること")
+    if st.button('ストーリー制作スタジオを開く'):
+        navigate('企画・ストーリー','ストーリー制作スタジオ')
     if next_step:
         st.info(f"{next_step['label']}：{next_step['state']}。{next_step['detail']}")
         if st.button("次の工程へ進む",type="primary"):navigate(next_step["menu"],next_step["section"])

@@ -47,24 +47,35 @@ def check_limits(files):
     if sum(map(len,files.values()))>MAX_TOTAL_BYTES:raise ValueError('1回の同期は100MiB以内にしてください。')
 
 
-def build_manifest(project_id,files,*,story_version_id,source_commit,settings_versions=None,characters=None,adoptions=None):
-    validate_id(project_id);validate_id(story_version_id);commit_id(source_commit,True);check_limits(files)
+def build_manifest(project_id,files,*,story_version_id,source_commit,settings_versions=None,characters=None,adoptions=None,content_kind='story'):
+    validate_id(project_id)
+    if content_kind not in ('story','concepts'):raise ValueError('同期対象の種類が不正です。')
+    if content_kind=='concepts':
+        if story_version_id is not None:raise ValueError('概要のみの同期に脚本版は指定しません。')
+    else:validate_id(story_version_id)
+    commit_id(source_commit,True);check_limits(files)
     if settings_versions is None or characters is None or adoptions is None:
         from manga.sync_local import manifest_context
         context=manifest_context(files)
         if settings_versions is None:settings_versions=context['settings_versions']
         if characters is None:characters=context['characters']
         if adoptions is None:adoptions=context['adoptions']
-    return dict(schema_version=1,format='manga-studio-sync',project_id=project_id,snapshot_id=str(uuid4()),created_at=now_iso(),
+    result=dict(schema_version=1,format='manga-studio-sync',project_id=project_id,snapshot_id=str(uuid4()),created_at=now_iso(),
         story_version_id=story_version_id,source_commit=source_commit,settings_versions=settings_versions or {},
         characters=characters or [],adoptions=adoptions or [],
         files=[dict(path=path,size=len(content),sha256=sha256(content)) for path,content in sorted(files.items())])
+    if content_kind=='concepts':result['content_kind']='concepts'
+    return result
 
 
 def validate_manifest(manifest,project_id):
     try:
         if type(manifest['schema_version']) is not int or manifest['schema_version']!=1 or manifest['format']!='manga-studio-sync' or manifest['project_id']!=validate_id(project_id):raise ValueError('同期manifestの作品ID・形式が一致しません。')
-        validate_id(manifest['snapshot_id']);validate_id(manifest['story_version_id']);commit_id(manifest['source_commit'],True)
+        validate_id(manifest['snapshot_id']);commit_id(manifest['source_commit'],True)
+        if manifest.get('content_kind','story') not in ('story','concepts'):raise ValueError('同期対象の種類が不正です。')
+        if manifest.get('content_kind')=='concepts':
+            if manifest['story_version_id'] is not None:raise ValueError('概要同期の脚本版が不正です。')
+        else:validate_id(manifest['story_version_id'])
         entries=manifest['files']
         if not isinstance(entries,list) or not 1<=len(entries)<=MAX_FILES:raise ValueError('同期ファイル数が不正です。')
         seen=set();total=0

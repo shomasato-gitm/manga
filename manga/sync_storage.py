@@ -26,7 +26,7 @@ class SyncStore:
         self.root.mkdir(parents=True,exist_ok=True)
         with ExitStack() as stack:
             # AssistantRepositoryと同順。既存のストーリー・作画・ページ保存を横断して保護する。
-            names=['project','story','artwork','editorial','assistant','composition','review','studio','sync_outputs','github_sync'] if production else ['github_sync']
+            names=['project','story','artwork','editorial','assistant','story_concepts','composition','review','studio','sync_outputs','github_sync'] if production else ['github_sync']
             for name in names:
                 file=stack.enter_context((self.root/f'.{name}.lock').open('a'))
                 fcntl.flock(file,fcntl.LOCK_EX);stack.callback(fcntl.flock,file,fcntl.LOCK_UN)

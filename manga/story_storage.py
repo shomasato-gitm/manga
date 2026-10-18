@@ -43,6 +43,8 @@ class StoryStore:
                 if datetime.fromisoformat(version["saved_at"]).tzinfo is None:
                     raise ValueError
                 restored_from = version.get("restored_from")
+                if 'parent_version_id' in version and version['parent_version_id'] is not None and version['parent_version_id'] not in seen:
+                    raise ValueError('親ストーリー版が履歴にありません。')
                 if version["action"] == "復元":
                     if restored_from not in seen:
                         raise ValueError
@@ -95,6 +97,7 @@ class StoryStore:
             "saved_at": now_iso(),
             "action": action,
             "restored_from": restored_from,
+            "parent_version_id": latest_id,
             "story": normalize_story(copy.deepcopy(story)).story,
         }
         if revision_context is not None:

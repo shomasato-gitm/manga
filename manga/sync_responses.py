@@ -14,23 +14,30 @@ from manga.assistant_repository import validate_assistant
 
 
 def fetch_response(service,branch,path,kind,*,expected_revision):
-    if kind not in ('assistant','review'):raise ValueError('回答の種類が不正です。')
+    if kind not in ('assistant','review','story_studio'):raise ValueError('回答の種類が不正です。')
     commit=service.remote.head(branch)
     if not commit:raise ValueError('対象ブランチがありません。')
     content=service.remote.read(commit,service._remote_path(path));decode_json(content)
     with service.store.locked(production=True):
         data=service.store.checked(expected_revision);local=collect_local(service.directory,service.project_id)
-        if 'story.json' not in local:raise ValueError('先に対応するストーリーと生成依頼を作成してください。')
+        if 'story.json' not in local and kind!='story_studio':raise ValueError('先に対応するストーリーと生成依頼を作成してください。')
         # 既存依頼のID・版・対象・現在の設定まで検証する。
         prepare_response(service,kind,content)
         from manga.sync_manifest import build_manifest
-        files={'story.json':local['story.json'],f'responses/{kind}.json':content}
-        version=decode_json(local['story_history.json'])['versions'][-1]['id']
+        files={f'responses/{kind}.json':content}
+        if 'story.json' in local:files['story.json']=local['story.json']
+        if kind=='story_studio':
+            files.update({name:local[name] for name in ('project.json','story_concepts.json')})
+            files.update({name:local[name] for name in ('story_history.json','editorial.json') if name in local})
+        version=decode_json(local['story_history.json'])['versions'][-1]['id'] if 'story_history.json' in local else None
     candidate=service._stage(branch,commit,files,version,expected_revision)
     return candidate
 
 
 def prepare_response(service,kind,content):
+    if kind=='story_studio':
+        from manga.story_studio import StudioService
+        return 'story_concepts.json',StudioService(service.directory,service.project_id).queue_plan(content.decode('utf-8-sig'))
     if kind=='assistant':
         store=AssistantStore(service.directory,service.project_id);data=store.load();raw=decode_json(content)
         request=store.request(data,raw.get('request_id'));store.latest(request['story_version_id'])

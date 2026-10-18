@@ -52,9 +52,12 @@ def evaluation_and_improvement(project, store, data, history, characters, prefix
     labels = _version_labels(history)
     version_id = st.selectbox("評価・改善する版", list(reversed(labels)), format_func=labels.get, key=f"{prefix}_{history[-1]['id']}_evaluation_version")
     version = next(item for item in history if item["id"] == version_id)
+    latest_evaluation = next((e for e in reversed(data['evaluations']) if e['payload']['story_version_id']==version_id and e['source_story']==version['story']),None)
+    st.subheader('次にやること：'+('改善プロンプトをコピーして改善版を作成' if latest_evaluation else '評価プロンプトをコピーして評価JSONを取り込む'))
     st.caption("評価は選択した版に紐づけます。改善後は新しい版を再評価してください。右上のコピーでプロンプトをChatGPTへ手動で渡します。")
     st.subheader("ストーリー評価用プロンプト")
-    st.code(evaluation_prompt(project, version, characters), language="text", wrap_lines=True)
+    from manga.prompt_ui import prompt_tools
+    prompt_tools(evaluation_prompt(project, version, characters), f'{prefix}_{version_id}_eval_prompt', 'story_evaluation.txt')
     values = json_input("ストーリー評価JSON", f"{prefix}_{version_id}_evaluation")
     if st.button("評価JSONを検証して保存", key=f"{prefix}_save_evaluation"):
         perform(lambda: store.save_evaluation(version_id, input_text(values), expected_revision=data["revision"]), "対象版の評価を新しい履歴として保存しました。", notice_key)
@@ -63,11 +66,17 @@ def evaluation_and_improvement(project, store, data, history, characters, prefix
     if not evaluations:
         improvement_area.info("この版の評価JSONを保存すると、評価に基づく改善プロンプトを作成できます。")
         return
+    if version_id != history[-1]['id']:
+        st.warning('過去版は確認・評価だけ行えます。改善する場合は履歴から復元し、新しい版を再評価してください。')
+        return
     with improvement_area.container():
         by_id = {item["id"]: item for item in evaluations}
-        evaluation_id = st.selectbox("使用する評価履歴", list(reversed(by_id)), format_func=lambda value: f"{by_id[value]['saved_at']} / {by_id[value]['payload']['total_score']:g}点", key=f"{prefix}_{version_id}_evaluation_history")
+        evaluation_id = st.selectbox("使用する評価履歴", list(reversed(by_id)), format_func=lambda value: f"{by_id[value]['saved_at']} / {by_id[value]['payload']['total_score']:g}点", key=f"{prefix}_{version_id}_{latest_evaluation['id']}_evaluation_history")
         evaluation = by_id[evaluation_id]
         _evaluation_details(evaluation["payload"])
+        if evaluation_id != latest_evaluation['id']:
+            st.warning('過去の評価は閲覧用です。改善する場合はこの版の最新評価を選んでください。')
+            return
         st.subheader("評価に基づく改善")
         mode = st.radio("改善方式", MODES, key=f"{prefix}_{version_id}_mode")
         criteria = st.multiselect("改善したい評価項目", list(CRITERIA), default=list(CRITERIA), format_func=CRITERIA.get, key=f"{prefix}_{evaluation_id}_criteria")
@@ -87,7 +96,7 @@ def evaluation_and_improvement(project, store, data, history, characters, prefix
             st.info("改善項目と、部分改善の場合は対象ページ・コマを選んでください。")
             return
         targets = normalize_targets(targets, version["story"], required=mode == MODES[1])
-        st.code(improvement_prompt(project, version["story"], request, evaluation=evaluation["payload"], mode=mode, criteria=criteria, targets=targets, characters=characters), language="text", wrap_lines=True)
+        prompt_tools(improvement_prompt(project, version["story"], request, evaluation=evaluation["payload"], mode=mode, criteria=criteria, targets=targets, characters=characters), f'{prefix}_{evaluation_id}_improve_prompt', 'story_improvement.txt')
         st.caption("改善版も全ページを含む既存のストーリーJSONで受け取ります。以下から保存すると、改善元・評価・理由を履歴に記録します。通常のJSON取り込みも利用できますが、改善との対応は記録されません。")
         improved_values = json_input("改善版ストーリーJSON", f"{prefix}_{evaluation_id}_{mode}_improved")
         if st.button("改善版を検証して新しい版に保存", key=f"{prefix}_save_improved"):

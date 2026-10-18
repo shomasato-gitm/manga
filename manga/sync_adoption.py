@@ -5,7 +5,7 @@ from manga.sync_manifest import decode_json,json_bytes,sha256,SyncConflict
 from manga.artwork_models import empty_artwork,character_fields,direction_fields
 from manga.page_storage import PageStore
 
-SCOPES={'story':'ストーリー','settings':'人物・作風・作画指示','images':'画像を候補登録','composition':'ページ編集'}
+SCOPES={'story':'ストーリー','settings':'人物・作風・作画指示','images':'画像を候補登録','composition':'ページ編集','concepts':'概要案・選択・制作PDCA（参考分析・評価を履歴追加）'}
 
 
 def image_identity(image):
@@ -31,10 +31,11 @@ def _merge_images(old,incoming,files,current_files):
 def adoption_plan(directory,project_id,current,files,manifest,scopes,adopt_selections=False):
     if not scopes or not set(scopes)<=set(SCOPES):raise ValueError('採用する内容を選択してください。')
     incoming={p:decode_json(b) for p,b in files.items() if p.endswith('.json')}
-    result={};version=manifest['story_version_id'];story=incoming['story.json']
+    result={};version=manifest['story_version_id'];story=incoming.get('story.json')
     history=decode_json(current['story_history.json']) if 'story_history.json' in current else dict(schema_version=1,project_id=project_id,versions=[])
     latest=history['versions'][-1] if history['versions'] else None
     if 'story' in scopes:
+        if story is None:raise ValueError('この候補は概要のみです。概要・制作PDCAを選択してください。')
         known=next((v for v in history['versions'] if v['id']==version),None)
         if known and known['story']!=story:raise SyncConflict('同じストーリー版IDに異なる脚本があります。')
         if latest is None or latest['id']!=version:
@@ -50,9 +51,12 @@ def adoption_plan(directory,project_id,current,files,manifest,scopes,adopt_selec
                 history['versions'].append(dict(id=version,saved_at=now_iso(),action='取り込み',restored_from=None,story=copy.deepcopy(story)))
             result['story_history.json']=json_bytes(history)
         latest=history['versions'][-1]
-    if any(s in scopes for s in ('settings','images','composition')) and (not latest or latest['id']!=version or latest['story']!=story):raise SyncConflict('作画・画像・ページ編集の脚本版が異なります。対応するストーリーも確認して採用してください。')
+    concepts_only=manifest.get('content_kind')=='concepts'
+    needs_story='composition' in scopes or (any(s in scopes for s in ('settings','images')) and not concepts_only)
+    if needs_story and (not latest or latest['id']!=version or latest['story']!=story):raise SyncConflict('作画・画像・ページ編集の脚本版が異なります。対応するストーリーも確認して採用してください。')
+    if concepts_only and incoming.get('artwork.json',{}).get('panels'):raise ValueError('概要のみの同期では、脚本に紐づくコマ画像・作画指示を採用できません。')
     if 'project.json' not in current:
-        if 'story' not in scopes:raise ValueError('初回はストーリーを選び、作品を明示的に登録してください。')
+        if 'story' not in scopes and not ('concepts' in scopes and 'project.json' in incoming):raise ValueError('初回はストーリーまたは概要・制作PDCAを選び、作品を明示的に登録してください。')
         project=Project.from_dict(incoming['project.json']) if 'project.json' in incoming else Project(id=project_id,title=story['title'],genre='未設定',synopsis=story['summary'] or 'GitHubから取り込んだ作品',page_count=len(story['pages']))
         result['project.json']=json_bytes(project.to_dict())
     if 'settings' in scopes or 'images' in scopes:
@@ -104,4 +108,7 @@ def adoption_plan(directory,project_id,current,files,manifest,scopes,adopt_selec
             if data['pages'].get(key)!=page:
                 data['history'].append(dict(kind='page',page=int(key),saved_at=now_iso(),before=copy.deepcopy(data['pages'].get(key))));data['pages'][key]=copy.deepcopy(page)
         data['revision']+=1;result['composition.json']=json_bytes(data)
+    if 'concepts' in scopes:
+        from manga.sync_concepts import concept_adoption
+        result.update(concept_adoption(directory,project_id,current,incoming,history['versions']))
     return result

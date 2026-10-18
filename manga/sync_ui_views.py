@@ -28,7 +28,9 @@ def import_view(service,data,branch,prefix,perform):
     if not jsons:st.info('選択できるJSONがありません。スナップショット方式を利用してください。');return
     if mode=='AI提案・画像レビューの回答':
         path=st.selectbox('取得する回答JSON',jsons,key=f'{prefix}_response_path')
-        kind=st.selectbox('既存の取り込み先',('assistant','review'),format_func=lambda k:'制作アシスタントの未採用提案' if k=='assistant' else '完成画像レビューの未確認提案')
+        labels={'assistant':'制作アシスタントの未採用提案','review':'完成画像レビューの未確認提案','story_studio':'ストーリー制作スタジオの回答候補'}
+        kind=st.selectbox('既存の取り込み先',list(labels),format_func=labels.get)
+        if kind=='story_studio':st.info('概要段階でも取得できます。受信箱へ登録後、ストーリー制作スタジオで確認・保存してください。脚本・評価の自動採用はありません。')
         st.caption('ローカルで作成した依頼ID・作品ID・脚本版・対象・設定と照合します。AI提案の正式採用や画像の自動修正は行いません。')
         if st.button('回答JSONを検証して候補取得'):
             perform(lambda:fetch_response(service,branch,path,kind,expected_revision=data['revision']),'回答JSONを候補保存しました。')
@@ -56,6 +58,7 @@ def candidate_view(service,data,prefix,perform,navigate):
     by_id={c['id']:c for c in shown}
     selected=st.selectbox('確認する同期候補',list(by_id),format_func=lambda i:f'{by_id[i]["saved_at"]} / {by_id[i]["status"]} / {i[:8]}',key=f'{prefix}_candidate')
     candidate=by_id[selected]
+    if candidate['manifest'].get('content_kind')=='concepts':st.info('概要段階の同期です。概要・制作PDCAを選択し、人物設定・参照画像も引き継ぐ場合は人物・画像の範囲も明示選択してください。')
     st.caption(f'取得元：{candidate["repository"]} / {candidate["source_branch"]} / {candidate["source_commit"]}')
     st.dataframe([{k:v for k,v in row.items() if k!='changes'} for row in candidate['differences']],hide_index=True,use_container_width=True)
     if st.checkbox('現在のローカルとの詳細差分を表示',key=f'{prefix}_{selected}_diff'):
