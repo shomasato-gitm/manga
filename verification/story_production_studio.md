@@ -45,6 +45,12 @@ Linux x86_64、Streamlit 1.40.2、既存requirements-dev.txt、日本語Notoフ�
 既存GitHub ActionsのPython 3.11／3.12全件実行を作業ブランチでも有効にした。JUnitと件数JSONをArtifactsへ保存する。
 ローカル成功とCI成功は区別する。実際のCIリンク・コミット・件数はPR本文またはActionsのSummaryで確認する。
 
+コードコミット `a3aa85b84528b4d208b33d6f837b2a2ca3dede70` の
+[GitHub Actions実行39145022063](https://github.com/shomasato-gitm/manga/actions/runs/39145022063) は成功し、Python 3.11／3.12の両ジョブが完了した。
+PR作成ジョブは実行されたが、GitHubからHTTP 403を受け、PRは作成できなかった。
+これはテスト失敗ではない。リポジトリ／組織のActions・トークン権限をこの実行から変更していない。
+[用意したPR本文](story_studio_pr.md)を使って比較画面から作成できる。
+
 CI成功後、利用者が依頼したレビュー用ドラフトPRを対象ブランチからmainへ作成する専用ジョブを追加。
 同じリポジトリ・この作業ブランチのpushだけに限定し、コードをcheckout・実行せず、Actions読み取り／PR書き込み権限だけを追加する。
 既存PRがあれば実績をコメントし、本文を上書きしない。マージは行わない。リポジトリ設定で作成が拒否された場合はSummaryと比較画面を案内する。
