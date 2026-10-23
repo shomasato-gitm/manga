@@ -2,6 +2,8 @@
 
 既存の漫画制作機能を変更せず、独立モジュールに課金前予算制御を追加しました。
 動画編集と外部AI APIの実接続は**まだ実装されていません**。
+
+Streamlitの「完成・書き出し → API予算管理」で作品・月額の利用額と未確定請求数を確認できます（表示専用）。
 このPRによって課金が発生することはありません。
 
 ## 設定
@@ -57,7 +59,7 @@ Phase 2: テキスト・画像生成APIとの統合。画像の自動再生成�
 ## テスト
 
 ```bash
-python -m pytest tests/test_video_budget.py tests/test_video_prereqs.py
+python -m pytest tests/test_video_budget.py tests/test_video_prereqs.py tests/test_video_budget_ui.py
 # 既存機能の回帰確認
 python -m pytest
 ```
