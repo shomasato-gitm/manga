@@ -1,0 +1,4 @@
+# Phase 0/1 uses the Python standard library only.
+# Optional API SDK dependencies will be pinned and added after provider
+# integration tests. FFmpeg/ffprobe are OS binaries and are not pip packages.
+# Existing requirements.txt stays unchanged for Intel Macs.
