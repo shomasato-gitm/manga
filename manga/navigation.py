@@ -5,7 +5,7 @@ MENUS = {
     "絵コンテ・作画指示": ["AI一括生成・採用", "コマ一覧・制作へ", "AI評価", "AI改善", "制作提案の履歴"],
     "イラスト制作": ["コマ制作ワークスペース", "画像プロンプト一括出力", "画像履歴"],
     "漫画ページ編集": [],
-    "完成・書き出し": ["品質チェック・修正管理", "PNG・PDF書き出し", "保存先・容量・診断", "GitHub作品同期"],
+    "完成・書き出し": ["品質チェック・修正管理", "PNG・PDF書き出し", "API予算管理", "保存先・容量・診断", "GitHub作品同期"],
 }
 
 
@@ -35,6 +35,9 @@ def dispatch(menu, section, project, store, navigate):
     elif menu == "企画・ストーリー" and section == "プロジェクト管理":
         from manga.project_ui import render_project
         render_project(store)
+    elif section == "API予算管理":
+        from manga.budget_ui import render_budget
+        render_budget(project, store.directory)
     elif section == "保存先・容量・診断":
         from manga.settings_ui import render_settings
         render_settings(project, store.directory)
