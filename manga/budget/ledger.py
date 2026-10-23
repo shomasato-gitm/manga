@@ -151,7 +151,7 @@ class BudgetLedger:
                 )
                 if not same:
                     raise ReservationConflict("リクエストIDが別の処理で使用済みです。")
-                return row[7]  # idempotent; never creates a second reservation
+                return "already_" + row[7]  # idempotent; do not call provider twice
 
             checks = [
                 ("作品", self.project_limit, self._used(db, "project_id=?", (project_id,))),
