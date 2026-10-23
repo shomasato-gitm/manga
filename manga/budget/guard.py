@@ -51,5 +51,10 @@ class BudgetedExecutor:
         except BaseException:
             self.ledger.mark_uncertain(request_id)
             raise
-        self.ledger.settle(request_id, actual_jpy=charged)
+        try:
+            self.ledger.settle(request_id, actual_jpy=charged)
+        except BaseException:
+            # Provider has already replied: never release its charge reservation.
+            self.ledger.mark_uncertain(request_id)
+            raise
         return response
