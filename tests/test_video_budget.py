@@ -246,3 +246,18 @@ def test_clock_and_ids_validated(tmp_path):
         reserve(book, "not-a-uuid", "5")
     with pytest.raises(ValueError):
         reserve(book, pid(), "5", now=datetime(2026, 10, 24))
+
+
+def test_invalid_charge_keeps_reservation_after_provider_response(tmp_path):
+    book = ledger(tmp_path)
+    guard = BudgetedExecutor(book)
+    work = pid()
+    with pytest.raises(ValueError):
+        guard.run(
+            project_id=work, request_id=str(uuid4()), provider="gemini",
+            model="tts", kind="voice", quote_jpy="50",
+            operation=lambda: {"status": "ok"},
+            actual_charge_jpy=lambda _: "-5",
+        )
+    assert book.summary(work)["requests_by_status"] == {"uncertain": 1}
+    assert book.summary(work)["project_used_jpy"] == 50
