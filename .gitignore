@@ -9,3 +9,4 @@ __pycache__/
 data/projects/*
 !data/projects/.gitkeep
 .streamlit/secrets.toml
+data/runtime/
