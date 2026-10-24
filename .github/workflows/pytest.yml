@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feature/github-studio-sync]
+    branches: [main, feature/github-studio-sync, feature/video-voice]
   workflow_dispatch:
 
 permissions:

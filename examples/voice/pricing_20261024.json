@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "provider": "aws-polly",
+  "verified_on": "2026-10-24",
+  "pricing_url": "https://aws.amazon.com/polly/pricing/",
+  "api_url": "https://docs.aws.amazon.com/polly/latest/dg/API_SynthesizeSpeech.html",
+  "terms_url": "https://aws.amazon.com/service-terms/",
+  "commercial_use_reviewed": false,
+  "japanese_reviewed": false,
+  "billing_maximum_reviewed": false,
+  "engines": {
+    "standard": {
+      "per_million_characters_usd": "4",
+      "fx_jpy_per_usd": "160",
+      "tax_multiplier": "1.10",
+      "safety_multiplier": "1.25",
+      "tax_note": "説明用の為替上限160円/USD・税係数1.10。市場為替の取得値ではない。実契約と最大請求条件を利用者が確認する。"
+    },
+    "neural": {
+      "per_million_characters_usd": "16",
+      "fx_jpy_per_usd": "160",
+      "tax_multiplier": "1.10",
+      "safety_multiplier": "1.25",
+      "tax_note": "説明用の為替上限160円/USD・税係数1.10。市場為替の取得値ではない。実契約と最大請求条件を利用者が確認する。"
+    }
+  }
+}

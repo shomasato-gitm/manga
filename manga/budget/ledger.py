@@ -339,6 +339,15 @@ class BudgetLedger:
             "providers": providers,
         }
 
+    def request_status(self, request_id):
+        """Read-only recovery lookup. This never retries, settles or releases money."""
+        request_id=_check_label(request_id,'リクエストID')
+        with self._transaction() as db:
+            row=self._get(db,request_id)
+            if row is None:return None
+            return dict(project_id=row[0],provider=row[2],model=row[3],kind=row[4],
+                        quote_jpy=_units_to_yen(row[5]),actual_jpy=_units_to_yen(row[6]) if row[6] is not None else None,state=row[7])
+
     def acknowledge_overrun(self, request_id, *, confirmed_reviewed=False, reason=''):
         """Operator-only acknowledgement, preserving the actual charge and audit trail."""
         if confirmed_reviewed is not True or not isinstance(reason,str) or not reason.strip() or len(reason)>1000:

@@ -1,0 +1,117 @@
+{
+  "note": "公開資料の閲覧記録。課金API呼び出しなし。取得時のHTMLハッシュであり、料金の永久保証ではない。本文の要約はdocs/tts-provider-comparison.md。",
+  "sources": [
+    {
+      "source": "aws-pricing",
+      "url": "https://aws.amazon.com/polly/pricing/",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "02e17797a6698e4ff2c57af29989086cb1cfdc8ae3d8c18475e2d9f104f60744",
+      "bytes": 403542
+    },
+    {
+      "source": "aws-api",
+      "url": "https://docs.aws.amazon.com/polly/latest/dg/API_SynthesizeSpeech.html",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "91c228dffc3bff20763079bcc36b57d3ea417c09686e6f99ae072c45df17bd1c",
+      "bytes": 33180
+    },
+    {
+      "source": "aws-voices",
+      "url": "https://docs.aws.amazon.com/polly/latest/dg/available-voices.html",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "12e1f4fae9816c207cd4553c000bc66ca21739f9b72fb14931df0119df69521a",
+      "bytes": 69365
+    },
+    {
+      "source": "aws-ssml",
+      "url": "https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "9e44bc7e697164c6b77f6f735ee74bfe070475c1d52754a468d038000166abf2",
+      "bytes": 25108
+    },
+    {
+      "source": "aws-faq",
+      "url": "https://aws.amazon.com/polly/faqs/",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "eeb91c3a6cf3b9894708636bfda50d90254e2197e45d880e0fd3937a1c3d7135",
+      "bytes": 422833
+    },
+    {
+      "source": "aws-terms",
+      "url": "https://aws.amazon.com/service-terms/",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "a4f3e186e33792452ed5726aa4acd745d08283f878d3ebf27426319fa320a776",
+      "bytes": 1036692
+    },
+    {
+      "source": "google-pricing",
+      "url": "https://cloud.google.com/text-to-speech/pricing/",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "92b985774e7531662567e1552dcff757ce0e6563d17f96c2163e90d8fb3fe841",
+      "bytes": 2253123
+    },
+    {
+      "source": "google-voices",
+      "url": "https://cloud.google.com/text-to-speech/docs/list-voices-and-types",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "4adb66d011da704d0d3eaafb3cf854b23f55bf920663a185f1b271433e59b3bf",
+      "bytes": 839607
+    },
+    {
+      "source": "google-agreement",
+      "url": "https://cloud.google.com/terms",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "dcfaca2cd3e8acfa14d082ba80fc3668c29aa317fef73fe050d8611fede04adb",
+      "bytes": 845365
+    },
+    {
+      "source": "google-terms",
+      "url": "https://cloud.google.com/terms/service-terms",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "1944c762ff99c599fb99dfa112da9ec4f3d9075e9d97507ddb9bd45139d68795",
+      "bytes": 1053382
+    },
+    {
+      "source": "openai-tts",
+      "url": "https://developers.openai.com/api/docs/guides/text-to-speech",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "24f0465095bd91bd0e22bf84890f5cf60d0c2bedfd12e54d66b70c85466f4a73",
+      "bytes": 472111
+    },
+    {
+      "source": "openai-model",
+      "url": "https://developers.openai.com/api/docs/models/gpt-4o-mini-tts",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "f2242c09f55a807ba87fccc24860184515bb9ac128334276be8fd3b2b0a8f37d",
+      "bytes": 431325
+    },
+    {
+      "source": "openai-agreement",
+      "url": "https://openai.com/policies/services-agreement/",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "c9d972511388b5e4d0e8725322f8b3bcda2ce99bfb303be6b0489b2a48a41330",
+      "bytes": 498682
+    },
+    {
+      "source": "openai-terms",
+      "url": "https://openai.com/policies/service-terms/",
+      "retrieved_on": "2026-10-24",
+      "method": "GET",
+      "sha256": "67a90bd7ffb8ef1770eaa95c00a6d4eeedadf2c94d95fd324c39ee9e4c01885c",
+      "bytes": 362102
+    }
+  ]
+}
