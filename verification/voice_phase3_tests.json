@@ -1,0 +1,71 @@
+{
+  "base_commit": "361444bace659cd8ad04f778905ee5855530ec2f",
+  "runs": [
+    {
+      "stage": "before",
+      "python": "3.12.14",
+      "scope": "all",
+      "tests": 526,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 526,
+      "seconds": 113.947
+    },
+    {
+      "stage": "after",
+      "python": "3.11.17",
+      "scope": "all",
+      "tests": 585,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 585,
+      "seconds": 125.365
+    },
+    {
+      "stage": "after",
+      "python": "3.12.14",
+      "scope": "all",
+      "tests": 585,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 585,
+      "seconds": 123.981
+    },
+    {
+      "stage": "compatibility",
+      "python": "3.9.25",
+      "scope": "voice core; UI excluded",
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 55,
+      "seconds": 8.234
+    }
+  ],
+  "paid_api_calls": 0,
+  "actual_api_cost_jpy": 0,
+  "fixture": {
+    "project_id": "fe94f999-2c56-4ccc-b5a5-f0821ecd218d",
+    "project_directory": "/workspace/artifacts/voice-phase3-demo-20261024/data/projects/fe94f999-2c56-4ccc-b5a5-f0821ecd218d",
+    "pages": 8,
+    "panels": 24,
+    "speakers": 4,
+    "first_generated": 5,
+    "repeat_cache_hits": 5,
+    "changed_line_generated": 1,
+    "assets_preserved": 6,
+    "paid_provider_calls": 0,
+    "api_cost_jpy": 0,
+    "mock_audio": true,
+    "duration_ms": 38710,
+    "timeline_json": "/workspace/artifacts/voice-phase3-demo-20261024/data/projects/fe94f999-2c56-4ccc-b5a5-f0821ecd218d/voice/exports/89045b21-a6b2-4e72-8495-03140c5d18df.json",
+    "subtitles_srt": "/workspace/artifacts/voice-phase3-demo-20261024/data/projects/fe94f999-2c56-4ccc-b5a5-f0821ecd218d/voice/exports/89045b21-a6b2-4e72-8495-03140c5d18df.srt",
+    "measurements": [
+      "wave+ffprobe"
+    ]
+  }
+}

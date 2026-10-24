@@ -1,32 +1,33 @@
 # 次タスクへの依存関係：TTS → FFmpeg
 
-今回の実装範囲は **CODEX_01_REVIEW_PR2.md のレビュー・不具合修正・テスト**です。
-音声・字幕・MP4の実装や実課金テストは開始していません。
+PR #2の予算レビューはmainへ反映済みです（基点361444b）。
+今回のPhase 3は `feature/video-voice` で音声・字幕を実装し、レビュー用PRにします。実課金テスト・MP4実装・自動マージは行いません。
+以下の旧依存関係のうち、TTSの確定契約は [VOICE_TIMELINE.md](VOICE_TIMELINE.md)、操作は [VOICE_PRODUCTION.md](VOICE_PRODUCTION.md) を優先してください。
 
 ## 着手順序と不足資料
 
 | タスク | 人間が判断する開始条件 | 新規ブランチ | 主な依存 |
 | --- | --- | --- | --- |
-| 今回：PR #2 | 既存ドラフトのレビュー | feature/video-budget-core-20261024 | 既存予算基盤と全漫画テスト |
-| CODEX_02_TTS.md | PR #2がmainにマージ済みであることを再確認 | feature/video-voice | 最新確定脚本・人物ID・予算ゲート・検証済み料金表 |
+| PR #2：反映済み | 人間によるレビュー・マージ済み | feature/video-budget-core-20261024 | 既存予算基盤と全漫画テスト |
+| Phase 3：今回 | PR #2の反映を確認済み。TTSはモックで検証 | feature/video-voice | 最新確定脚本・人物ID・予算ゲート・検証済み料金表 |
 | CODEX_03_FFMPEG.md | 予算基盤とTTSのPRがmainにマージ済みであることを再確認 | feature/video-renderer | 採用画像・WAV・実測尺・SRT・確定したタイムライン |
 
 mainへの直接push・自動マージは行いません。後続は更新mainを基点とする別タスク／別PRです。
-今回は添付のAGENTS.md、START_HERE.md、CODEX_01〜03とリポジトリの現行コードを確認しました。
-文書が参照する以下のファイルは、今回の添付にも現行リポジトリにもありません。後続タスク前に内容を用意・確認する必要があります。
+添付のAGENTS.md、START_HERE.md、CODEX_01〜03と現行コードを参照しています。
+以前不足していた以下のファイルは、今回既存設計と整合する仕様として新設しました。
 
 - docs/VIDEO_STUDIO_REQUIREMENTS.md
 - docs/VIDEO_COST_POLICY.md
 - docs/VIDEO_TEST_PLAN.md
 - examples/video_timeline_example.json
 
-本書はこれらの仕様書を受領済みと扱うものではありません。以下のJSON契約は**合意用の案**です。
+以下の元のJSON案は将来の動画要件も含みます。Phase 3の実装済み範囲と未実装範囲は新しい仕様書で区別しています。
 
 ## TTSが使う予算API
 
 `manga.budget.config.open_budget(projects_directory)` でUIと同じ永続台帳を開きます。
 詳細は [予算基盤](video-budget-phase1.md) の新しい `BudgetedExecutor.run()` 契約に従います。
-以前の `quote_jpy` だけの呼び出しは安全性不足のため拒否します。まだ他の製品コードにその呼び出し元はありません。
+以前の `quote_jpy` だけの呼び出しは安全性不足のため拒否します。Phase 3は `price_quote` と `usage_limits` を渡します。
 
 1. 接続する1プロバイダーについて、公式モデルの存在、商用利用・声の権利、最大入力・出力と請求量を調べます。
 2. 公式料金URL・確認日・provider・model・入力/出力/件数単位・税の範囲を `PriceRates` に登録します。最大30日の有効期限を検査します。
@@ -49,9 +50,9 @@ mainへの直接push・自動マージは行いません。後続は更新main�
 - **作品全体のストーリー版IDをキャッシュキーに直接入れて全音声を無効化しません。** 版IDは生成元として別に記録し、変更したセリフだけ再生成します。
 - キャッシュ再利用時はAPI送信・予算予約ともに0回。権利確認や声の許諾が失効した素材は再利用しません。
 
-## 音声 → FFmpegのJSON契約案（未実装）
+## 音声 → FFmpegの元の契約案（実装済み範囲は別紙）
 
-後続PRで少なくとも次の情報を検証・保存する契約を確定します。
+音声の実尺・素材・字幕・生成元照合はPhase 3で実装しました。focusや出力別構成などはFFmpeg側で追加します。
 
 | 領域 | 必要な項目 |
 | --- | --- |

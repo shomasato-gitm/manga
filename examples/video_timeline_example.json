@@ -1,0 +1,550 @@
+{
+  "schema_version": 1,
+  "format": "manga-voice-timeline",
+  "project_id": "1a790946-970e-4595-a360-d9c4e253ba1e",
+  "id": "6b72d68d-11c6-4260-8c7b-10aa309c8f5d",
+  "created_at": "2026-10-24T01:57:52.443330+00:00",
+  "story_version_id": "2ec1a67f-400d-4558-9ba1-23d2f308692d",
+  "story_sha256": "fc7fe437a8ca80ce7212ac651a52c66838f560e4bea9336b250cc9ca56869de8",
+  "settings_revision": 1,
+  "artwork_revision": 3,
+  "source_fingerprint": "d35ba080bd74a90124891cf58cc012d202072ca519cd1f451e20a41fcb1cc382",
+  "duration_ms": 38710,
+  "options": {
+    "gap_ms": 200,
+    "silent_panel_ms": 1500
+  },
+  "assets": [
+    {
+      "id": "d58edc56-6832-48fc-9699-8c9fe3deccfe",
+      "job_id": "0d5ea6b9-354d-4525-98c5-206e97a7f453",
+      "path": "voice/audio/d58edc56-6832-48fc-9699-8c9fe3deccfe.wav",
+      "cache_key": "f2d0bb8a5116a215719cc4ea73a33e222d3e75f69a886d2b23c759d8a638ccde",
+      "speaker_id": "a88bed54-7f32-53d6-b1ae-7922fd768ab7",
+      "settings": {
+        "provider": "mock",
+        "engine": "mock",
+        "voice_id": "mock-4",
+        "speed": 1.0,
+        "emotion": "normal"
+      },
+      "info": {
+        "frames": 7200,
+        "sample_rate": 16000,
+        "channels": 1,
+        "duration_ms": 450,
+        "sha256": "a56e67df5dbdc4b9f0587cc558f469b9c9c0f7fe2fd5f39315498e3c84bfeaee",
+        "size": 14444,
+        "measurement": "wave"
+      },
+      "created_at": "2026-10-24T01:57:52.037023+00:00",
+      "mock": true,
+      "story_version_id": "979fb34a-8a28-43a2-a052-e784e079ce33",
+      "rights": {
+        "kind": "test-tone",
+        "terms_url": null,
+        "reviewed_on": null,
+        "status": "test-only"
+      },
+      "human_reviewed": false
+    },
+    {
+      "id": "93269175-ee4a-40e7-9d0f-f422f1175bfc",
+      "job_id": "08f2cbbd-8367-4975-aaf0-87c770d30c77",
+      "path": "voice/audio/93269175-ee4a-40e7-9d0f-f422f1175bfc.wav",
+      "cache_key": "503513234d12709ba951e3b6efca4e1aba976d2107db4133f83311f249fd7d9f",
+      "speaker_id": "2e32bb5b-1bec-483c-bf88-848f4f65e49f",
+      "settings": {
+        "provider": "mock",
+        "engine": "mock",
+        "voice_id": "mock-1",
+        "speed": 1.0,
+        "emotion": "normal"
+      },
+      "info": {
+        "frames": 6240,
+        "sample_rate": 16000,
+        "channels": 1,
+        "duration_ms": 390,
+        "sha256": "9e5d0324f3605de6bc3a279ad988a6a66f5184bedae45a97979c15762635128d",
+        "size": 12524,
+        "measurement": "wave"
+      },
+      "created_at": "2026-10-24T01:57:52.111372+00:00",
+      "mock": true,
+      "story_version_id": "979fb34a-8a28-43a2-a052-e784e079ce33",
+      "rights": {
+        "kind": "test-tone",
+        "terms_url": null,
+        "reviewed_on": null,
+        "status": "test-only"
+      },
+      "human_reviewed": false
+    },
+    {
+      "id": "80c3a28a-f0af-4600-87bf-ccca03858a76",
+      "job_id": "8cf24db8-2be7-4a4e-8e8d-7349af8c740c",
+      "path": "voice/audio/80c3a28a-f0af-4600-87bf-ccca03858a76.wav",
+      "cache_key": "ea3339aabf178bd545b229ae53bf299b7304d06d1e583f5a3f316071c5fd2d46",
+      "speaker_id": "4f16f55a-63d3-4c66-8620-44d5c4d5195c",
+      "settings": {
+        "provider": "mock",
+        "engine": "mock",
+        "voice_id": "mock-2",
+        "speed": 1.0,
+        "emotion": "normal"
+      },
+      "info": {
+        "frames": 6880,
+        "sample_rate": 16000,
+        "channels": 1,
+        "duration_ms": 430,
+        "sha256": "e38f4e6e465ffb8835e428b478ed9b4cc629145016703a0bc7e1d02d76e8d260",
+        "size": 13804,
+        "measurement": "wave"
+      },
+      "created_at": "2026-10-24T01:57:52.184987+00:00",
+      "mock": true,
+      "story_version_id": "979fb34a-8a28-43a2-a052-e784e079ce33",
+      "rights": {
+        "kind": "test-tone",
+        "terms_url": null,
+        "reviewed_on": null,
+        "status": "test-only"
+      },
+      "human_reviewed": false
+    },
+    {
+      "id": "577561bc-738b-4552-995f-cd4dd042beb4",
+      "job_id": "18a9750d-1100-4e3e-adf1-efb3347c0605",
+      "path": "voice/audio/577561bc-738b-4552-995f-cd4dd042beb4.wav",
+      "cache_key": "5a3779e5b9994eb5b3ca4ab258839a56516531acd5d673f2ecc440009f4e39b0",
+      "speaker_id": "709cec56-b76d-4dae-b849-1c6ae0bab236",
+      "settings": {
+        "provider": "mock",
+        "engine": "mock",
+        "voice_id": "mock-3",
+        "speed": 1.0,
+        "emotion": "normal"
+      },
+      "info": {
+        "frames": 7520,
+        "sample_rate": 16000,
+        "channels": 1,
+        "duration_ms": 470,
+        "sha256": "3441580f16d57788fbb6e37eaf7dde94dd76f3dfe3641d7386aa7d33c4581fcb",
+        "size": 15084,
+        "measurement": "wave"
+      },
+      "created_at": "2026-10-24T01:57:52.256855+00:00",
+      "mock": true,
+      "story_version_id": "979fb34a-8a28-43a2-a052-e784e079ce33",
+      "rights": {
+        "kind": "test-tone",
+        "terms_url": null,
+        "reviewed_on": null,
+        "status": "test-only"
+      },
+      "human_reviewed": false
+    },
+    {
+      "id": "4db3057f-3c8d-4d58-a5a0-f40120a9d7f9",
+      "job_id": "ea59c582-7112-4a6b-b3a0-806cab8688bc",
+      "path": "voice/audio/4db3057f-3c8d-4d58-a5a0-f40120a9d7f9.wav",
+      "cache_key": "8b8d4680fd2f3d2fd98e9eb544d1656768fa9895d99edd7989e3c4047b6944c6",
+      "speaker_id": "2e32bb5b-1bec-483c-bf88-848f4f65e49f",
+      "settings": {
+        "provider": "mock",
+        "engine": "mock",
+        "voice_id": "mock-1",
+        "speed": 1.0,
+        "emotion": "normal"
+      },
+      "info": {
+        "frames": 7520,
+        "sample_rate": 16000,
+        "channels": 1,
+        "duration_ms": 470,
+        "sha256": "bb96e5aa240fe0a25e079b0f14b88b151900354b41bbe92e36644f874a2ce463",
+        "size": 15084,
+        "measurement": "wave"
+      },
+      "created_at": "2026-10-24T01:57:52.438132+00:00",
+      "mock": true,
+      "story_version_id": "2ec1a67f-400d-4558-9ba1-23d2f308692d",
+      "rights": {
+        "kind": "test-tone",
+        "terms_url": null,
+        "reviewed_on": null,
+        "status": "test-only"
+      },
+      "human_reviewed": false
+    }
+  ],
+  "scenes": [
+    {
+      "id": "p1-c1",
+      "page": 1,
+      "panel": 1,
+      "description": "夕暮れの教室。",
+      "start_ms": 0,
+      "end_ms": 1670,
+      "image": null,
+      "utterances": [
+        {
+          "id": "f658a104-9dc9-57a7-83b5-4bae3871d1e9",
+          "speaker_id": "a88bed54-7f32-53d6-b1ae-7922fd768ab7",
+          "kind": "narration",
+          "text": "卒業まで、あと7日。",
+          "spoken_text": "卒業まで、あと7日。",
+          "asset_id": "d58edc56-6832-48fc-9699-8c9fe3deccfe",
+          "emotion": "normal",
+          "start_ms": 0,
+          "end_ms": 450
+        },
+        {
+          "id": "25d41211-24d8-5e6b-bf16-5f193a7aa570",
+          "speaker_id": "2e32bb5b-1bec-483c-bf88-848f4f65e49f",
+          "kind": "dialogue",
+          "text": "あのさ、美咲。",
+          "spoken_text": "あのさ、美咲。",
+          "asset_id": "93269175-ee4a-40e7-9d0f-f422f1175bfc",
+          "emotion": "normal",
+          "start_ms": 650,
+          "end_ms": 1040
+        },
+        {
+          "id": "891aa279-cca9-5ecc-bd0e-96577f135ab6",
+          "speaker_id": "4f16f55a-63d3-4c66-8620-44d5c4d5195c",
+          "kind": "dialogue",
+          "text": "先に話してもいい？",
+          "spoken_text": "先に話してもいい？",
+          "asset_id": "80c3a28a-f0af-4600-87bf-ccca03858a76",
+          "emotion": "normal",
+          "start_ms": 1240,
+          "end_ms": 1670
+        }
+      ],
+      "silent_duration_user_setting": false
+    },
+    {
+      "id": "p1-c2",
+      "page": 1,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 1870,
+      "end_ms": 2340,
+      "image": null,
+      "utterances": [
+        {
+          "id": "da499589-4cc4-5ee3-8278-39ee0da245c3",
+          "speaker_id": "709cec56-b76d-4dae-b849-1c6ae0bab236",
+          "kind": "dialogue",
+          "text": "ふたりとも、どうした？",
+          "spoken_text": "ふたりとも、どうした？",
+          "asset_id": "577561bc-738b-4552-995f-cd4dd042beb4",
+          "emotion": "normal",
+          "start_ms": 1870,
+          "end_ms": 2340
+        }
+      ],
+      "silent_duration_user_setting": false
+    },
+    {
+      "id": "p1-c3",
+      "page": 1,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 2540,
+      "end_ms": 3010,
+      "image": null,
+      "utterances": [
+        {
+          "id": "f7afbdd9-1c64-5cf8-bf06-bc561fd75bb1",
+          "speaker_id": "2e32bb5b-1bec-483c-bf88-848f4f65e49f",
+          "kind": "dialogue",
+          "text": "本当のことを、話すよ。",
+          "spoken_text": "本当のことを、話すよ。",
+          "asset_id": "4db3057f-3c8d-4d58-a5a0-f40120a9d7f9",
+          "emotion": "normal",
+          "start_ms": 2540,
+          "end_ms": 3010
+        }
+      ],
+      "silent_duration_user_setting": false
+    },
+    {
+      "id": "p2-c1",
+      "page": 2,
+      "panel": 1,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 3210,
+      "end_ms": 4710,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p2-c2",
+      "page": 2,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 4910,
+      "end_ms": 6410,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p2-c3",
+      "page": 2,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 6610,
+      "end_ms": 8110,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p3-c1",
+      "page": 3,
+      "panel": 1,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 8310,
+      "end_ms": 9810,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p3-c2",
+      "page": 3,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 10010,
+      "end_ms": 11510,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p3-c3",
+      "page": 3,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 11710,
+      "end_ms": 13210,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p4-c1",
+      "page": 4,
+      "panel": 1,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 13410,
+      "end_ms": 14910,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p4-c2",
+      "page": 4,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 15110,
+      "end_ms": 16610,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p4-c3",
+      "page": 4,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 16810,
+      "end_ms": 18310,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p5-c1",
+      "page": 5,
+      "panel": 1,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 18510,
+      "end_ms": 20010,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p5-c2",
+      "page": 5,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 20210,
+      "end_ms": 21710,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p5-c3",
+      "page": 5,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 21910,
+      "end_ms": 23410,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p6-c1",
+      "page": 6,
+      "panel": 1,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 23610,
+      "end_ms": 25110,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p6-c2",
+      "page": 6,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 25310,
+      "end_ms": 26810,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p6-c3",
+      "page": 6,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 27010,
+      "end_ms": 28510,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p7-c1",
+      "page": 7,
+      "panel": 1,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 28710,
+      "end_ms": 30210,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p7-c2",
+      "page": 7,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 30410,
+      "end_ms": 31910,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p7-c3",
+      "page": 7,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 32110,
+      "end_ms": 33610,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p8-c1",
+      "page": 8,
+      "panel": 1,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 33810,
+      "end_ms": 35310,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p8-c2",
+      "page": 8,
+      "panel": 2,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 35510,
+      "end_ms": 37010,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    },
+    {
+      "id": "p8-c3",
+      "page": 8,
+      "panel": 3,
+      "description": "音声テスト用の無音コマ。実作品の画像は使用しない。",
+      "start_ms": 37210,
+      "end_ms": 38710,
+      "image": null,
+      "utterances": [],
+      "silent_duration_user_setting": true
+    }
+  ],
+  "subtitles": [
+    {
+      "utterance_id": "f658a104-9dc9-57a7-83b5-4bae3871d1e9",
+      "text": "卒業まで、あと7日。",
+      "start_ms": 0,
+      "end_ms": 450
+    },
+    {
+      "utterance_id": "25d41211-24d8-5e6b-bf16-5f193a7aa570",
+      "text": "あのさ、美咲。",
+      "start_ms": 650,
+      "end_ms": 1040
+    },
+    {
+      "utterance_id": "891aa279-cca9-5ecc-bd0e-96577f135ab6",
+      "text": "先に話してもいい？",
+      "start_ms": 1240,
+      "end_ms": 1670
+    },
+    {
+      "utterance_id": "da499589-4cc4-5ee3-8278-39ee0da245c3",
+      "text": "ふたりとも、どうした？",
+      "start_ms": 1870,
+      "end_ms": 2340
+    },
+    {
+      "utterance_id": "f7afbdd9-1c64-5cf8-bf06-bc561fd75bb1",
+      "text": "本当のことを、話すよ。",
+      "start_ms": 2540,
+      "end_ms": 3010
+    }
+  ],
+  "needs_review": true,
+  "warnings": [
+    "現在の脚本版は未確定です。",
+    "確認用トーンを含みます。日本語音声の完成品ではありません。",
+    "人間が未確認の音声があります。",
+    "採用画像がないコマがあります。動画生成前に画像を準備してください。"
+  ],
+  "publication_review_required": true,
+  "billing_note": "料金は共有台帳で管理。音声単価の円換算額は最終請求書を取得したものではない。",
+  "timeline_version_id": "6b72d68d-11c6-4260-8c7b-10aa309c8f5d"
+}
