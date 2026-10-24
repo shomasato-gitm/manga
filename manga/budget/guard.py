@@ -4,33 +4,39 @@ Adapters must never call provider SDKs on their own. Reserve the worst-case
 quote before making a request, never silently retry or upgrade models, and
 preserve the full reservation on any ambiguous provider/usage outcome.
 """
-from .ledger import BudgetLedger, ReservationConflict
+from .ledger import BudgetLedger, ReservationConflict, _yen_to_units, _units_to_yen
+from .pricing import PriceQuote
 
 
 class BudgetedExecutor:
     def __init__(self, ledger: BudgetLedger):
         self.ledger = ledger
 
-    def dry_run(self, *, project_id, quote_jpy, now=None):
+    def dry_run(self, *, project_id, quote_jpy, provider=None, now=None):
         """Offline preview; no provider operation or reservation takes place."""
         from .ledger import _yen_to_units
         quote = _yen_to_units(quote_jpy, positive=True)
         summary = self.ledger.summary(project_id, now=now)
         from decimal import Decimal
         price = Decimal(quote) / Decimal(1000000)
-        return {
-            "possible_under_project_and_month": (
+        possible = not summary['blocked'] and (
                 price <= summary["project_remaining_jpy"]
                 and price <= summary["monthly_remaining_jpy"]
-            ),
+            )
+        provider_info = summary['providers'].get(provider)
+        possible_provider = provider_info is None or provider_info['used_jpy']+price<=provider_info['limit_jpy']
+        return {
+            "possible_under_project_and_month": possible,
+            "possible": possible and possible_provider,
+            "provider_checked": provider is not None,
             "quoted_max_jpy": price,
             "reserved_jpy": Decimal("0"),
             "network_calls": 0,
         }
 
     def run(
-        self, *, project_id, request_id, provider, model, kind, quote_jpy,
-        operation, actual_charge_jpy, now=None,
+        self, *, project_id, request_id, provider, model, kind, quote_jpy=None,
+        operation, actual_charge_jpy, price_quote=None, usage_limits=None, now=None,
     ):
         """Operation is a *single* provider call. Do not auto-repeat failures.
 
@@ -39,12 +45,21 @@ class BudgetedExecutor:
         """
         if not callable(operation) or not callable(actual_charge_jpy):
             raise TypeError("API呼び出しと利用額計算の両方を指定してください。")
+        if not isinstance(price_quote, PriceQuote):
+            raise ValueError('金額だけでは実行できません。確認済みのPriceQuoteと最大利用量が必要です。')
+        evidence = price_quote.execution_evidence(provider,model,usage_limits,now=now)
+        computed = _yen_to_units(evidence['computed_max_jpy'],positive=True)
+        quote = computed if quote_jpy is None else _yen_to_units(quote_jpy,positive=True)
+        if quote<computed:
+            raise ValueError('事前予約額が料金表と最大利用量から求めた見積を下回っています。')
+        evidence['reserved_max_jpy'] = str(_units_to_yen(quote))
         state = self.ledger.reserve(
             project_id=project_id, request_id=request_id, provider=provider,
-            model=model, kind=kind, max_jpy=quote_jpy, now=now,
+            model=model, kind=kind, max_jpy=_units_to_yen(quote), now=now, evidence=evidence,
         )
         if state != "reserved":
             raise ReservationConflict("同じリクエストIDの再送はできません。")
+        claim = self.ledger.claim_execution(request_id,now=now)
         try:
             response = operation()
             charged = actual_charge_jpy(response)
@@ -52,7 +67,7 @@ class BudgetedExecutor:
             self.ledger.mark_uncertain(request_id)
             raise
         try:
-            self.ledger.settle(request_id, actual_jpy=charged)
+            self.ledger.settle(request_id, actual_jpy=charged, execution_claim=claim)
         except BaseException:
             # Provider has already replied: never release its charge reservation.
             self.ledger.mark_uncertain(request_id)

@@ -11,6 +11,7 @@ from manga.budget import (
     BudgetExceeded, BudgetLedger, BudgetedExecutor,
     PriceQuote, PriceRates, ReservationConflict,
 )
+from budget_fakes import offline_quote
 
 
 def pid():
@@ -128,10 +129,14 @@ def test_calendar_month_rollover_but_work_limit_is_lifetime(tmp_path):
     jst = ZoneInfo("Asia/Tokyo")
     oct31 = datetime(2026, 10, 31, 23, 55, tzinfo=jst)
     nov1 = oct31 + timedelta(minutes=10)
-    reserve(book, pid(), "500", now=oct31)
+    first = pid()
+    key, _ = reserve(book, first, "500", now=oct31)
+    book.settle(key, actual_jpy='500', charged_at=oct31)
     with pytest.raises(BudgetExceeded):
         reserve(book, pid(), "1", now=oct31)
     second = pid()
+    with pytest.raises(BudgetExceeded):
+        reserve(book, first, '1', now=nov1)
     reserve(book, second, "499", now=nov1)
     assert book.summary(second, now=nov1)["month"] == "2026-11"
     with pytest.raises(BudgetExceeded):
@@ -181,7 +186,8 @@ def test_guarded_operation_once_and_no_second_send(tmp_path):
         return {"usage": 8}
     kw = dict(project_id=work, request_id=key, provider="gemini", model="test",
               kind="tts", quote_jpy="10", operation=operation,
-              actual_charge_jpy=lambda response: str(response["usage"]))
+              actual_charge_jpy=lambda response: str(response["usage"]),
+              **offline_quote('gemini','test','10'))
     assert guard.run(**kw) == {"usage": 8}
     with pytest.raises(ReservationConflict):
         guard.run(**kw)
@@ -199,6 +205,7 @@ def test_guard_keeps_money_on_provider_error(tmp_path):
         guard.run(project_id=work, request_id=str(uuid4()),
                   provider="gemini", model="tts", kind="voice",
                   quote_jpy="200", operation=fail,
+                  **offline_quote('gemini','tts','200'),
                   actual_charge_jpy=lambda result: "1")
     assert book.summary(work)["requests_by_status"] == {"uncertain": 1}
     assert book.summary(work)["project_used_jpy"] == 200
@@ -212,6 +219,7 @@ def test_guard_keeps_money_on_missing_usage(tmp_path):
         guard.run(project_id=work, request_id=str(uuid4()),
                   provider="gemini", model="image", kind="image",
                   quote_jpy="20", operation=lambda: object(),
+                  **offline_quote('gemini','image','20'),
                   actual_charge_jpy=lambda result: (_ for _ in ()).throw(ValueError("unknown usage")))
     assert book.summary(work)["requests_by_status"] == {"uncertain": 1}
 
@@ -231,7 +239,7 @@ def test_prices_require_reference_and_conservative_quote():
     rates = PriceRates(input_per_million_usd="1", output_per_million_usd="2",
                        per_item_usd="0.1", source_url="https://example.com/rates",
                        verified_on="2026-10-24")
-    quote = PriceQuote(rates)
+    quote = PriceQuote(rates,fx_jpy_per_usd='160')
     assert quote.estimate_jpy(max_input_tokens=1_000_000,
                               max_output_tokens=500_000, max_items=2) == Decimal("440")
     with pytest.raises(ValueError):
@@ -257,6 +265,7 @@ def test_invalid_charge_keeps_reservation_after_provider_response(tmp_path):
             project_id=work, request_id=str(uuid4()), provider="gemini",
             model="tts", kind="voice", quote_jpy="50",
             operation=lambda: {"status": "ok"},
+            **offline_quote('gemini','tts','50'),
             actual_charge_jpy=lambda _: "-5",
         )
     assert book.summary(work)["requests_by_status"] == {"uncertain": 1}

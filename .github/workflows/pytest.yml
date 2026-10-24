@@ -133,3 +133,90 @@ jobs:
             } catch (error) {
               core.warning(`PRコメントを書き込めませんでした (HTTP ${error.status || 'unknown'})。このジョブのSummaryをPRへ転記してください。`);
             }
+
+  report-pr2:
+    name: Record PR 2 budget safety review
+    needs: pytest
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      github.event.pull_request.number == 2 &&
+      github.repository == 'shomasato-gitm/manga' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'feature/video-budget-core-20261024'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      # PR #2の検証結果だけを記載。リポジトリのコードはcheckout・実行しない。
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: pytest-python-*
+          path: test-results
+      - name: Append review results while preserving the existing PR description
+        uses: actions/github-script@v7
+        env:
+          MATRIX_RESULT: ${{ needs.pytest.result }}
+        with:
+          script: |
+            const fs = require('fs');
+            const rows = [];
+            for (const version of ['3.11','3.12']) {
+              const path = `test-results/pytest-python-${version}/summary.json`;
+              if (!fs.existsSync(path)) {
+                rows.push(`- Python ${version}: 結果未取得`);
+                continue;
+              }
+              const r = JSON.parse(fs.readFileSync(path,'utf8'));
+              if (!['tests','failures','errors','skipped'].every(k => Number.isSafeInteger(r[k]) && r[k]>=0)) {
+                throw new Error('Invalid pytest summary');
+              }
+              rows.push(`- Python ${version}: 成功 ${r.tests-r.failures-r.errors-r.skipped}、失敗 ${r.failures}、エラー ${r.errors}、スキップ ${r.skipped}`);
+            }
+            const sha = context.payload.pull_request.head.sha;
+            const base = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
+            const run = `${base}/actions/runs/${context.runId}`;
+            const body = [
+              '### PR #2 予算管理のレビュー・修正結果',
+              `対象: \`${sha}\` / CI: **${process.env.MATRIX_RESULT}**（[実行結果](${run})）`,
+              '修正前は480件成功。今回の実行結果:', ...rows, '',
+              '- 1作品生涯500円・全作品月間5,000円を別枠で予約し、複数プロセスの上限と同一request_idの単一実行を検証。',
+              '- 実行権を永続化し、実行中の予約解除・第三者精算を拒否。例外・利用量欠落・精算失敗時は予約を保持する。',
+              '- 過去月の未確定予約を持ち越し、請求不明・未確認の見積超過が残る間は追加実行を停止。超過実績は消さない。',
+              '- 料金表・確認期限・モデル・為替・税・最大利用量・再試行0回を検証。金額だけの実行を拒否し、根拠を台帳へ保存。',
+              '- 共有設定不一致・DB不整合・初期化後のDB欠損で停止。既存SQLiteへ管理テーブルのみ追加し、作品JSON・画像・履歴は変更しない。',
+              '',
+              '**実課金API呼び出し0回、API費用0円。** TTS・FFmpeg・本番公開・マージは実施しない。PRはドラフトを維持する。',
+              '',
+              `変更ファイル・ローカル実績・制約: [検証記録](${base}/blob/${sha}/verification/pr2_budget_review.md)。`,
+              `次PhaseのAPI・JSON契約と不足資料: [依存関係](${base}/blob/${sha}/docs/video-next-phases.md)。`,
+              '',
+              '残リスク: Intel Mac実機と実プロバイダー請求は未検証。全ワーカーは同じ永続SQLiteを使用し、DBと初期化記録をバックアップする。公式料金の真偽・SDK再試行無効化・最大請求量の保証は、次Phaseのアダプターで確認が必要。'
+            ].join('\n');
+            await core.summary.addRaw(body).write();
+            try {
+              const current = await github.rest.pulls.get({...context.repo,pull_number:2});
+              if (current.data.state!=='open' || current.data.head.sha!==sha || current.data.head.ref!=='feature/video-budget-core-20261024') {
+                core.warning('PRの状態・版が更新されたため記載を停止しました。');
+                return;
+              }
+              const start = '<!-- codex-pr2-budget-review:start -->';
+              const end = '<!-- codex-pr2-budget-review:end -->';
+              const old = current.data.body || '';
+              const block = `${start}\n${body}\n${end}`;
+              const from = old.indexOf(start), to = old.indexOf(end);
+              const updated = from>=0 && to>=from ? old.slice(0,from)+block+old.slice(to+end.length) : `${old}\n\n${block}`;
+              if (!current.headers.etag) throw new Error('Missing conditional-update ETag');
+              await github.rest.pulls.update({...context.repo,pull_number:2,body:updated,
+                headers:{'if-match':current.headers.etag}});
+              core.info('PR #2 description updated; original text and draft state preserved.');
+            } catch (error) {
+              core.warning(`PR説明の更新は完了しませんでした (HTTP ${error.status || 'unknown'})。検証結果をコメントへ記録します。`);
+              try {
+                await github.rest.issues.createComment({...context.repo,issue_number:2,body});
+              } catch (commentError) {
+                core.warning(`コメントも記載できませんでした (HTTP ${commentError.status || 'unknown'})。Summaryを転記してください。`);
+              }
+            }

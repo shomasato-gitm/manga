@@ -6,8 +6,9 @@ with BudgetedExecutor and must pass a conservative maximum-charge estimate.
 from .ledger import BudgetExceeded, BudgetLedger, ReservationConflict
 from .guard import BudgetedExecutor
 from .pricing import PriceQuote, PriceRates
+from .integrity import BudgetStateError
 
 __all__ = [
     "BudgetExceeded", "BudgetLedger", "ReservationConflict",
-    "BudgetedExecutor", "PriceQuote", "PriceRates",
+    "BudgetedExecutor", "PriceQuote", "PriceRates", "BudgetStateError",
 ]

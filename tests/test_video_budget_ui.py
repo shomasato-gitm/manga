@@ -1,9 +1,15 @@
 """Navigation and budget UI smoke tests (no AI API calls)."""
 from types import SimpleNamespace
 from uuid import uuid4
+import pytest
 
 from manga import budget_ui
 from manga.navigation import MENUS
+
+
+@pytest.fixture(autouse=True)
+def isolate_user_budget_path(monkeypatch):
+    monkeypatch.delenv('MANGA_BUDGET_DB',raising=False)
 
 
 def test_budget_menu_preserves_existing_top_level_sections():
