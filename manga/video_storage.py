@@ -58,6 +58,20 @@ class VideoStore:
             for item in data['exports']:
                 validate_id(item['job_id'])
                 if item['kind'] not in ('youtube_main','tiktok_vertical','youtube_shorts') or item['path']!=f"video/exports/{item['job_id']}/{item['kind']}.mp4" or not re.fullmatch('[0-9a-f]{64}',item['sha256']):raise ValueError
+            for event in data['events']:
+                if event['kind'] in ('production_validation','production_final_review'):
+                    if not re.fullmatch('[0-9a-f]{64}',event['token']):raise ValueError
+                if event['kind'] == 'production_validation':
+                    for key in ('audio_done','audio_total','audio_reviewed'):
+                        if type(event[key]) is not int or not 0 <= event[key] <= 10000:raise ValueError
+                    if not 0 <= event['audio_reviewed'] <= event['audio_done'] <= event['audio_total'] or type(event['mock_audio']) is not bool:raise ValueError
+                    if event['timeline_id'] is not None:validate_id(event['timeline_id'])
+                    if not isinstance(event['export_ids'],list) or len(set(event['export_ids'])) != len(event['export_ids']) or len(event['export_ids']) > 3:raise ValueError
+                    for identifier in event['export_ids']:validate_id(identifier)
+                    for key in ('errors','warnings'):
+                        if not isinstance(event[key],list) or any(not isinstance(v,str) for v in event[key]):raise ValueError
+                if event['kind'] == 'production_final_review':
+                    if not isinstance(event['checks'],dict) or not event['checks'] or any(type(v) is not bool for v in event['checks'].values()) or not isinstance(event['note'],str) or not event['note'].strip():raise ValueError
             return data
         except (OSError,ValueError,KeyError,TypeError,RecursionError) as error:
             raise StorageError('video.jsonを安全に読み込めません。既存ファイルを削除せずバックアップを確認してください。') from error

@@ -1,0 +1,57 @@
+{
+  "verified_at_jst": "2026-10-25T02:16:12.015269+09:00",
+  "base_main_sha": "23a0d8be48ee0fb4650ab00f2047411ba5b1501c",
+  "branch": "feature/phase5a-production-dashboard",
+  "baseline": {
+    "python_3_11": {
+      "passed": 913,
+      "failed": 0,
+      "skipped": 0
+    },
+    "python_3_12": {
+      "passed": 913,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "final": [
+    {
+      "tests": 938,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "python": "3.11.17",
+      "command": "/workspace/.venvs/manga-voice-311/bin/python -m pytest -q --junitxml=work/pytest-311.xml",
+      "seconds": 342.782,
+      "passed": 938
+    },
+    {
+      "tests": 938,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "python": "3.12.14",
+      "command": "work/venv312/bin/python -m pytest -q --junitxml=work/pytest-312.xml",
+      "seconds": 343.413,
+      "passed": 938
+    }
+  ],
+  "external_paid_api_calls": 0,
+  "actual_api_cost_jpy": 0,
+  "independent_production_fixture": {
+    "pages": 8,
+    "panels": 24,
+    "manual_image_import": true,
+    "png_zip": true,
+    "pdf": true,
+    "mp4_formats": [
+      "youtube_main",
+      "tiktok_vertical",
+      "youtube_shorts"
+    ],
+    "mock_audio": true,
+    "human_review_simulated": true,
+    "publication_ready": false
+  },
+  "mac_hardware_verified": false
+}

@@ -130,7 +130,8 @@ def test_storage_scan_is_on_demand_and_diagnostics_have_real_timings(workspace):
 
 def test_next_action_and_unfinished_panel_jump(workspace):
     app=open_app();button(app,"次の工程へ進む")
-    assert element(app,"radio","制作メニュー").value=="キャラクター・作風"
+    assert element(app,"radio","制作メニュー").value=="企画・ストーリー"
+    assert element(app,"selectbox","作業を選択").value=="比較・脚本確定"
     go(app,"画像制作・画像管理","コマ画像・採用一覧")
     element(app,"selectbox","未完了コマへ移動").set_value("2:3").run()
     button(app,"このコマの画像管理を開く")
@@ -169,4 +170,5 @@ def test_successful_export_updates_home_and_metadata_without_modifying_legacy_da
     assert (root/project.id/"story_history.json").read_bytes()==original
     go(app,"ホーム・進行状況")
     frame=next(f.value for f in app.dataframe if "工程" in f.value.columns)
-    assert frame.iloc[-1]["状態"]=="完了"
+    assert frame.loc[frame['工程']=='漫画ページ編集・PNG・PDF出力','状態'].item()=='要確認'
+    assert frame.iloc[-1]['状態']!='完了'

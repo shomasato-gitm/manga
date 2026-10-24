@@ -71,8 +71,9 @@ def main():
                     from manga.review_ui_common import return_link
                     return_link(project,menu,section,navigate)
             # 長い品質画面と短い出力画面の切替で旧ウィジェットを残さない固定領域。
-            quality_area, production_area = st.empty(), st.empty()
-            with (quality_area if section == "品質チェック・修正管理" else production_area).container():
+            quality_area, dashboard_area, manual_area, production_area = st.empty(), st.empty(), st.empty(), st.empty()
+            area = quality_area if section == '品質チェック・修正管理' else dashboard_area if section == 'ホーム・進行状況' else manual_area if section == '手動画像制作' else production_area
+            with area.container():
                 dispatch(menu,section,project,store,navigate)
     record_screen(f"{menu} / {section or ''}",time.perf_counter()-started)
     st.caption("ChatGPTとの連携は手動です。APIキー・OpenAI API・Web画面の自動操作は使用しません。")

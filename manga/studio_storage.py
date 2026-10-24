@@ -25,6 +25,9 @@ class StudioStore:
             for event in data["exports"]:
                 self.validate_event(event)
                 if event["kind"] not in ("page","pdf","png_zip","sns") or not isinstance(event["pages"],list) or not event["pages"] or any(type(p) is not int or not 1 <= p <= 100 for p in event["pages"]):raise ValueError
+                if any(k in event for k in ('path','sha256','bytes')):
+                    self.artifact_path(event)
+                    if type(event['bytes']) is not int or not 0 < event['bytes'] <= 256*1024*1024:raise ValueError
             return data
         except FileNotFoundError:
             return dict(schema_version=1, project_id=self.project_id, revision=0, skip_evaluation=False, renders={}, exports=[])
@@ -66,3 +69,63 @@ class StudioStore:
             for page in event["pages"]:
                 data["renders"][str(page)]=dict(fingerprint=event["fingerprint"],saved_at=saved_at)
         self.update(action)
+
+    def artifact_path(self, event):
+        """新しい出力だけに付く実体情報。旧イベントの形式は維持する。"""
+        import re
+        sha = event.get('sha256', '')
+        extension = {'page':'png', 'pdf':'pdf', 'png_zip':'zip', 'sns':'zip'}[event['kind']]
+        if not re.fullmatch('[0-9a-f]{64}', sha) or event.get('path') != f'studio_exports/{sha}.{extension}':
+            raise StorageError('保存済み出力のパス・ハッシュが不正です。')
+        root = self.path.parent
+        path = root / event['path']
+        if root.is_symlink() or path.parent.is_symlink() or path.is_symlink():
+            raise StorageError('保存済み出力へのリンクは使用できません。')
+        return path
+
+    def export_bytes(self, event):
+        import hashlib
+        path = self.artifact_path(event)
+        if not path.is_file() or not 0 < event['bytes'] <= 256*1024*1024 or path.stat().st_size != event['bytes']:
+            raise StorageError('保存済み出力が欠損・容量不一致です。再出力してください。')
+        payload = path.read_bytes()
+        if hashlib.sha256(payload).hexdigest() != event['sha256']:
+            raise StorageError('保存済み出力が変更されています。履歴を保持して再出力してください。')
+        return payload
+
+    def save_export(self, event, content):
+        """実体を先に排他的保存し、同じ条件の再実行では既存記録を返す。"""
+        import hashlib
+        import os
+        from tempfile import NamedTemporaryFile
+        if not isinstance(content, bytes) or not 0 < len(content) <= 256*1024*1024:
+            raise ValueError('ページ出力は256MiB以下にしてください。')
+        extension = {'page':'png', 'pdf':'pdf', 'png_zip':'zip', 'sns':'zip'}[event['kind']]
+        sha = hashlib.sha256(content).hexdigest()
+        event = dict(event, sha256=sha, bytes=len(content), path=f'studio_exports/{sha}.{extension}')
+        path = self.artifact_path(event)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = None
+        try:
+            if path.exists():
+                self.export_bytes(event)
+            else:
+                with NamedTemporaryFile(dir=path.parent, delete=False) as file:
+                    temporary = Path(file.name)
+                    file.write(content); file.flush(); os.fsync(file.fileno())
+                try:
+                    os.link(temporary, path, follow_symlinks=False)
+                except FileExistsError:
+                    self.export_bytes(event)
+            def action(data):
+                if any(all(e.get(k) == v for k,v in event.items()) for e in data['exports']):
+                    return
+                saved_at = now_iso()
+                data['exports'].append(dict(event, saved_at=saved_at))
+                for page in event['pages']:
+                    data['renders'][str(page)] = dict(fingerprint=event['fingerprint'], saved_at=saved_at)
+            self.update(action)
+            return next(e for e in reversed(self.load()['exports']) if all(e.get(k) == v for k,v in event.items()))
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)

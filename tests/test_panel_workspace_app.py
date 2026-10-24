@@ -55,11 +55,13 @@ def cursor(app):
     return element(app, "selectbox", "画像を確認するページ").value+1, element(app, "selectbox", "画像を管理するコマ").value+1
 
 
-def test_six_stages_and_three_panel_end_to_end_without_switching_screen(workspace):
+def test_six_menus_nine_stages_and_three_panel_end_to_end_without_switching_screen(workspace):
     app, art, version, uploads, ref, project = workspace
     go(app, "企画・ストーリー", "ホーム・進行状況")
     stages = next(f.value for f in app.dataframe if "工程" in f.value.columns)
-    assert list(stages["工程"]) == list(MENUS)
+    assert len(stages) == 9
+    assert stages.iloc[0]['工程'] == '企画・脚本の正式採用'
+    assert stages.iloc[-1]['工程'] == '完成品の最終品質チェック'
     go(app, "イラスト制作", "コマ制作ワークスペース")
     assert list(MENUS) == ["企画・ストーリー", "キャラクター・作風", "絵コンテ・作画指示", "イラスト制作", "漫画ページ編集", "完成・書き出し"]
     assert element(app, "radio", "制作メニュー").options == list(MENUS)

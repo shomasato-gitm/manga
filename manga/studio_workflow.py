@@ -5,7 +5,7 @@ from manga.artwork_models import image_context_changed, panel_key
 from manga.assistant_changes import active_characters
 
 
-def panel_states(story, artwork, root=None):
+def panel_states(story, artwork, root=None, version_id=None):
     rows = []
     for page in story["pages"]:
         for panel in page["panels"]:
@@ -16,6 +16,9 @@ def panel_states(story, artwork, root=None):
             state = "作画指示未設定" if not direction else "画像未登録" if not entry.get("candidates") else "候補あり" if image is None else "採用済み"
             direction_stale=bool(direction and direction["source_panel"] != panel)
             image_stale=bool(image and (image["source_panel"] != panel or image_context_changed(image, entry, artwork)))
+            if version_id is not None:
+                direction_stale |= bool(direction and direction['story_version_id'] != version_id)
+                image_stale |= bool(image and image['story_version_id'] != version_id)
             if image and root is not None:
                 path=Path(root)/image["path"]
                 image_stale=image_stale or not path.resolve().is_relative_to(Path(root).resolve()) or not path.is_file()
