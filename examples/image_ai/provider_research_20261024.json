@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "format": "manga-image-provider-research",
+  "verified_on": "2026-10-24",
+  "cards": [
+    {
+      "provider": "openai-images",
+      "model": "gpt-image-2.5-flare",
+      "verified_on": "2026-10-24",
+      "pricing_source": "https://developers.openai.com/api/docs/models/gpt-image-2.5-flare.md",
+      "rates_verified": true,
+      "commercial_conditions_reviewed": true,
+      "text_input_usd_per_million": "5",
+      "image_input_usd_per_million": "8",
+      "image_output_usd_per_million": "30",
+      "maximum_charge_verified": false,
+      "maximum_charge_jpy": null,
+      "execution_available": false
+    },
+    {
+      "provider": "openai-images",
+      "model": "gpt-image-2.5-sunburst",
+      "verified_on": "2026-10-24",
+      "pricing_source": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst.md",
+      "rates_verified": true,
+      "commercial_conditions_reviewed": true,
+      "text_input_usd_per_million": "5",
+      "image_input_usd_per_million": "8",
+      "image_output_usd_per_million": "30",
+      "maximum_charge_verified": false,
+      "maximum_charge_jpy": null,
+      "execution_available": false
+    },
+    {
+      "provider": "gemini-developer-api",
+      "model": "gemini-3.1-flash-lite-image",
+      "verified_on": "2026-10-24",
+      "pricing_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "rates_verified": false,
+      "commercial_conditions_reviewed": false,
+      "vertex_global_reference": {
+        "input_usd_per_million": "0.25",
+        "text_output_usd_per_million": "1.50",
+        "image_output_usd_per_million": "30",
+        "source": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+        "output_tokens_per_1k_image": 1120
+      },
+      "maximum_charge_verified": false,
+      "maximum_charge_jpy": null,
+      "execution_available": false
+    },
+    {
+      "provider": "gemini-developer-api",
+      "model": "gemini-3.1-flash-image",
+      "verified_on": "2026-10-24",
+      "pricing_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "rates_verified": false,
+      "commercial_conditions_reviewed": false,
+      "vertex_global_reference": {
+        "input_usd_per_million": "0.50",
+        "text_output_usd_per_million": "3",
+        "image_output_usd_per_million": "60",
+        "source": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+        "output_tokens_per_1k_image": 1120
+      },
+      "maximum_charge_verified": false,
+      "maximum_charge_jpy": null,
+      "execution_available": false
+    }
+  ]
+}

@@ -220,3 +220,29 @@ class ArtworkStore:
             return path.read_bytes()
         except OSError as error:
             raise StorageError("画像ファイルを読み込めません。保存フォルダとバックアップを確認してください。") from error
+
+    def restore_registered_image(self, image, content, expected_sha256, *, expected_revision):
+        """保存中断で欠損した登録済みPNGだけを、同じIDで復元する。既存ファイルは変更しない。"""
+        import hashlib
+        png, width, height = prepare_image(content)
+        if hashlib.sha256(png).hexdigest() != expected_sha256 or (width, height) != (image['width'], image['height']):
+            raise StorageError('復元する画像のSHA・寸法が保存記録と一致しません。')
+
+        def operation(data):
+            registered = [i for c in data['characters'] for i in c['references']]
+            registered += [i for e in data['panels'].values() for i in e['candidates']]
+            if not any(i == image for i in registered):
+                raise StorageError('登録済みの画像ID・メタデータが一致しません。新しいIDを発行せず停止しました。')
+            path = self.image_path(image)
+            for item in (self.root, path, *path.parents):
+                if item == self.root.parent: break
+                if item.is_symlink(): raise StorageError('登録画像の復元先のリンクを拒否しました。')
+            if path.exists():
+                if not path.is_file() or path.read_bytes() != png: raise StorageError('既存の異なる画像を上書きしません。')
+                return image
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open('xb') as stream:
+                stream.write(png); stream.flush(); os.fsync(stream.fileno())
+            return image
+
+        return self._update(operation, expected_revision)
