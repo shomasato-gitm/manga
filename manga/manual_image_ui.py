@@ -115,12 +115,12 @@ def render_manual_images(project, directory, navigate):
             upload = st.file_uploader('手動生成画像',type=['png','jpg','jpeg','webp'],key=prefix+'_'+identity+'_upload')
             manifest = st.file_uploader('生成時の対象確認票（必須）',type=['json'],key=prefix+'_'+identity+'_receipt')
             st.caption('確認票のページ番号・コマ番号・人物UUID・脚本版を照合します。画像の外見と人物の一致は、取り込み後に人間が比較・確認してください。')
+            upload_sha = hashlib.sha256(upload.getvalue()).hexdigest() if upload else None
+            if upload_sha: st.caption('取り込み対象のSHA-256：'+upload_sha)
             if st.button('検証して画像候補を取り込む',disabled=upload is None or manifest is None):
                 def import_image():
-                    verify_receipt(plan,manifest.getvalue())
-                    job = service.create_job(plan,provider='manual',content=upload.getvalue(),filename=upload.name,expected_revision=data['revision'])
-                    if job['state'] == 'queued': service.run(job['id'])
-                    elif job['state'] != 'ready': raise ValueError('同じ依頼の保存を履歴・復旧画面で再開してください。')
+                    from manga.automation import Automation
+                    Automation(directory,project.id).import_manual(plan,manifest.getvalue(),upload.getvalue(),upload.name,upload_sha)
                 action(import_image,'候補を保存しました。外見・権利の確認後に明示採用してください。')
         st.subheader('この対象の候補を比較・正式採用')
         jobs = {j['id']:j for j in data['jobs'] if j['plan']['kind'] == kind and all(j['plan'][k] == v for k,v in selection.items())}

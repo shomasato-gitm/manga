@@ -122,7 +122,7 @@ class StudioStore:
                     return
                 saved_at = now_iso()
                 data['exports'].append(dict(event, saved_at=saved_at))
-                for page in event['pages']:
+                for page in ([] if event.get('artifact_role') == 'prompt_bundle' else event['pages']):
                     data['renders'][str(page)] = dict(fingerprint=event['fingerprint'], saved_at=saved_at)
             self.update(action)
             return next(e for e in reversed(self.load()['exports']) if all(e.get(k) == v for k,v in event.items()))

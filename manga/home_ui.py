@@ -11,3 +11,6 @@ def render_home(project,directory,navigate):
         return
     from manga.production_ui import render_dashboard
     render_dashboard(project,directory,navigate)
+    from manga.automation_ui import render_automation
+    with st.empty().container():
+        render_automation(project,directory,navigate)
