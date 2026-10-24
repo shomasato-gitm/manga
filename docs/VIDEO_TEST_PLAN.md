@@ -23,4 +23,8 @@ python scripts/verify_voice.py --output /tmp/manga-voice-unused-directory
 
 実測した件数・時間・変更前後は [検証記録](../verification/voice_phase3.md) に記載します。
 Intel Mac実機、Polly実音声、実際のAWS請求との照合は未実行です。承認なしで「結合テスト成功」と扱いません。
-次Phaseでは実画像・WAVからFFmpegでMP4を作り、codec・寸法・尺・字幕・権利確認・中断復旧を追加検証します。
+Phase 4はtest_video_plans / safety / validation / rendering / appで検証します。
+実際に採用したテストPNG・WAVから3形式のMP4を生成し、codec・寸法・FPS・尺・音声トラックをffprobeで照合します。
+音声をデコードしたトーン開始と、字幕画像のマスク照合による表示開始を測定し、±250ms以内を確認します。
+欠損・不正パス・symlink・古い版・長文／未対応文字・空き容量・同時処理・タイムアウト／中断・保存失敗の復旧・無料再実行・UIを含みます。
+CIにFFmpegを導入し、全pytest内で実動画テストを実行します。結果は [Phase 4検証記録](../verification/video_phase4.md) を参照してください。
