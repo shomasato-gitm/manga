@@ -1,0 +1,39 @@
+{
+  "verified_at_jst": "2026-10-25T03:02:23.776238+09:00",
+  "base_main_sha": "3104d9b3712ca78d2929fcfb3fdd2e3c74769799",
+  "branch": "feature/phase5b-automation",
+  "baseline_python311_passed": 938,
+  "final": [
+    {
+      "tests": 946,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "python": "3.11.17",
+      "passed": 946,
+      "seconds": 438.072,
+      "command": "/workspace/.venvs/manga-voice-311/bin/python -m pytest -q --junitxml=work/5b-311.xml"
+    },
+    {
+      "tests": 946,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "python": "3.12.14",
+      "passed": 946,
+      "seconds": 431.335,
+      "command": "work/venv312/bin/python -m pytest -q --junitxml=work/5b-312.xml"
+    }
+  ],
+  "paid_api_calls": 0,
+  "api_cost_jpy": 0,
+  "pages": 8,
+  "panels": 24,
+  "real_ffmpeg_formats": [
+    "youtube_main",
+    "tiktok_vertical",
+    "youtube_shorts"
+  ],
+  "manual_review_simulated": true,
+  "mac_hardware_verified": false
+}
