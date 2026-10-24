@@ -1,0 +1,27 @@
+{
+  "real_api_calls": 0,
+  "actual_api_cost_jpy": "0",
+  "network_attempts": 0,
+  "fake_http_calls": 1,
+  "project_id": "23fac068-a98f-41fc-9160-68b6edd43f24",
+  "request_id": "b6ed0d28-b838-4002-8d2b-5d6539d395a3",
+  "response_id": "fake-response-1",
+  "model": "fake-image-contract-v1",
+  "usage": {
+    "candidatesTokenCount": 1120,
+    "promptTokenCount": 100,
+    "thoughtsTokenCount": 0,
+    "totalTokenCount": 1220
+  },
+  "fake_max_reservation_jpy": "14.300000",
+  "fake_converted_charge_jpy": "5.9224",
+  "calculation": "((100 * 0.5 + 1120 * 30) / 1000000) * 160 * 1.10 = 5.922400 JPY (架空料金)",
+  "candidate_id": "b52f66fe-368c-5e8d-825f-61080b17eb6d",
+  "image_sha256": "6f62d3caa3708bfc9502e680366ecf78d1ad6025265d38dd4dd47e8532d69411",
+  "artwork_image_id": "56417932-54b1-4709-8b8d-6a51d9390154",
+  "input_sha256": "9e50a33e692302aee02f5a72a7723c8e9143092d10db75991b7f8d65d50bc41b",
+  "candidate_count": 1,
+  "explicit_fixture_adoption": true,
+  "existing_files_preserved": true,
+  "production_send_enabled": false
+}

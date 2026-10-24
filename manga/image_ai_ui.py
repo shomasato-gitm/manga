@@ -17,7 +17,7 @@ def action(function,message):
 
 def render_image_ai(project,directory,navigate=None):
     st.header('AI画像生成・採用')
-    st.info('現在は無料モック／手動画像専用です。有料APIは未対応・送信不可です。')
+    st.info('無料モック・手動画像は従来どおり利用できます。実APIアダプターは追加していますが、最大課金量が未確認のため本番送信は無効です。')
     st.caption(NOTICE)
     if project is None: st.info('先にプロジェクトを選択してください。'); return
     if '_image_ai_notice' in st.session_state: st.success(st.session_state.pop('_image_ai_notice'))

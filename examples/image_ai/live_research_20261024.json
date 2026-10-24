@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-10-24",
+  "provider": "gemini-live",
+  "model": "gemini-3.1-flash-lite-image",
+  "network_enabled": false,
+  "maximum_charge_verified": false,
+  "developer_docs_retrieved": false,
+  "reason": "Developer APIのモデル別最大入力・画像出力・thinking課金量、参照制限、商用・データ条件が未確認",
+  "sources": [
+    {
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "retrieved": false
+    },
+    {
+      "url": "https://ai.google.dev/gemini-api/docs/image-generation",
+      "retrieved": false
+    },
+    {
+      "url": "https://ai.google.dev/api/generate-content",
+      "retrieved": false
+    },
+    {
+      "url": "https://ai.google.dev/gemini-api/terms",
+      "retrieved": false
+    },
+    {
+      "url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "retrieved": true,
+      "scope": "Vertexのみ。Developer料金ではない"
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/pricing",
+      "retrieved": true
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/image-generation",
+      "retrieved": true
+    },
+    {
+      "url": "https://developers.openai.com/api/reference/resources/images/methods/edit",
+      "retrieved": true
+    },
+    {
+      "url": "https://github.com/googleapis/python-genai/blob/main/google/genai/types.py",
+      "retrieved": true,
+      "scope": "型定義のみ。モデル別対応保証ではない"
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/models/gpt-image-2.5-flare",
+      "retrieved": true
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst",
+      "retrieved": true
+    },
+    {
+      "url": "https://openai.com/policies/services-agreement/",
+      "retrieved": true
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/your-data",
+      "retrieved": true
+    }
+  ],
+  "cards": [
+    {
+      "model": "gemini-3.1-flash-lite-image",
+      "scope": "Vertex Global参考",
+      "input_usd_per_million": "0.25",
+      "text_thinking_output_usd_per_million": "1.50",
+      "image_output_usd_per_million": "30",
+      "image_1k_output_tokens": 1120,
+      "output_only_usd": "0.0336",
+      "verified_on": "2026-10-24",
+      "source_url": "https://cloud.google.com/vertex-ai/generative-ai/pricing"
+    },
+    {
+      "model": "gemini-3.1-flash-image",
+      "scope": "Vertex Global参考",
+      "input_usd_per_million": "0.50",
+      "text_thinking_output_usd_per_million": "3",
+      "image_output_usd_per_million": "60",
+      "image_1k_output_tokens": 1120,
+      "output_only_usd": "0.0672",
+      "verified_on": "2026-10-24",
+      "source_url": "https://cloud.google.com/vertex-ai/generative-ai/pricing"
+    },
+    {
+      "model": "gpt-image-2.5-flare",
+      "scope": "OpenAI Images API",
+      "text_input_usd_per_million": "5",
+      "image_input_usd_per_million": "8",
+      "image_output_usd_per_million": "30",
+      "maximum_tokens_verified": false,
+      "verified_on": "2026-10-24",
+      "source_url": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "model": "gpt-image-2.5-sunburst",
+      "scope": "OpenAI Images API",
+      "text_input_usd_per_million": "5",
+      "image_input_usd_per_million": "8",
+      "image_output_usd_per_million": "30",
+      "maximum_tokens_verified": false,
+      "verified_on": "2026-10-24",
+      "source_url": "https://developers.openai.com/api/docs/pricing"
+    }
+  ]
+}

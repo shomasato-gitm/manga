@@ -15,9 +15,27 @@ from manga.voice_models import digest
 
 
 class ImageAIService:
-    def __init__(self,directory,project_id):
+    def __init__(self,directory,project_id,*,live_adapter=None):
         self.directory=directory; self.store=ImageAIStore(directory,project_id); self.project_id=self.store.project_id
         self.artwork=ArtworkStore(directory,project_id)
+        self._live_adapter=live_adapter
+
+    @property
+    def live_adapter(self):
+        if self._live_adapter is None:
+            from manga.image_ai_live_provider import GeminiImageAdapter
+            self._live_adapter=GeminiImageAdapter()
+        return self._live_adapter
+
+    def estimate_live(self,plan,card,consent_reference_ids):
+        from manga.image_ai_live_plan import prepare
+        with self.store.locked():
+            self.store.checked(self.store.load()['revision'])
+            return prepare(self,plan,card,consent_reference_ids)[0]
+
+    def create_live_job(self,plan,card,consent_reference_ids,*,approval_token,confirmed=False,expected_revision,new_request=False):
+        from manga.image_ai_live_jobs import create
+        return create(self,plan,card,consent_reference_ids,approval_token=approval_token,confirmed=confirmed,expected_revision=expected_revision,new_request=new_request)
 
     def plan(self,kind,*,options=None,**selection):
         with self.store.locked():
@@ -51,11 +69,19 @@ class ImageAIService:
             if provider=='manual': self.store.write(f"image_ai/jobs/{job['id']}/input.bin",content)
             return job
 
-    def run(self,job_id,*,content=None):
+    def run(self,job_id,*,content=None,approved=False):
+        job=next((j for j in self.store.load()['jobs'] if j['id']==job_id),None)
+        if job and job['provider']=='gemini-live':
+            from manga.image_ai_live_jobs import run
+            return run(self,job_id,approved=approved)
         from manga.image_ai_jobs import run
         return run(self,job_id,content=content)
 
     def recover(self,job_id,*,confirmed=False,content=None):
+        job=next((j for j in self.store.load()['jobs'] if j['id']==job_id),None)
+        if job and job['provider']=='gemini-live':
+            from manga.image_ai_live_jobs import recover
+            return recover(self,job_id,confirmed=confirmed)
         from manga.image_ai_jobs import recover
         return recover(self,job_id,confirmed=confirmed,content=content)
 
@@ -64,6 +90,7 @@ class ImageAIService:
         validate_id(job_id)
         job=next((j for j in self.store.load()['jobs'] if j['id']==job_id),None)
         if not job or job['state'] not in ('queued','running','artifact_pending'): raise ValueError('停止する依頼を選んでください。')
+        if job['provider']=='gemini-live': raise ValueError('実API依頼の送信中止・予約解除を自動で行いません。送信前の依頼は実行せず、送信済みは請求を照合してください。')
         self.store.write(f'image_ai/jobs/{job_id}/cancel',b'cancel')
         if job['state']=='queued':
             with self.store.locked():

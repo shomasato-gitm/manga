@@ -5,7 +5,7 @@ from datetime import datetime
 from manga.artwork_models import panel_key, text
 from manga.models import validate_id
 
-STATES = ('queued', 'running', 'ready', 'artifact_pending', 'cancelled')
+STATES = ('queued', 'running', 'ready', 'artifact_pending', 'cancelled', 'reserved', 'sending', 'response_saved', 'settled', 'uncertain', 'failed', 'not_sent')
 REVIEW_FIELDS = {'identity':'人物の顔・固定特徴', 'clothing':'衣装・場面例外', 'anatomy':'人体・手指', 'framing':'構図・見切れ・余白', 'no_text':'不要な文字・吹き出し', 'rights':'素材の利用権と出典'}
 NOTICE = '設定・版・ID・ハッシュの静的管理です。画像の人物一致や完成品質は人間の目視確認が必要です。'
 SIZES = {'1024x1024': (1024,1024), '1536x1024': (1536,1024), '1024x1536': (1024,1536)}
@@ -48,7 +48,11 @@ def validate(data, project_id):
             seen.add(row['id'])
     jobs = {j['id']:j for j in data['jobs']}
     for j in jobs.values():
-        if j['request_id']!=j['id'] or j['state'] not in STATES or j['provider'] not in ('mock','manual') or j['api_calls']!=0 or j['cost_jpy']!='0': raise ValueError
+        if j['request_id']!=j['id'] or j['state'] not in STATES or j['provider'] not in ('mock','manual','gemini-live'): raise ValueError
+        if j['provider']=='gemini-live':
+            from manga.image_ai_live_plan import validate_live_job
+            validate_live_job(j)
+        elif j['api_calls']!=0 or j['cost_jpy']!='0' or j['state'] not in ('queued','running','ready','artifact_pending','cancelled'): raise ValueError
         validate_id(j['candidate_id']); plan=j['plan']
         validate_id(plan['story_version_id']); sha(plan['material_token']); sha(plan['prompt_sha256']); sha(j['job_key'])
         if settings(plan['options']) != plan['options']: raise ValueError
@@ -64,7 +68,10 @@ def validate(data, project_id):
         if c['job_id'] not in jobs or c['id'] != jobs[c['job_id']]['candidate_id'] or c['path']!=f"image_ai/candidates/{c['id']}.png": raise ValueError('候補画像のID・保存先が不正です。')
         sha(c['sha256'])
         if type(c['width']) is not int or type(c['height']) is not int or not 0<c['width']*c['height']<=24000000 or min(c['width'],c['height'])<1: raise ValueError
-        if c['provider']!=jobs[c['job_id']]['provider'] or c['mock']!=(c['provider']=='mock'): raise ValueError
+        job=jobs[c['job_id']]
+        expected_mock=job['live']['fake'] if c['provider']=='gemini-live' else c['provider']=='mock'
+        if c['provider']!=job['provider'] or type(c['mock']) is not bool or c['mock']!=expected_mock: raise ValueError
+        if c['provider']=='gemini-live' and c['model'] not in job['live']['card']['returned_models']: raise ValueError
     for r in data['reviews']:
         if r['candidate_id'] not in candidates or r['checks']!={k:True for k in REVIEW_FIELDS}: raise ValueError('人間の品質確認が不足しています。')
         sha(r['sha256']); sha(r['material_token']); text(r['note'],'人間の確認メモ',2000,True)

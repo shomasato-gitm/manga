@@ -13,6 +13,11 @@ from manga.storage import StorageError, write_json_atomic
 from manga.voice_models import digest
 
 
+def image_marker(registration_id,candidate):
+    suffix='TEST_ONLY' if candidate['mock'] else 'API' if candidate['provider']=='gemini-live' else 'MANUAL'
+    return 'image-ai-'+registration_id+'-'+suffix+'.png'
+
+
 def adopt(service,candidate_id,*,expected_revision,expected_artwork_revision,confirmed=False):
     if confirmed is not True: raise ValueError('正規登録・採用と既存画像への影響を確認してください。')
     validate_id(candidate_id)
@@ -34,7 +39,7 @@ def adopt(service,candidate_id,*,expected_revision,expected_artwork_revision,con
             if selected==prior['image_id']: return prior
         identifier=str(uuid4())
         registration_id=prior['registration_id'] if prior and 'registration_id' in prior else prior['id'] if prior else identifier
-        marker='image-ai-'+registration_id+('-TEST_ONLY.png' if candidate['mock'] else '-MANUAL.png')
+        marker=image_marker(registration_id,candidate)
         journal=dict(id=identifier,project_id=service.project_id,state='pending',candidate_id=candidate_id,review_id=review['id'],
             before_artwork=art,marker=marker,canonical_sha256=hashlib.sha256(prepare_image(content)[0]).hexdigest(),image_id=prior['image_id'] if prior else None,
             registration_id=registration_id,mode='reselect' if prior else 'new',stage='register')
@@ -99,7 +104,7 @@ def finish(service,journal):
     registration_id=validate_id(journal['registration_id'])
     if mode=='new' and registration_id!=journal['id']: raise StorageError('登録操作IDが一致しません。')
     if mode=='reselect' and not any(a['id']==registration_id and a['candidate_id']==candidate['id'] and a['image_id']==journal['image_id'] for a in data['adoptions']): raise StorageError('既存画像の採用元が見つかりません。')
-    expected_marker='image-ai-'+registration_id+('-TEST_ONLY.png' if candidate['mock'] else '-MANUAL.png')
+    expected_marker=image_marker(registration_id,candidate)
     if journal['project_id']!=service.project_id or journal['marker']!=expected_marker or journal['canonical_sha256']!=canonical: raise StorageError('画像採用の再開記録が一致しません。')
     art=service.artwork.load(); entry,images=_entry(art,plan)
     registered=[i for i in images if i['original_name']==journal['marker']]

@@ -33,7 +33,7 @@ class ImageAIStore:
         return path
 
     def sources_safe(self):
-        for name in ('image_ai.json','story_history.json','artwork.json','character_ai.json','assistant.json','assistant_pending.json','editorial.json','composition.json','.project.lock','.story.lock','.image-ai.lock'):
+        for name in ('image_ai.json','story_history.json','artwork.json','character_ai.json','assistant.json','assistant_pending.json','editorial.json','composition.json','.project.lock','.story.lock','.image-ai.lock','.image-ai-live-generation.lock'):
             if (self.root/name).is_symlink(): raise StorageError('画像制作の設定・ロックへのリンクを拒否しました。')
         self.safe('image_ai')
         if (self.root.parent/(self.project_id+'.json')).is_symlink(): raise StorageError('プロジェクト情報へのリンクを拒否しました。')

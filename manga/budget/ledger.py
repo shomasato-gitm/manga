@@ -323,12 +323,18 @@ class BudgetLedger:
                 """SELECT state, count(*) FROM api_budget_requests
                    WHERE project_id=? GROUP BY state""", (project_id,),
             ).fetchall()
+            project_settled = db.execute("SELECT COALESCE(SUM(actual_units),0) FROM api_budget_requests WHERE project_id=? AND state='settled'",(project_id,)).fetchone()[0]
+            month_settled = db.execute("SELECT COALESCE(SUM(actual_units),0) FROM api_budget_requests WHERE month_key=? AND state='settled'",(month,)).fetchone()[0]
         return {
             "project_limit_jpy": _units_to_yen(self.project_limit),
             "project_used_jpy": _units_to_yen(work),
+            "project_settled_jpy": _units_to_yen(project_settled),
+            "project_reserved_jpy": _units_to_yen(work-project_settled),
             "project_remaining_jpy": _units_to_yen(max(0, self.project_limit - work)),
             "monthly_limit_jpy": _units_to_yen(self.monthly_limit),
             "monthly_used_jpy": _units_to_yen(monthly),
+            "monthly_settled_jpy": _units_to_yen(month_settled),
+            "monthly_reserved_jpy": _units_to_yen(monthly-month_settled),
             "monthly_remaining_jpy": _units_to_yen(max(0, self.monthly_limit - monthly)),
             "requests_by_status": dict(groups),
             "month": month,
