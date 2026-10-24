@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "story_version_id": "63ee1c65-1e4f-4314-8a15-f85ff8da8c02",
+  "criteria": {
+    "opening": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    },
+    "characters": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    },
+    "structure": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    },
+    "emotion": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    },
+    "dialogue": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    },
+    "foreshadowing": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    },
+    "ending": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    },
+    "originality": {
+      "score": 8.0,
+      "good_points": "人物の目的をコマで示している",
+      "problems": "動機や伏線をさらに明確にできる",
+      "reason": "読者の理解を助ける",
+      "targets": [
+        {
+          "page": 1,
+          "panel": 1
+        }
+      ],
+      "suggestion": "小道具と選択の因果を結ぶ"
+    }
+  },
+  "total_score": 80.0,
+  "summary": "確認用モックの評価・改善5回。主観点の品質保証ではありません。"
+}

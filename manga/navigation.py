@@ -1,6 +1,6 @@
 """制作の6工程と遅延読み込み。旧画面名は内部リンクの互換用に解決する。"""
 MENUS = {
-    "企画・ストーリー": ["ホーム・進行状況", "プロジェクト管理", "生成・取り込み", "ページ編集", "ストーリー評価・改善", "比較・脚本確定", "参考作品", "参考作品の分析", "参考作品のAI候補", "ストーリー履歴", "参考作品の提案履歴"],
+    "企画・ストーリー": ["ホーム・進行状況", "プロジェクト管理", "AI企画・ストーリー", "生成・取り込み", "ページ編集", "ストーリー評価・改善", "比較・脚本確定", "参考作品", "参考作品の分析", "参考作品のAI候補", "ストーリー履歴", "参考作品の提案履歴"],
     "キャラクター・作風": ["AI一括生成・採用", "手動設定", "基準画像・作風", "制作提案の履歴"],
     "絵コンテ・作画指示": ["AI一括生成・採用", "コマ一覧・制作へ", "AI評価", "AI改善", "制作提案の履歴"],
     "イラスト制作": ["コマ制作ワークスペース", "画像プロンプト一括出力", "画像履歴"],
@@ -44,6 +44,9 @@ def dispatch(menu, section, project, store, navigate):
     elif section == "動画制作・MP4出力":
         from manga.video_ui import render_video
         render_video(project,store.directory)
+    elif section == "AI企画・ストーリー":
+        from manga.story_ai_ui import render_story_ai
+        render_story_ai(project,store.directory,navigate)
     elif section == "保存先・容量・診断":
         from manga.settings_ui import render_settings
         render_settings(project, store.directory)

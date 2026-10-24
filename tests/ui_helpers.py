@@ -56,5 +56,7 @@ def element(app,kind,label):
 
 
 def button(app,label):
-    element(app,"button",label).click().run(timeout=20)
+    # Honour the scenario's configured limit (30/60s for real PNG/video jobs).
+    # A fixed 20s silently shortened that limit under shared CPU load.
+    element(app,"button",label).click().run(timeout=max(20,app.default_timeout))
     assert not app.exception

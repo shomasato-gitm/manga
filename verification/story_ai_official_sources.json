@@ -1,0 +1,61 @@
+{
+  "note": "公開資料の閲覧記録。有料生成・token計数APIは呼び出していない。単価・契約・日本語品質の永久保証ではない。",
+  "sources": [
+    {
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-luna.md",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "bf9fdb1c3b6466c37fb856e5f8e5973ff088164b6c7792d3fb15e0d9927bd781",
+      "bytes": 3658
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-terra.md",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "fc7b41226f0ae27528801ec7b5be2a6bc67606ed9b74171471ecc53fea16ea17",
+      "bytes": 3656
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/token-counting.md",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "a446c08afd6dca0e252e69a3ebf82c117d45b8f60b304dc09a21340e3b6a07f6",
+      "bytes": 22672
+    },
+    {
+      "url": "https://developers.openai.com/api/docs/guides/structured-outputs.md",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "09aa3814251cf168070294ace79d677091de04b330055048392548d604aa7104",
+      "bytes": 136333
+    },
+    {
+      "url": "https://openai.com/policies/services-agreement/",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "7d15d0c2c855782e1909cf4c43016efca7b53bd3d094224ef4d8233e220b0eb6",
+      "bytes": 498628
+    },
+    {
+      "url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "113c10cb4596419ebb7ae6e292e8cf9d3f8fa81089f27b01157b7f964f3488ec",
+      "bytes": 3630424
+    },
+    {
+      "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/control-generated-output",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "ca89ec8350497721e6b4ec9ab6692fa565046923eb6aa9781426a324f217f543",
+      "bytes": 680370
+    },
+    {
+      "url": "https://cloud.google.com/terms/service-terms",
+      "method": "GET",
+      "retrieved_on": "2026-10-24",
+      "sha256": "2db0791c60f8f9159bcd2891ac4c07545ec64cc95f40acaf805bdc329c123bd9",
+      "bytes": 1053378
+    }
+  ]
+}
