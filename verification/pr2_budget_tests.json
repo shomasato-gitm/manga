@@ -1,0 +1,46 @@
+{
+  "reviewed_head": "574f52214a37930e4febc074503b7794d3ddd571",
+  "branch": "feature/video-budget-core-20261024",
+  "paid_provider_calls": 0,
+  "api_cost_jpy": 0,
+  "platform": "Linux x86_64",
+  "streamlit": "1.40.2",
+  "results": [
+    {
+      "code": "before",
+      "python": "3.12.14",
+      "tests": 480,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 92.44
+    },
+    {
+      "code": "after",
+      "python": "3.11.17",
+      "tests": 526,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 96.413
+    },
+    {
+      "code": "after",
+      "python": "3.12.14",
+      "tests": 526,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 94.912
+    },
+    {
+      "code": "core-only",
+      "python": "3.9.25",
+      "tests": 69,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 1.257
+    }
+  ]
+}
