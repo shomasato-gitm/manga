@@ -37,6 +37,22 @@ def effective_profile(bible, page=None, panel=None):
     return profile, applied
 
 
+def source_snapshot(latest, artwork, data, root, *, hashed=False):
+    """既存Storeの保存値から読み取り専用の素材スナップショットを作る。"""
+    refs = {}
+    for person in artwork['characters']:
+        if person['deleted_at']: continue
+        try: refs[person['id']] = dict(images=references(root, person, hashed=hashed), error=None)
+        except (ValueError, OSError, StorageError) as error: refs[person['id']] = dict(images=[], error=str(error))
+    observations = {}
+    for observation in data['observations']:
+        key = (observation['story_version_id'], observation['page'], observation['panel'], observation['character_id'])
+        observations[key] = observation
+    # shaは別途バイブル比較で検査する。軽量な更新検知にも同じtokenを使う。
+    ref_state = {k:dict(error=v['error'], images=[{a:b for a,b in r.items() if a != 'sha256'} for r in v['images']]) for k,v in refs.items()}
+    relevant = dict(story=latest, artwork=artwork, references=ref_state, bibles=list(latest_bibles(data).values()), observations=list(observations.values()))
+    return dict(latest=latest, artwork=artwork, data=data, references=refs, observations=list(observations.values()), token=digest(relevant))
+
 class CharacterAIService:
     def __init__(self, directory, project_id):
         self.proposals = CharacterProposals(directory, project_id)
@@ -49,19 +65,7 @@ class CharacterAIService:
         latest = self.proposals.latest()
         artwork = self.artwork.load()
         data = self.store.load()
-        refs = {}
-        for person in artwork['characters']:
-            if person['deleted_at']: continue
-            try: refs[person['id']] = dict(images=references(self.store.root, person, hashed=hashed), error=None)
-            except (ValueError, OSError, StorageError) as error: refs[person['id']] = dict(images=[], error=str(error))
-        observations = {}
-        for observation in data['observations']:
-            key = (observation['story_version_id'], observation['page'], observation['panel'], observation['character_id'])
-            observations[key] = observation
-        # shaは別途バイブル比較で検査する。軽量な更新検知にも同じtokenを使う。
-        ref_state = {k:dict(error=v['error'], images=[{a:b for a,b in r.items() if a != 'sha256'} for r in v['images']]) for k,v in refs.items()}
-        relevant = dict(story=latest, artwork=artwork, references=ref_state, bibles=list(latest_bibles(data).values()), observations=list(observations.values()))
-        return dict(latest=latest, artwork=artwork, data=data, references=refs, observations=list(observations.values()), token=digest(relevant))
+        return source_snapshot(latest, artwork, data, self.store.root, hashed=hashed)
 
     def save_bible(self, character_id, *, version_id, expected_revision, expected_artwork_revision,
                    locked_fields, aliases, exceptions, reason, confirmed=False):

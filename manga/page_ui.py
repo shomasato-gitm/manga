@@ -165,7 +165,20 @@ def _export(page, latest, artwork, data, images, prefix):
         export_key = f"{prefix}_export"
         if st.session_state.get(export_key, {}).get("fingerprint") != fingerprint:
             st.session_state.pop(export_key, None)
-        if st.button("出力ファイルを生成", key=f"{prefix}_generate") and export_key not in st.session_state:
+        requested = st.button("出力ファイルを生成", key=f"{prefix}_generate")
+        if requested and export_key not in st.session_state:
+            studio = StudioStore(images.root.parent,data['project_id'])
+            target_pages = [page['page']] if kind == 'page' else [p['page'] for p in pages]
+            # 再起動後も、同じ保存条件の検証済みファイルを再利用する。
+            previous = next((e for e in reversed(studio.load()['exports']) if e.get('path') and e['fingerprint'] == state_fingerprint and e['kind'] == kind and e['pages'] == target_pages and (kind != 'sns' or e.get('sns_width') == sns_width)),None)
+            if previous:
+                try:
+                    content = studio.export_bytes(previous)
+                    mime = {'page':'image/png','pdf':'application/pdf','png_zip':'application/zip','sns':'application/zip'}[kind]
+                    st.session_state[export_key] = dict(fingerprint=fingerprint,content=content,filename=previous['filename'],mime=mime,notes=[])
+                except (StorageError,OSError,ValueError) as error:
+                    st.warning(str(error))
+        if requested and export_key not in st.session_state:
             try:
                 font = find_japanese_font(data["settings"]["font_path"])
                 meter=st.progress(0,text="出力対象を確認しています")
@@ -184,7 +197,7 @@ def _export(page, latest, artwork, data, images, prefix):
                         filename, mime = ("manga.pdf", "application/pdf") if kind == "pdf" else ("manga_pages.zip", "application/zip")
                 output_pages=[page["page"]] if kind=="page" else [p["page"] for p in pages]
                 studio=StudioStore(images.root.parent,data["project_id"])
-                studio.record_export(dict(fingerprint=state_fingerprint,pages=output_pages,kind=kind,filename=filename))
+                studio.save_export(dict(fingerprint=state_fingerprint,pages=output_pages,kind=kind,filename=filename,sns_width=sns_width if kind == 'sns' else None),content)
                 meter.empty()
                 st.session_state[export_key] = dict(fingerprint=fingerprint, content=content, filename=filename, mime=mime, notes=notes)
             except (TextLayoutError, ValueError, StorageError, OSError) as error:
@@ -264,3 +277,18 @@ def render_page_workspace(project, directory, mode="editor"):
         if any(c[0]==project.id and d["config"]!=d["base"] for c,d in drafts.items()):
             st.warning("未保存のページ編集があります。書き出しに含める場合は漫画ページ編集へ戻って保存してください。ここでは保存済みの設定を出力します。")
         _export(page, latest, artwork, data, images, prefix)
+        from manga.studio_storage import StudioStore
+        from manga.studio_assets import production_fingerprint
+        studio = StudioStore(directory, project.id)
+        fingerprint = production_fingerprint(latest, artwork, data, images.root)
+        saved_outputs = [e for e in studio.load()['exports'] if e.get('path') and e['fingerprint'] == fingerprint]
+        if saved_outputs:
+            with st.expander('保存済みの出力を再取得（再起動後も利用可能）'):
+                index = st.selectbox('保存済みページ出力', list(range(len(saved_outputs))),
+                    format_func=lambda i:saved_outputs[i]['filename']+' / '+saved_outputs[i]['saved_at'], key=prefix+'_saved_output')
+                if st.checkbox('選んだ保存済みファイルを取得する',key=prefix+'_load_output'):
+                    try:
+                        event = saved_outputs[index]
+                        st.download_button('保存済み完成ファイルをダウンロード', studio.export_bytes(event), file_name=event['filename'],key=prefix+'_saved_download')
+                    except (StorageError, OSError, ValueError) as error:
+                        st.error(str(error))

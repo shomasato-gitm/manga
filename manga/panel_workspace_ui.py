@@ -44,7 +44,7 @@ def render_panel_overview(project, directory, navigate):
     try:
         store, data, latest = _load(project, directory)
         if not latest: st.info("先にストーリーJSONを登録してください。"); return
-        rows = panel_states(latest["story"], data, store.root)
+        rows = panel_states(latest["story"], data, store.root, latest['id'])
         _overview(rows, f"board_{project.id}", lambda p, c: open_panel(project.id, p, c, navigate))
         if st.button("コマ制作ワークスペースを開く", type="primary"):
             navigate("イラスト制作", "コマ制作ワークスペース")
@@ -114,7 +114,7 @@ def render_panel_workspace(project, directory, navigate, history_only=False):
         from manga.page_storage import PageStore
         composition=read_store(PageStore(directory,project.id))
         story = latest["story"]
-        rows = panel_states(story, data, store.root)
+        rows = panel_states(story, data, store.root, latest['id'])
     except StorageError as error:
         st.error(str(error)); return
 
@@ -129,6 +129,9 @@ def render_panel_workspace(project, directory, navigate, history_only=False):
     page, panel = _selection(story, latest, prefix)
     state = next(r for r in rows if r["key"] == panel_key(page["page"], panel["panel"]))
     st.subheader(f"{page['page']}ページ・{panel['panel']}コマ")
+    if st.button('このコマを対象確認票付きの手動画像制作で開く'):
+        st.session_state['manual_'+project.id+'_jump'] = (page['page'],panel['panel'])
+        navigate('イラスト制作','手動画像制作')
     _panel_navigation(project, latest, page["page"], panel["panel"], rows, prefix, navigate)
     action = "以前の作画指示・画像を確認する" if state["stale"] else "作画指示を保存する" if not state["direction"] else "次の未完成コマへ進む" if state["selected"] else "画像候補を比較して採用する" if state["candidates"] else "プロンプトと基準画像をChatGPTへ渡し、生成画像を登録する"
     st.info(f"現在の状態：{state['status']}" + (" / 要確認" if state["stale"] else "") + f" ｜ 次にやること：{action}")
