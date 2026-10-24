@@ -9,6 +9,10 @@ from manga.storage import StorageError
 from manga.ui_runtime import ui as st
 
 
+def source_label(candidate):
+    return 'AI生成ではないテスト用画像' if candidate['mock'] else 'API画像・品質と権利は人間確認' if candidate['provider']=='gemini-live' else '手動画像・権利は人間確認'
+
+
 def candidates(service,data,prefix,navigate):
     if not data['candidates']: st.info('候補はまだありません。無料モックまたは手動画像から1候補作成してください。'); return
     jobs={j['id']:j for j in data['jobs']}
@@ -20,10 +24,10 @@ def candidates(service,data,prefix,navigate):
     selected_target=st.selectbox('比較する画像の対象',keys,format_func=lambda k:('人物 '+k[1]) if k[0]=='character' else k[1]+' ページ:コマ',key=prefix+'_compare_target')
     images=list(reversed(targets[selected_target]))
     for c in page_items(images,prefix+'_candidate_page','候補比較',size=2):
-        st.caption(c['id'][:8]+' / '+('AI生成ではないテスト用画像' if c['mock'] else '手動画像・権利は人間確認'))
+        st.caption(c['id'][:8]+' / '+source_label(c))
         st.image(thumbnail(service,c),width=300)
     by_id={c['id']:c for c in images}
-    identifier=st.selectbox('確認・採用する画像候補',list(by_id),format_func=lambda i:i[:8]+' / '+('テスト画像' if by_id[i]['mock'] else '手動画像'),key=prefix+'_candidate')
+    identifier=st.selectbox('確認・採用する画像候補',list(by_id),format_func=lambda i:i[:8]+' / '+source_label(by_id[i]),key=prefix+'_candidate')
     candidate=by_id[identifier]; job=jobs[candidate['job_id']]; plan=job['plan']
     st.caption(f"実際の画像寸法：{candidate['width']}×{candidate['height']} ／ 計画サイズ：{plan['options']['size']}")
     if f"{candidate['width']}x{candidate['height']}"!=plan['options']['size']: st.warning('手動画像の寸法は計画と異なります。見切れ・縦横比・次の動画工程の画素数上限を確認してください。自動トリミングはしません。')

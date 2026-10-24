@@ -17,6 +17,7 @@ def run(service,identifier,*,content=None):
         data=service.store.checked(service.store.load()['revision'])
         job=next((j for j in data['jobs'] if j['id']==identifier),None)
         if not job: raise ValueError('画像依頼が見つかりません。')
+        if job['provider'] not in ('mock','manual'): raise ValueError('実API依頼を無料モック経路で実行しません。')
         if job['state']=='ready': return next(c for c in data['candidates'] if c['id']==job['candidate_id'])
         if job['state']!='queued': raise ValueError('待機中の依頼だけを実行できます。保存失敗は同じ依頼を復旧してください。')
         if service.store.safe(f'image_ai/jobs/{identifier}/cancel').exists():
@@ -50,14 +51,25 @@ def run(service,identifier,*,content=None):
 
 def finish(service,identifier,receipt):
     data=service.store.load(); job=next(j for j in data['jobs'] if j['id']==identifier)
+    if job['provider'] not in ('mock','manual'): raise ValueError('実API応答は精算確認後に保存してください。')
     expected=f"image_ai/candidates/{job['candidate_id']}.png"
     if receipt['job_id']!=identifier or receipt['candidate_id']!=job['candidate_id'] or receipt['path']!=expected or receipt['api_calls']!=0 or receipt['cost_jpy']!='0': raise StorageError('保存済み応答の対応が不正です。')
+    return publish_candidate(service,identifier,receipt,mock=job['provider']=='mock',model='offline-fixture-v1' if job['provider']=='mock' else None)
+
+
+def publish_candidate(service,identifier,receipt,*,mock,model):
+    """精算・応答検証は各実行系で行い、候補の不変保存と明示採用を共用する。"""
+    data=service.store.load(); job=next(j for j in data['jobs'] if j['id']==identifier)
+    expected=f"image_ai/candidates/{job['candidate_id']}.png"
+    if receipt['job_id']!=identifier or receipt['candidate_id']!=job['candidate_id'] or receipt['path']!=expected: raise StorageError('保存済み候補の対応が不正です。')
     candidate=dict(id=job['candidate_id'],saved_at=job['saved_at'],job_id=identifier,path=expected,sha256=receipt['sha256'],width=receipt['width'],height=receipt['height'],
-                   provider=job['provider'],mock=job['provider']=='mock',model='offline-fixture-v1' if job['provider']=='mock' else None)
+                   provider=job['provider'],mock=mock,model=model)
     service.candidate_bytes(candidate)
     existing=next((c for c in data['candidates'] if c['id']==candidate['id']),None)
     if existing:
         if existing!=candidate: raise StorageError('別の候補を同じIDへ保存しません。')
+        if job['state']!='ready' and job['provider']=='gemini-live':
+            job['state']='ready'; job['error']=None; service.store.save(data,'candidate_recovered',candidate_id=candidate['id'])
         return existing
     data['candidates'].append(candidate)
     job['state']='cancelled' if service.store.safe(f'image_ai/jobs/{identifier}/cancel').exists() else 'ready'
@@ -74,6 +86,7 @@ def recover(service,identifier,*,confirmed=False,content=None):
         service.store.checked(service.store.load()['revision'])
         data=service.store.load(); job=next((j for j in data['jobs'] if j['id']==identifier),None)
         if not job: raise ValueError('復旧する依頼を選択してください。')
+        if job['provider'] not in ('mock','manual'): raise ValueError('実API依頼を無料モックの再生成で復旧しません。')
         if job['state']=='cancelled': raise ValueError('停止済みです。既存候補は保持しています。')
         path=service.store.safe(f'image_ai/jobs/{identifier}/receipt.json')
         if path.exists(): return finish(service,identifier,json.loads(service.store.read(f'image_ai/jobs/{identifier}/receipt.json',128*1024)))

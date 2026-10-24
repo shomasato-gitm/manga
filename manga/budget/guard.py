@@ -6,6 +6,15 @@ preserve the full reservation on any ambiguous provider/usage outcome.
 """
 from .ledger import BudgetLedger, ReservationConflict, _yen_to_units, _units_to_yen
 from .pricing import PriceQuote
+from contextvars import ContextVar
+
+_execution = ContextVar('manga_budget_execution',default=None)
+
+
+def current_execution():
+    """送信アダプターの迂回防止用。永続claim取得後のoperation内だけ有効。"""
+    value=_execution.get()
+    return dict(value) if value is not None else None
 
 
 class BudgetedExecutor:
@@ -61,7 +70,11 @@ class BudgetedExecutor:
             raise ReservationConflict("同じリクエストIDの再送はできません。")
         claim = self.ledger.claim_execution(request_id,now=now)
         try:
-            response = operation()
+            token=_execution.set(dict(project_id=project_id,request_id=request_id,provider=provider,model=model))
+            try:
+                response = operation()
+            finally:
+                _execution.reset(token)
             charged = actual_charge_jpy(response)
         except BaseException:
             self.ledger.mark_uncertain(request_id)
