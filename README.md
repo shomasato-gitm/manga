@@ -67,6 +67,13 @@ request_id・usage・画像SHAを `report.json` に記録します。人間に�
 
 [操作・復旧・Mac手順](docs/IMAGE_API_LIVE.md) / [公式料金比較とno-go判断](docs/IMAGE_API_LIVE_COMPARISON.md)。
 
+Phase 2-D3では、同じ「モデル・見積」「実API」画面に**本番接続の準備状況**を追加しました。
+Google公式資料の確認済み事実と未確認10項目を分け、参考費用と最大費用の違いを表示します。
+本番送信は引き続き無効です。キー・フラグだけでは解除できません。
+読取専用の `python scripts/check_gemini_image_readiness.py` はAPI・作品・台帳にアクセスせず、
+準備状況を出力します（終了コード2は想定どおりのno-go）。
+[公式再調査・不足条件・Mac操作・代替案](docs/GEMINI_IMAGE_READINESS.md)。
+
 ## キャラクター別音声・字幕（Phase 3、任意）
 
 **完成・書き出し → 音声制作・字幕**で、保存済み脚本からセリフとナレーションを抽出します。
@@ -1022,6 +1029,10 @@ Phase 2-D1追加後はLinux・Python 3.11 / 3.12で、それぞれ817件のテ�
 Phase 2-D2追加後はPython 3.11 / 3.12で、それぞれ**879件成功・失敗0件・スキップ0件**です。
 追加62件にfake API・課金異常系・保存復旧・Streamlit画面・音声/動画素材への受け渡しを含みます。
 本番画像APIは送信無効、実際のAPI費用は0円です。[Phase 2-D2検証記録](verification/image_ai_live_phase2d2.md)。
+
+Phase 2-D3追加後はPython 3.11 / 3.12で、それぞれ**913件成功・失敗0件・スキップ0件**です。
+追加34件で公式根拠の判定、読取専用診断、HTTPSのfake境界、二重送信防止、予約後の版変更、画面を確認しています。
+本番送信は引き続き無効、実際のAPI費用は0円です。[Phase 2-D3検証記録](verification/gemini_image_phase2d3.md)。
 Phase 2-C時点の748件、人物・バイブルの検証は[人物検証記録](verification/character_ai_phase2c.md)に保持しています。
 Phase 2-A/B時点の684件、3〜5案・5回改善・模擬API予算等の結果は[企画・脚本検証記録](verification/story_ai_phase2ab.md)に保持しています。
 Phase 4時点の630件のうち、Phase 3の585件から追加した45件には、3形式の実MP4生成と同期測定・異常系・Streamlit検証を含みます。[Phase 4検証記録](verification/video_phase4.md) を参照してください。
