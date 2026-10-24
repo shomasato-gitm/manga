@@ -30,5 +30,6 @@ Python 3.11、Streamlit 1.40.2、Intel Mac/macOS 12を想定します。実機�
 ## Phase 4への引き渡し
 
 [VOICE_TIMELINE.md](VOICE_TIMELINE.md) の実WAVと実尺・字幕・採用画像参照を使用します。
-今回、MP4生成、SNSへの投稿、無許諾音声クローン、BGM/SFX取得は実装しません。
+Phase 3自体にはMP4を追加しません。Phase 4の別モジュールが [VIDEO_RENDERING.md](VIDEO_RENDERING.md) の3形式MP4を生成します。
+動画計画・履歴・素材コピーはvideo.jsonとvideo/へ分離します。SNS投稿・無許諾音声クローン・BGM/SFXの自動取得は実装しません。
 要件・費用・異常系の確認は [費用方針](VIDEO_COST_POLICY.md)、[テスト方針](VIDEO_TEST_PLAN.md)、[操作手順](VOICE_PRODUCTION.md) を参照してください。

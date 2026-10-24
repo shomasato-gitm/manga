@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feature/github-studio-sync, feature/video-voice]
+    branches: [main, feature/github-studio-sync, feature/video-voice, feature/video-renderer]
   workflow_dispatch:
 
 permissions:
@@ -36,10 +36,11 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-dev.txt
-      - name: Install Japanese fonts for rendering tests
+      - name: Install Japanese fonts and FFmpeg for rendering tests
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y fonts-noto-cjk
+          sudo apt-get install --no-install-recommends -y fonts-noto-cjk ffmpeg
+          ffmpeg -version
       - name: Install test dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Run regression and Streamlit UI tests

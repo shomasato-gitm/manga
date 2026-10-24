@@ -1,7 +1,8 @@
 # 次タスクへの依存関係：TTS → FFmpeg
 
 PR #2の予算レビューはmainへ反映済みです（基点361444b）。
-今回のPhase 3は `feature/video-voice` で音声・字幕を実装し、レビュー用PRにします。実課金テスト・MP4実装・自動マージは行いません。
+Phase 3 PR #5も人間がmainへマージ済みです。Phase 4は最新main 807914aから `feature/video-renderer` で作業します。
+音声・予算の契約を維持し、[動画制作ガイド](VIDEO_RENDERING.md) のローカルMP4生成を追加します。実課金・自動マージ・SNS投稿は行いません。
 以下の旧依存関係のうち、TTSの確定契約は [VOICE_TIMELINE.md](VOICE_TIMELINE.md)、操作は [VOICE_PRODUCTION.md](VOICE_PRODUCTION.md) を優先してください。
 
 ## 着手順序と不足資料

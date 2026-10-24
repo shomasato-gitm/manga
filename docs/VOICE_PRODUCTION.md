@@ -86,7 +86,7 @@ python -m streamlit run app.py --server.address 127.0.0.1
 Python 3.11を推奨します。`requirements.txt` がない場合は、まず `pwd` と `ls` で `app.py` と同じディレクトリにいるか確認してください。
 ZIPの場合はデータを含む旧フォルダを残し、新しいフォルダで仮想環境を作って起動します。
 `MANGA_DATA_DIR` と `MANGA_BUDGET_DB` は更新前と同じ外部保存先を指定します。コード更新は作品データの自動移動を行いません。
-追加pip依存はありません。ffprobeがあればWAV実尺を照合し、不在でもPCMフレーム数から正確に計測します。動画生成は次Phaseです。
+追加pip依存はありません。ffprobeがあればWAV実尺を照合し、不在でもPCMフレーム数から正確に計測します。動画生成は [Phase 4の任意画面](VIDEO_RENDERING.md) から使います。
 
 ## データに触れずに無料検証する
 
