@@ -66,6 +66,8 @@ def plan_editor(service,prefix,navigate):
 
 
 def estimate(service,prefix):
+    from manga.image_ai_readiness_ui import render
+    render(prefix)
     from manga.image_ai_pricing import research,output_reference
     raw,expired=research()
     st.subheader('モデル・費用の確認（実送信不可）')

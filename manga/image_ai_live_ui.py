@@ -7,6 +7,8 @@ from manga.ui_runtime import ui as st
 
 
 def generation(service,data,prefix,plan):
+    from manga.image_ai_readiness_ui import render
+    render(prefix)
     st.subheader('実API：この1枚だけ（既定OFF）')
     st.error('送信不可：'+REASON)
     enabled=st.checkbox('実APIを使用する意図と外部送信を確認する（これだけでは有効になりません）',key=prefix+'_live_enabled')

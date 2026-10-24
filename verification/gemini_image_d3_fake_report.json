@@ -1,0 +1,27 @@
+{
+  "real_api_calls": 0,
+  "actual_api_cost_jpy": "0",
+  "network_attempts": 0,
+  "fake_http_calls": 1,
+  "project_id": "3f115d01-c6da-46da-b265-7ef1af412e38",
+  "request_id": "c211799a-9459-4e0b-8f2c-c409a0c8d3f4",
+  "response_id": "fake-response-1",
+  "model": "fake-image-contract-v1",
+  "usage": {
+    "candidatesTokenCount": 1120,
+    "promptTokenCount": 100,
+    "thoughtsTokenCount": 0,
+    "totalTokenCount": 1220
+  },
+  "fake_max_reservation_jpy": "14.300000",
+  "fake_converted_charge_jpy": "5.9224",
+  "calculation": "((100 * 0.5 + 1120 * 30) / 1000000) * 160 * 1.10 = 5.922400 JPY (架空料金)",
+  "candidate_id": "727709c4-4c1e-5776-b701-d059f5c08017",
+  "image_sha256": "339cce39bf41f735d2f7a4e7a42148952b2eb803f6c2ec7a59fe9bdabab783cc",
+  "artwork_image_id": "b1f5d80d-2948-4213-b6fa-c06ec9994976",
+  "input_sha256": "48fc1b773d491d7d7430a0bc9fd331cae64fc98cc83b936a8850e3d1efdb6cb0",
+  "candidate_count": 1,
+  "explicit_fixture_adoption": true,
+  "existing_files_preserved": true,
+  "production_send_enabled": false
+}

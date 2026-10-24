@@ -80,6 +80,13 @@ def run(service,identifier,*,approved=False):
             service.store.write(f'image_ai/jobs/{identifier}/prepared',job['live']['input_sha256'].encode(),1024)
         card=job['live']['card']
         def operation():
+            # 予約・実行権取得の間に別画面で元データが変わっていないか再確認する。
+            # 検出時も実行権は使い直さず、予約は手動照合まで保持する。
+            from manga.image_ai_planning import current
+            with service.store.locked():
+                service.store.checked(service.store.load()['revision'])
+                current(service.directory,service.project_id,job['plan'],hashed=True)
+                shared_ledger(service,expected=job['live']['ledger_path'])
             update(service,identifier,state='reserved')
             update(service,identifier,state='sending',api_calls=1)
             response=service.live_adapter.send(card,body)

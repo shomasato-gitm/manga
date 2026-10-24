@@ -47,6 +47,9 @@ class LiveError(ValueError):
 def network_allowed():
     # 設定カードを書き換えても未検証の能力を有効化できない。
     from manga.image_ai_live_pricing import NETWORK_VERIFIED,research
+    from manga.image_ai_readiness import assess
+    readiness=assess()
+    if not readiness['evidence_ready']: raise LiveError('unverified_maximum',REASON+' 本番接続の準備状況で不足する公式根拠を確認してください。')
     manifest=research()
     if NETWORK_VERIFIED is not True or manifest['network_enabled'] is not True or manifest['maximum_charge_verified'] is not True: raise LiveError('unverified_maximum',REASON)
     if os.environ.get('MANGA_ENABLE_IMAGE_API')!='1': raise LiveError('disabled','実API機能フラグがOFFです。')
@@ -57,6 +60,8 @@ def _https(model,body):
     network_allowed()  # fakeの注入やUIフラグでは本番転送を解除できない。
     key=os.environ.get('GEMINI_API_KEY','')
     if not key.strip(): raise LiveError('authentication','GEMINI_API_KEYを環境変数に設定してください。')
+    from manga.budget.guard import claim_provider_call
+    claim_provider_call('gemini-live',model)
     import urllib.request
     import urllib.error
     class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -91,6 +96,9 @@ class GeminiImageAdapter:
     def send(self,card,body):
         _require_budget(card['model'])
         self.check()
+        if self.fake:
+            from manga.budget.guard import claim_provider_call
+            claim_provider_call('gemini-live',card['model'])
         try:
             response=self._transport(card['model'],body)
             # 任意オブジェクトや無制限応答を保存しない。HTTPヘッダー・例外本文・キーを除外。

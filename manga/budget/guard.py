@@ -7,14 +7,27 @@ preserve the full reservation on any ambiguous provider/usage outcome.
 from .ledger import BudgetLedger, ReservationConflict, _yen_to_units, _units_to_yen
 from .pricing import PriceQuote
 from contextvars import ContextVar
+from threading import Lock
 
 _execution = ContextVar('manga_budget_execution',default=None)
+_provider_call_lock = Lock()
 
 
 def current_execution():
     """送信アダプターの迂回防止用。永続claim取得後のoperation内だけ有効。"""
     value=_execution.get()
     return dict(value) if value is not None else None
+
+
+def claim_provider_call(provider,model):
+    """対応アダプターの1リクエスト制限。コピーした実行contextでも共有する。"""
+    with _provider_call_lock:
+        value=_execution.get()
+        if value is None or value['provider']!=provider or value['model']!=model:
+            raise ReservationConflict('予算の実行権と送信先が一致しません。')
+        if value.get('provider_call_claimed'):
+            raise ReservationConflict('この実行権では既に1リクエストを送信しています。再送しません。')
+        value['provider_call_claimed']=True
 
 
 class BudgetedExecutor:

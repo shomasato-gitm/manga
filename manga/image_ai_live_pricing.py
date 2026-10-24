@@ -70,6 +70,11 @@ def actual_charge(card,response):
     if any(type(usage.get(k)) is not int or not 0<=usage[k]<=10**9 for k in fields): raise LiveError('usage_invalid','usageの課金量が不正または欠落しています。')
     if usage.get('toolUsePromptTokenCount',0)!=0 or usage.get('cachedContentTokenCount',0)!=0: raise LiveError('usage_unrecognized','未対応の追加課金・キャッシュusageです。')
     inp,out,thought,total=(usage[k] for k in fields)
+    if inp==0: raise LiveError('usage_invalid','空でない画像依頼の入力usageが0です。課金量を推測せず確認してください。')
+    has_image=any('inlineData' in part for candidate in response.get('candidates',[]) for part in candidate.get('content',{}).get('parts',[]))
+    if has_image and out==0: raise LiveError('usage_invalid','画像応答があるのに出力usageが0です。無料と仮定せず確認してください。')
+    for key in ('toolUsePromptTokenCount','cachedContentTokenCount'):
+        if key in usage and type(usage[key]) is not int: raise LiveError('usage_invalid','追加usageの型が不正です。')
     if not total or total!=inp+out+thought: raise LiveError('usage_inconsistent','usageの合計が一致しません。')
     # 上限超過でも正しい利用量は精算する。ledgerが見積超過を検出し以後を停止。
     return str(price_quote(card,settlement=True).estimate_jpy(max_input_tokens=inp,max_output_tokens=out+thought))

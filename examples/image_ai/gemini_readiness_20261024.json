@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "format": "manga-gemini-readiness",
+  "model": "gemini-3.1-flash-lite-image",
+  "verified_on": "2026-10-24",
+  "sources": [
+    {
+      "id": "pricing",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "image-generation",
+      "url": "https://ai.google.dev/gemini-api/docs/image-generation",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "billing",
+      "url": "https://ai.google.dev/gemini-api/docs/billing",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "generate-content",
+      "url": "https://ai.google.dev/api/generate-content",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "models",
+      "url": "https://ai.google.dev/gemini-api/docs/models",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "limits",
+      "url": "https://ai.google.dev/gemini-api/docs/rate-limits",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "images-model",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite-image",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "paid-terms",
+      "url": "https://ai.google.dev/gemini-api/terms",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "api-usage",
+      "url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+      "checked_on": "2026-10-24",
+      "scope": "developer-api",
+      "retrieved": false,
+      "final_url": null,
+      "sha256": null,
+      "retrieval": "proxy-tunnel-403-after-network-permission-retry"
+    },
+    {
+      "id": "google-sdk",
+      "url": "https://raw.githubusercontent.com/googleapis/python-genai/main/google/genai/types.py",
+      "checked_on": "2026-10-24",
+      "scope": "sdk",
+      "retrieved": true,
+      "final_url": "https://raw.githubusercontent.com/googleapis/python-genai/main/google/genai/types.py",
+      "sha256": "9702b1dbd19d9bfeefe72fba96a2b55c7ed975ed0129d57db67fadf4dbd1f618",
+      "retrieval": "public-http-get"
+    },
+    {
+      "id": "vertex-pricing",
+      "url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+      "checked_on": "2026-10-24",
+      "scope": "vertex",
+      "retrieved": true,
+      "final_url": "https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing",
+      "sha256": "a5bf0888d9617d4dc91b8ff0f7f6650ef278d3fa12665d8350a486fb22c01a88",
+      "retrieval": "public-http-get"
+    },
+    {
+      "id": "cloud-budget",
+      "url": "https://cloud.google.com/billing/docs/how-to/budgets",
+      "checked_on": "2026-10-24",
+      "scope": "cloud-billing",
+      "retrieved": true,
+      "final_url": "https://docs.cloud.google.com/billing/docs/how-to/budgets",
+      "sha256": "d98359c617d1dd1ef62dd3b53f9240a00099b7851713db1c231312e5279a7084",
+      "retrieval": "public-http-get"
+    }
+  ],
+  "facts": [
+    {
+      "id": "vertex-reference",
+      "status": "confirmed",
+      "scope": "vertex",
+      "source_ids": [
+        "vertex-pricing"
+      ],
+      "statement": "Vertex Globalの参考単価は入力0.25、テキスト/思考出力1.50、画像出力30 USD/100万token。1K画像は1120token。Developer APIの料金・最大量ではない。",
+      "quote": "Gemini 3.1 Flash-Lite Image (Nano Banana 2 Lite) ... Global $0.25 ... Global $1.50 ... Global $30.00"
+    },
+    {
+      "id": "budget-not-cap",
+      "status": "confirmed",
+      "scope": "cloud-billing",
+      "source_ids": [
+        "cloud-budget"
+      ],
+      "statement": "alerts-only予算は支出を自動停止しない。利用量報告の遅延を考慮する。spend cap budgetもサービス対応条件の確認が必要で、Developer APIの絶対上限として扱わない。",
+      "quote": "For alerts-only budgets, the budget doesn't automatically set a hard cap on spending. ... account for delays in usage reporting."
+    },
+    {
+      "id": "sdk-not-contract",
+      "status": "confirmed",
+      "scope": "sdk",
+      "source_ids": [
+        "google-sdk"
+      ],
+      "statement": "SDKはcandidate_count/max_output_tokens、ImageConfig 1K/1:1を定義。thinking_budget=0はDISABLEDだが、許容範囲はモデル依存。型定義だけで対象モデルの実対応・課金上限を証明しない。",
+      "quote": "0 is DISABLED. -1 is AUTOMATIC. The default values and allowed ranges are model dependent."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "model",
+      "title": "モデルIDと提供条件",
+      "status": "unverified",
+      "source_ids": [
+        "images-model"
+      ],
+      "needed": "Developer APIでの正確なモデルID、提供段階、リージョン・利用資格、返却modelVersion"
+    },
+    {
+      "id": "one-image",
+      "title": "1024×1024・画像1枚",
+      "status": "unverified",
+      "source_ids": [
+        "image-generation"
+      ],
+      "needed": "candidateCount=1、1K/1:1での実寸と出力画像数、追加画像・テキストの扱い"
+    },
+    {
+      "id": "references",
+      "title": "人物参照画像",
+      "status": "unverified",
+      "source_ids": [
+        "image-generation"
+      ],
+      "needed": "基準画像・複数人物参照の対応、最大枚数・bytes・寸法、利用者の送信権利"
+    },
+    {
+      "id": "input-bound",
+      "title": "最大入力課金量",
+      "status": "unverified",
+      "source_ids": [
+        "generate-content"
+      ],
+      "needed": "テキスト・参照画像・プロトコルを含むサーバー保証の最大課金入力token数"
+    },
+    {
+      "id": "output-bound",
+      "title": "最大画像出力課金量",
+      "status": "unverified",
+      "source_ids": [
+        "generate-content"
+      ],
+      "needed": "画像1枚に伴う全課金出力の上限。maxOutputTokensと画像tokenの関係"
+    },
+    {
+      "id": "thinking-bound",
+      "title": "思考の制御と課金",
+      "status": "unverified",
+      "source_ids": [
+        "image-generation"
+      ],
+      "needed": "対象モデルでthinkingBudget=0が有効か、無効化可否、思考の最大量とmaxOutputTokensへの算入"
+    },
+    {
+      "id": "pricing",
+      "title": "Developer APIの料金",
+      "status": "unverified",
+      "source_ids": [
+        "pricing"
+      ],
+      "needed": "入力モダリティ別、画像・テキスト・思考出力、追加料金、税・為替を含む全最大額"
+    },
+    {
+      "id": "usage",
+      "title": "usageと請求の対応",
+      "status": "unverified",
+      "source_ids": [
+        "generate-content"
+      ],
+      "needed": "usageの全課金項目・内訳・省略時の意味、cached/thought/tool、合計・返却モデルの正しい解釈"
+    },
+    {
+      "id": "failure-billing",
+      "title": "失敗時の請求・制限",
+      "status": "unverified",
+      "source_ids": [
+        "billing"
+      ],
+      "needed": "拒否・中断・タイムアウト・429/5xxの請求、レート制限と支出制限の適用範囲"
+    },
+    {
+      "id": "terms",
+      "title": "商用・データ・SynthID",
+      "status": "unverified",
+      "source_ids": [
+        "paid-terms"
+      ],
+      "needed": "有料Developer APIの商用条件、入力権利、データ保持・学習、生成物・透かしの扱い"
+    }
+  ],
+  "reference_cost": {
+    "scope": "vertex-output-only-not-developer-quote",
+    "output_tokens": 1120,
+    "usd_per_million": "30",
+    "usd": "0.0336",
+    "fx_jpy_per_usd": "160",
+    "tax_multiplier": "1.10",
+    "jpy": "5.913600",
+    "maximum_jpy": null
+  }
+}
