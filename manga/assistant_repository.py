@@ -157,6 +157,9 @@ class AssistantRepository:
         self._finish(journal)
 
     def _finish(self, journal):
+        if journal["after_assistant"]["adoptions"] and journal["after_assistant"]["adoptions"][-1].get("character_ai"):
+            from manga.character_ai_recovery import validate_recovery
+            validate_recovery(journal)
         target_store = self.artwork if journal["target"] == "artwork" else self.editorial
         current_target, current_assistant = target_store.load(), self.load()
         if current_target not in (journal["before_target"], journal["after_target"]) or current_assistant not in (journal["before_assistant"], journal["after_assistant"]):

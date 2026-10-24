@@ -140,6 +140,9 @@ def render_panel_workspace(project, directory, navigate, history_only=False):
     st.caption(f"作風：{data['style']}")
     from manga.page_prompt_hints import layout_hint
     st.caption(layout_hint(page,composition,panel["panel"]).split("\n")[0])
+    if (store.root / "character_ai.json").is_file() and st.button("このコマのバイブル付き統一プロンプトへ"):
+        st.session_state[f"character_ai_{project.id}_jump"] = (page["page"], panel["panel"])
+        navigate("キャラクター・作風", "AIキャラクター制作・一貫性管理")
     with st.expander("セリフ・ナレーション・作風を確認"):
         st.write(f"セリフ：{panel['dialogue'] or 'なし'}")
         st.write(f"ナレーション：{panel['narration'] or 'なし'}")

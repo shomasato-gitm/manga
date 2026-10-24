@@ -101,6 +101,8 @@ class AssistantStore(AssistantRepository):
             proposal = self.proposal(data, proposal_id)
             request = self.request(data, proposal["request_id"])
             self.latest(request["story_version_id"])
+            if request.get("character_ai"):
+                raise ValueError("この人物提案は「AIキャラクター制作・一貫性管理」で人物の同定・固定ロック・部分採用を確認してください。")
             artwork, editorial = self.artwork.load(), self.editorial.load()
             if type(expected_artwork_revision) is not int or artwork["revision"] != expected_artwork_revision or type(expected_editorial_revision) is not int or editorial["revision"] != expected_editorial_revision:
                 raise StorageError("既存設定が更新されました。画面を更新して差分を確認してください。")
