@@ -53,11 +53,17 @@ def test_bgm_sfx_rights_mixing_and_audio_only_validation(video_workspace):
     with pytest.raises(ValueError):service.add_audio(content,'music.wav',rights_reviewed=False,expected_revision=service.store.load()['revision'])
     record=service.add_audio(content,'music.wav',rights_reviewed=True,expected_revision=service.store.load()['revision'])
     plans=service.plans(timeline);plan=plans['tiktok_vertical']
+    # Exercise an actual fade and a successful focus crop as well as the
+    # short-scene cut fallback covered by the three-format fixture.
+    plan['rows'][0].update(gap_after_ms=1000,framing='focus',focus=[.82,.12,.14,.2])
     plan['bgm']=dict(id=record['id'],volume=.1,start_ms=0,fade_ms=100)
     plan['sfx']=[dict(id=record['id'],volume=.1,start_ms=200,fade_ms=50)]
     service.save_plans(timeline['id'],plans,expected_revision=service.store.load()['revision'])
     job=create_job(service,timeline,['tiktok_vertical']);result=service.run_job(job['id'])[0]
     assert result['metadata']['audio_codec']=='aac'
+    receipt=json.loads(service.store.safe(f"video/jobs/{job['id']}/render_receipt.json").read_text())
+    visual=receipt['results'][0]['visuals'][0]
+    assert visual['transition_applied']=='fade' and visual['crop'] is not None and not visual['focus_fallback']
     with pytest.raises((ValueError,VideoError)):service.add_audio(b'not audio','secret.mp3',rights_reviewed=True,expected_revision=service.store.load()['revision'])
 
 

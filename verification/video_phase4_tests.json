@@ -213,5 +213,23 @@
       }
     ]
   },
-  "ffmpeg_version": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers"
+  "ffmpeg_version": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "additional_targeted_validation": {
+    "note": "全630件成功後、製品コード変更なしで既存BGM/SFXテストへ通常フェードと成功するfocus cropの実レンダ検証を追加。最終CIは強化後の全テストを実行。",
+    "test": "tests/test_video_rendering.py::test_bgm_sfx_rights_mixing_and_audio_only_validation",
+    "runs": [
+      {
+        "python": "3.11.17",
+        "passed": 1,
+        "failures": 0,
+        "seconds_pytest": 8.89
+      },
+      {
+        "python": "3.12.14",
+        "passed": 1,
+        "failures": 0,
+        "seconds_pytest": 8.88
+      }
+    ]
+  }
 }
