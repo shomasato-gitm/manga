@@ -3,7 +3,7 @@ MENUS = {
     "企画・ストーリー": ["ホーム・進行状況", "プロジェクト管理", "AI企画・ストーリー", "生成・取り込み", "ページ編集", "ストーリー評価・改善", "比較・脚本確定", "参考作品", "参考作品の分析", "参考作品のAI候補", "ストーリー履歴", "参考作品の提案履歴"],
     "キャラクター・作風": ["AI一括生成・採用", "AIキャラクター制作・一貫性管理", "手動設定", "基準画像・作風", "制作提案の履歴"],
     "絵コンテ・作画指示": ["AI一括生成・採用", "コマ一覧・制作へ", "AI評価", "AI改善", "制作提案の履歴"],
-    "イラスト制作": ["コマ制作ワークスペース", "画像プロンプト一括出力", "画像履歴"],
+    "イラスト制作": ["コマ制作ワークスペース", "AI画像生成・採用", "画像プロンプト一括出力", "画像履歴"],
     "漫画ページ編集": [],
     "完成・書き出し": ["品質チェック・修正管理", "PNG・PDF書き出し", "音声制作・字幕", "動画制作・MP4出力", "API予算管理", "保存先・容量・診断", "GitHub作品同期"],
 }
@@ -50,6 +50,9 @@ def dispatch(menu, section, project, store, navigate):
     elif section == "AIキャラクター制作・一貫性管理":
         from manga.character_ai_ui import render_character_ai
         render_character_ai(project,store.directory,navigate)
+    elif section == "AI画像生成・採用":
+        from manga.image_ai_ui import render_image_ai
+        render_image_ai(project,store.directory,navigate)
     elif section == "保存先・容量・診断":
         from manga.settings_ui import render_settings
         render_settings(project, store.directory)

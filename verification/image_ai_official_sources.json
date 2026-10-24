@@ -1,0 +1,138 @@
+[
+  {
+    "name": "google-pricing",
+    "url": "https://ai.google.dev/gemini-api/docs/pricing",
+    "status": "unavailable",
+    "reason": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "google-image",
+    "url": "https://ai.google.dev/gemini-api/docs/image-generation",
+    "status": "unavailable",
+    "reason": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-image",
+    "url": "https://developers.openai.com/api/docs/guides/image-generation.md",
+    "status": "retrieved",
+    "bytes": 114687,
+    "sha256": "8e9337b4b505536c2785e90c7298b41537e6a61f27d81caa069d9467787e3fe5",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-flare",
+    "url": "https://developers.openai.com/api/docs/models/gpt-image-2.5-flare.md",
+    "status": "retrieved",
+    "bytes": 3399,
+    "sha256": "24567a412f95a959795e193b7571edcc5c27d0f6b760750c3e38e70c7e89dd68",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-sunburst",
+    "url": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst.md",
+    "status": "retrieved",
+    "bytes": 3418,
+    "sha256": "09fa5cd4e0a0fb559c2646aa02c99274d0a8842df4a9cb0f993ae16881f12cf8",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-edit",
+    "url": "https://developers.openai.com/api/reference/resources/images/methods/edit.md",
+    "status": "unavailable",
+    "reason": "HTTP Error 404: Not Found",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-deprecations",
+    "url": "https://developers.openai.com/api/docs/deprecations.md",
+    "status": "retrieved",
+    "bytes": 42211,
+    "sha256": "b5d1cafefc8a491f2c095d77359a6ca185498baa5f65a66bac1cb722e188855f",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-terms",
+    "url": "https://openai.com/policies/services-agreement/",
+    "status": "retrieved",
+    "bytes": 498628,
+    "sha256": "7d15d0c2c855782e1909cf4c43016efca7b53bd3d094224ef4d8233e220b0eb6",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "google-terms",
+    "url": "https://ai.google.dev/gemini-api/terms",
+    "status": "unavailable",
+    "reason": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "google-pricing",
+    "url": "https://ai.google.dev/gemini-api/docs/pricing",
+    "status": "unavailable",
+    "reason": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "google-image",
+    "url": "https://ai.google.dev/gemini-api/docs/image-generation",
+    "status": "unavailable",
+    "reason": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "google-terms",
+    "url": "https://ai.google.dev/gemini-api/terms",
+    "status": "unavailable",
+    "reason": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "google-model-lite",
+    "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite-image",
+    "status": "unavailable",
+    "reason": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-edit-html",
+    "url": "https://developers.openai.com/api/reference/resources/images/methods/edit",
+    "status": "retrieved",
+    "bytes": 853997,
+    "sha256": "b24168c041fb52ecde101d15d1fc7b08f3e40caf23bb31d392c6306e59e72ecc",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-pricing",
+    "url": "https://developers.openai.com/api/docs/pricing.md",
+    "status": "retrieved",
+    "bytes": 22449,
+    "sha256": "606acc6693f882253e203e30da2fbfd23f28b02540a98f26fce93c5cdc04e9dd",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "openai-data",
+    "url": "https://developers.openai.com/api/docs/guides/your-data.md",
+    "status": "retrieved",
+    "bytes": 83793,
+    "sha256": "219b705c34aa7592431086068711e9c0d917bfb7e0308593a1aa0258597f4da7",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "vertex-pricing",
+    "url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+    "status": "retrieved",
+    "bytes": 3630415,
+    "sha256": "258b956abe284808a5f9ab20eb86978f311817c385ad6857b604c144b500c106",
+    "verified_on": "2026-10-24"
+  },
+  {
+    "name": "vertex-terms",
+    "url": "https://cloud.google.com/terms/service-terms",
+    "status": "retrieved",
+    "bytes": 1053378,
+    "sha256": "6137f63780924d79f7911cfd191bd166efd2e1940999ce4bd230ce2b2278eeec",
+    "verified_on": "2026-10-24"
+  }
+]

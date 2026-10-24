@@ -63,6 +63,8 @@ def build_timeline(service,*,gap_ms=200,silent_panel_ms=1500):
             entry=plan['artwork']['panels'].get(f'{number[0]}:{number[1]}',{})
             selected=next((i for i in entry.get('candidates',[]) if i['id']==entry.get('selected_image_id')),None)
             if selected:
+                if selected['original_name'].startswith('image-ai-') and selected['original_name'].endswith('-TEST_ONLY.png'):
+                    warnings.append('AI生成ではないテスト用コマ画像を含みます。公開用の完成画像品質は未確認です。')
                 try:
                     image=dict(id=selected['id'],path=selected['path'],sha256=hashlib.sha256(service.artwork.image_bytes(selected)).hexdigest())
                     image['story_version_id']=selected['story_version_id']
