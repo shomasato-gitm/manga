@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "provider": "openai-responses",
+  "model": "gpt-5.6-luna",
+  "returned_model_ids": [
+    "gpt-5.6-luna"
+  ],
+  "verified_on": "2026-10-24",
+  "pricing_url": "https://developers.openai.com/api/docs/models/gpt-5.6-luna.md",
+  "model_url": "https://developers.openai.com/api/docs/models/gpt-5.6-luna.md",
+  "terms_url": "https://openai.com/policies/services-agreement/",
+  "input_per_million_usd": "0.50",
+  "output_per_million_usd": "1.80",
+  "max_input_tokens": 922000,
+  "max_output_tokens": 16384,
+  "reasoning_effort": "low",
+  "fx_jpy_per_usd": "160",
+  "tax_multiplier": "1.10",
+  "safety_multiplier": "1.25",
+  "tax_note": "説明用160円/USD・税1.10。通常入力0.20に長文2倍・cache write1.25倍を含む最大0.50、出力1.20に長文1.5倍を含む最大1.80。市場為替・最終請求額ではない。",
+  "availability_reviewed": false,
+  "structured_outputs_reviewed": false,
+  "commercial_use_reviewed": false,
+  "maximum_billing_reviewed": false
+}
