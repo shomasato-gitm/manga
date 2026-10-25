@@ -1,0 +1,38 @@
+{
+  "base_commit": "59da1ac96f06b4edfbf959e32a51d4d97aec5cb0",
+  "branch": "feature/phase9a-api-architecture",
+  "checked_on_jst": "2026-10-26",
+  "paid_api_calls": 0,
+  "cost_jpy": 0,
+  "generation_or_engine_probes": 0,
+  "local_baseline": {
+    "python": "3.11.17",
+    "passed": 974,
+    "elapsed_seconds": 638.29
+  },
+  "local_targeted": {
+    "passed": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "local_full": [
+    {
+      "python": "3.11.17",
+      "exit_code": 0,
+      "passed": null,
+      "detail": "環境切断によりXML集計未取得"
+    },
+    {
+      "python": "3.12.14",
+      "exit_code": 0,
+      "passed": null,
+      "detail": "環境切断によりXML集計未取得"
+    }
+  ],
+  "recovery": "会話記録からGitHubブランチへ復元。既存ファイル変更なし。復元版はCIで再検証。",
+  "ci": {
+    "status": "pending",
+    "expected_total_per_python": 1010
+  }
+}
