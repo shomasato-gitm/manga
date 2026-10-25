@@ -1,0 +1,548 @@
+{
+  "schema_version": 1,
+  "format": "manga-phase9-research-only",
+  "checked_on": "2026-10-26",
+  "sources": [
+    {
+      "id": "google-pricing",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "title": "Gemini Developer API pricing",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "google-api",
+      "url": "https://ai.google.dev/api/generate-content",
+      "title": "GenerateContent",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "google-regions",
+      "url": "https://ai.google.dev/gemini-api/docs/available-regions",
+      "title": "Available regions",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "google-terms",
+      "url": "https://ai.google.dev/gemini-api/terms",
+      "title": "Gemini API terms",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "google-billing",
+      "url": "https://ai.google.dev/gemini-api/docs/billing",
+      "title": "Billing",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "openai-text",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5-mini",
+      "title": "GPT-5 mini model",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "openai-image",
+      "url": "https://developers.openai.com/api/docs/models/gpt-image-1-mini",
+      "title": "GPT Image 1 mini model",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "openai-regions",
+      "url": "https://developers.openai.com/api/docs/supported-countries",
+      "title": "Supported countries",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "openai-terms",
+      "url": "https://openai.com/policies/services-agreement/",
+      "title": "Services Agreement",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "openai-image-guide",
+      "url": "https://developers.openai.com/api/docs/guides/image-generation",
+      "title": "Image generation",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "voicevox-engine",
+      "url": "https://github.com/VOICEVOX/voicevox_engine",
+      "title": "VOICEVOX ENGINE README",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "voicevox-release",
+      "url": "https://github.com/VOICEVOX/voicevox_engine/releases/tag/0.26.0",
+      "title": "ENGINE x64 / arm64 assets",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "voicevox-os",
+      "url": "https://voicevox.hiroshiba.jp/qa/",
+      "title": "VOICEVOX operating requirements",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "voicevox-terms",
+      "url": "https://voicevox.hiroshiba.jp/term/",
+      "title": "Software terms",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "voicevox-library",
+      "url": "https://zunko.jp/con_ongen_kiyaku.html",
+      "title": "Library terms and credits",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "polly-pricing",
+      "url": "https://aws.amazon.com/polly/pricing/",
+      "title": "Polly pricing",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "polly-api",
+      "url": "https://docs.aws.amazon.com/polly/latest/APIReference/API_SynthesizeSpeech.html",
+      "title": "SynthesizeSpeech",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "polly-regions",
+      "url": "https://docs.aws.amazon.com/general/latest/gr/pol.html",
+      "title": "Polly endpoints and quotas",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "polly-faq",
+      "url": "https://aws.amazon.com/polly/faqs/",
+      "title": "Polly FAQ",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-or-github-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "chatgpt-plans",
+      "url": "https://openai.com/chatgpt/pricing/",
+      "title": "ChatGPT plans (redirects to chatgpt.com/pricing)",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-tool",
+      "content_sha256": null
+    },
+    {
+      "id": "chatgpt-terms",
+      "url": "https://openai.com/policies/terms-of-use/",
+      "title": "Consumer Terms of Use",
+      "checked_on": "2026-10-26",
+      "retrieved": true,
+      "retrieval_method": "official-page-via-web-tool",
+      "content_sha256": null
+    }
+  ],
+  "providers": [
+    {
+      "id": "gemini-text",
+      "mode": "cloud",
+      "models": [
+        "gemini-2.5-flash-lite"
+      ],
+      "implementation": "not-implemented",
+      "facts": {
+        "pricing": {
+          "value": {
+            "currency": "USD",
+            "unit": "million tokens",
+            "input": "0.10",
+            "output_including_thinking": "0.40"
+          },
+          "source_ids": [
+            "google-pricing"
+          ]
+        },
+        "free_tier": {
+          "value": "対象モデルの無料枠あり。アカウントの地域・枠・データ利用同意は未確認。",
+          "source_ids": [
+            "google-pricing",
+            "google-terms",
+            "google-regions"
+          ]
+        },
+        "failure_billing": {
+          "value": "400/500はtoken非課金との記載。クォータ消費あり。通信不明時や他の状態は未確定。",
+          "source_ids": [
+            "google-billing"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "openai-text",
+      "mode": "cloud",
+      "models": [
+        "gpt-5-mini",
+        "gpt-5-mini-2025-08-07"
+      ],
+      "implementation": "conditional-live-path",
+      "facts": {
+        "pricing": {
+          "value": {
+            "currency": "USD",
+            "unit": "million tokens",
+            "input": "0.25",
+            "cached_input": "0.025",
+            "output": "2.00"
+          },
+          "source_ids": [
+            "openai-text"
+          ]
+        },
+        "lifecycle": {
+          "value": "公式ページにDeprecated表示。継続提供・後継・権限を再確認するまで新規モデル固定不可。",
+          "source_ids": [
+            "openai-text"
+          ]
+        },
+        "free_tier": {
+          "value": "モデルページのFree tierは非対応。ChatGPT契約をAPI残高として扱わない。",
+          "source_ids": [
+            "openai-text"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "chatgpt-text",
+      "mode": "manual",
+      "models": [],
+      "implementation": "manual",
+      "facts": {
+        "free_tier": {
+          "value": "Freeプランあり。画像作成等に制限。個別契約・実残枠・有料プランの金額は未確認。API利用料と別。",
+          "source_ids": [
+            "chatgpt-plans"
+          ]
+        },
+        "terms": {
+          "value": "消費者向け規約と適用する公開・利用ポリシーの確認が必要。APIのServices Agreementとは別。",
+          "source_ids": [
+            "chatgpt-terms"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "gemini-image",
+      "mode": "cloud",
+      "models": [
+        "gemini-3.1-flash-lite-image"
+      ],
+      "implementation": "hard-disabled",
+      "facts": {
+        "pricing": {
+          "value": {
+            "currency": "USD",
+            "unit": "million tokens",
+            "input": "0.25",
+            "text_thinking_output": "1.50",
+            "image_output": "30.00",
+            "image_1k_output_tokens": 1120,
+            "image_1k_output_only_usd": "0.0336"
+          },
+          "source_ids": [
+            "google-pricing"
+          ]
+        },
+        "free_tier": {
+          "value": "この画像モデルの無料枠はなし。",
+          "source_ids": [
+            "google-pricing"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "openai-image",
+      "mode": "cloud",
+      "models": [
+        "gpt-image-1-mini"
+      ],
+      "implementation": "not-implemented",
+      "facts": {
+        "pricing": {
+          "value": {
+            "currency": "USD",
+            "unit": "million tokens",
+            "text_input": "2.00",
+            "image_input": "2.50",
+            "image_output": "8.00",
+            "low_1024_square_output_only_usd": "0.005"
+          },
+          "source_ids": [
+            "openai-image"
+          ]
+        },
+        "lifecycle": {
+          "value": "公式ページにDeprecated表示。新規採用は提供状態再確認が必要。",
+          "source_ids": [
+            "openai-image"
+          ]
+        },
+        "free_tier": {
+          "value": "モデルページのFree tierは非対応。",
+          "source_ids": [
+            "openai-image"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "chatgpt-image",
+      "mode": "manual",
+      "models": [],
+      "implementation": "manual",
+      "facts": {
+        "free_tier": {
+          "value": "Freeプランあり。画像作成等に制限。個別契約・実残枠・有料プランの金額は未確認。API利用料と別。",
+          "source_ids": [
+            "chatgpt-plans"
+          ]
+        },
+        "terms": {
+          "value": "消費者向け規約と適用する公開・利用ポリシーの確認が必要。APIのServices Agreementとは別。",
+          "source_ids": [
+            "chatgpt-terms"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "voicevox",
+      "mode": "local",
+      "models": [],
+      "implementation": "not-implemented",
+      "facts": {
+        "pricing": {
+          "value": {
+            "api_jpy": "0",
+            "excludes": "機材・電力・任意の別契約"
+          },
+          "source_ids": [
+            "voicevox-terms"
+          ]
+        },
+        "platform": {
+          "value": "ENGINE 0.26.0にmacos-x64配布あり。現行ソフトQ&AはmacOS14以降。12の適合は未確認。",
+          "source_ids": [
+            "voicevox-release",
+            "voicevox-os"
+          ]
+        },
+        "terms": {
+          "value": "ソフトと各音声ライブラリ両方の規約を確認。ずんだもん等はVOICEVOX:人物名のクレジットが必要。他ライブラリへ一般化しない。",
+          "source_ids": [
+            "voicevox-terms",
+            "voicevox-library"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "aws-polly",
+      "mode": "cloud",
+      "models": [
+        "standard",
+        "neural"
+      ],
+      "implementation": "conditional-live-path",
+      "facts": {
+        "pricing": {
+          "value": {
+            "currency": "USD",
+            "unit": "million billable characters",
+            "standard": "4.00",
+            "neural": "16.00",
+            "speech_marks_separately_billed": true
+          },
+          "source_ids": [
+            "polly-pricing"
+          ]
+        },
+        "free_tier": {
+          "value": "2025-07-15以降の新規向け最大$200クレジット、無料プラン6か月・クレジット期限12か月の記載。対象アカウント残枠は未確認。",
+          "source_ids": [
+            "polly-pricing"
+          ]
+        }
+      },
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "manual-voice",
+      "mode": "manual",
+      "models": [],
+      "implementation": "not-implemented",
+      "facts": {},
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    },
+    {
+      "id": "mock",
+      "mode": "mock",
+      "models": [],
+      "implementation": "offline-mock",
+      "facts": {},
+      "execution_requirements": {
+        "availability": "unverified",
+        "capabilities": "unverified",
+        "maximum_charge": "unverified",
+        "terms_for_this_use": "unverified",
+        "single_approval": "unverified",
+        "account_permissions": "unverified"
+      },
+      "maximum_jpy": null,
+      "execution_approved": false
+    }
+  ],
+  "note": "調査記録。実行用料金カードではない。ウェブ閲覧の取得バイト列SHAは算出していない。実送信の承認や既存停止フラグの変更には使わない。"
+}
