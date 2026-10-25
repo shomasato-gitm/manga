@@ -1,0 +1,41 @@
+{
+  "verified_at_jst": "2026-10-25T11:08:40.682973+09:00",
+  "pr13_merged": true,
+  "pr13_merged_at": "2026-10-25T01:36:10Z",
+  "base_main_sha": "f2a97ec914aaa3b9e55640ec4361e33f2fe3ef15",
+  "branch": "feature/phase6a-studio-ux",
+  "final": [
+    {
+      "tests": 959,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "python": "3.11.17",
+      "passed": 959,
+      "seconds": 859.012,
+      "command": "/workspace/.venvs/manga-voice-311/bin/python -m pytest -q --junitxml=work/6a-311.xml"
+    },
+    {
+      "tests": 959,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "python": "3.12.14",
+      "passed": 959,
+      "seconds": 845.942,
+      "command": "work/venv312/bin/python -m pytest -q --junitxml=work/6a-312.xml"
+    }
+  ],
+  "new_ux_cases": 13,
+  "existing_cases": 946,
+  "browser": "Chromium on Linux",
+  "browser_checks": 12,
+  "widths": [
+    1440,
+    1280,
+    390
+  ],
+  "paid_api_calls": 0,
+  "api_cost_jpy": 0,
+  "mac_hardware_verified": false
+}

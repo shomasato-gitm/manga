@@ -239,6 +239,12 @@ def render_page_workspace(project, directory, mode="editor"):
     if mode == "export":
         _settings(store, data, prefix, notice)
     if mode == "editor":
+        with st.expander('ページ一覧から選ぶ',expanded=True):
+            page_numbers=[p['page'] for p in latest['story']['pages']]
+            columns=st.columns(4)
+            for i,n in enumerate(page_numbers):
+                if columns[i%4].button(f'{n}ページを編集',key=f'{prefix}_quick_{n}'):
+                    st.session_state[f'{prefix}_page_jump']=n;st.rerun()
         jump = st.session_state.pop(f"{prefix}_page_jump", None)
         if jump in [p["page"] for p in latest["story"]["pages"]]:
             st.session_state[f"{prefix}_editor_page"] = jump

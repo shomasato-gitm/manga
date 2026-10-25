@@ -35,6 +35,11 @@ def render_voice(project,directory,navigate=None):
             navigate('企画・ストーリー','比較・脚本確定')
     st.caption(f"脚本版：{plan['version']['id']} ｜ 発話：{len(plan['rows'])}件 ｜ 保存音声：{len(data['assets'])}件")
     if not service.paid_enabled():st.info('有料TTSは無効です。確認用トーンを生成でき、API課金は発生しません。')
+    from manga.ux import wizard,details
+    steps=('準備・話者設定','音声生成・試聴','字幕・タイムライン','履歴・復旧')
+    view_key=f'voice_view_{project.id}'
+    def move(value): st.session_state[view_key]=value
+    wizard('音声の手順',steps,st.session_state.get(view_key,steps[0]),move)
     view=st.radio('音声制作の作業',('準備・話者設定','音声生成・試聴','字幕・タイムライン','履歴・復旧'),horizontal=True,key=f'voice_view_{project.id}')
     prefix=f'voice_{project.id}'
     with st.empty().container():

@@ -1062,3 +1062,7 @@ MANGA_CHROMIUM=/path/to/chromium node tests/browser/quality_review.cjs \
 ホームから9工程の不足条件と次の操作を確認できます。「イラスト制作 → 手動画像制作」でプロンプト・基準画像・対象確認票を取得し、生成画像の取り込み・比較・明示採用を進めます。操作・保存・Mac確認・無料モックの制約は [Phase 5-Aガイド](docs/production-phase5a.md) を参照してください。
 
 Phase 5-Bでは、ホームの自動進行パネルから対象・順序を確認し、承認後に無料処理を実行できます。[自動進行とMacの確認手順](docs/production-phase5b.md)を参照してください。
+
+## 制作UI（Phase 6-A）
+
+7つの主要メニューと標準／詳細モードから制作を進められます。旧6工程は互換用の折りたたみに残しています。[画面の変更・操作回数・Mac確認手順](docs/ui-phase6a.md)を参照してください。

@@ -34,6 +34,8 @@ def render_video(project,directory):
         base=f'video_{project.id}_{identifier}';draft_key=base+'_draft'
         plans=st.session_state.setdefault(draft_key,service.plans(timeline))
         epoch=st.session_state.get(base+'_epoch',0);prefix=f'{base}_{epoch}'
+        from manga.ux import wizard
+        wizard('動画の手順',('編集計画','生成・進行状況','出力履歴'),st.session_state.get(base+'_view','編集計画'),lambda value:st.session_state.update({base+'_view':value}))
         view=st.radio('動画制作の作業',('編集計画','生成・進行状況','出力履歴'),horizontal=True,key=base+'_view')
         if view=='編集計画':
             from manga.video_ui_editor import editor

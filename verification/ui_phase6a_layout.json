@@ -1,0 +1,62 @@
+[
+  {
+    "screen": "ホーム",
+    "width": 1440,
+    "scroll": 1440
+  },
+  {
+    "screen": "キャラクター",
+    "width": 1440,
+    "scroll": 1440
+  },
+  {
+    "screen": "画像制作",
+    "width": 1440,
+    "scroll": 1440
+  },
+  {
+    "screen": "音声・動画",
+    "width": 1440,
+    "scroll": 1440
+  },
+  {
+    "screen": "ホーム",
+    "width": 1280,
+    "scroll": 1280
+  },
+  {
+    "screen": "キャラクター",
+    "width": 1280,
+    "scroll": 1280
+  },
+  {
+    "screen": "画像制作",
+    "width": 1280,
+    "scroll": 1280
+  },
+  {
+    "screen": "音声・動画",
+    "width": 1280,
+    "scroll": 1280
+  },
+  {
+    "screen": "ホーム",
+    "width": 390,
+    "scroll": 390
+  },
+  {
+    "screen": "キャラクター",
+    "width": 390,
+    "scroll": 390
+  },
+  {
+    "screen": "画像制作",
+    "width": 390,
+    "scroll": 390
+  },
+  {
+    "screen": "音声・動画",
+    "width": 390,
+    "scroll": 390
+  }
+]
