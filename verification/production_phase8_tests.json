@@ -1,0 +1,42 @@
+{
+  "base_commit": "819c664",
+  "branch": "feature/phase8-production-usability",
+  "paid_api_calls": 0,
+  "cost_jpy": 0,
+  "production_work_phase7": {
+    "completed_by_this_test": false,
+    "pdf_mp4_human_validation": "未完了・未検証のまま"
+  },
+  "results": [
+    {
+      "run": "baseline311",
+      "python": "3.11.17",
+      "tests": 959,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 959,
+      "elapsed_seconds": 571.6
+    },
+    {
+      "run": "final311",
+      "python": "3.11.17",
+      "tests": 974,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 974,
+      "elapsed_seconds": 806.31
+    },
+    {
+      "run": "final312",
+      "python": "3.12.14",
+      "tests": 974,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 974,
+      "elapsed_seconds": 789.27
+    }
+  ]
+}
