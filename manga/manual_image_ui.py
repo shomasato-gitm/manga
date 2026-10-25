@@ -73,7 +73,12 @@ def render_manual_images(project, directory, navigate):
             selected = st.selectbox('画像を作るページ・コマ',keys,key=prefix+'_target')
             page,panel = [int(v) for v in selected.split(':')]
             selection = dict(page=page,panel=panel)
-            st.caption(f'対象：{page}ページ・{panel}コマ / 脚本版：{latest["id"]}')
+            st.subheader(f'{page}ページ・{panel}コマ')
+            source_panel=latest['story']['pages'][page-1]['panels'][panel-1]
+            st.write(source_panel['description'])
+            st.caption('セリフ：'+(source_panel['dialogue'] or 'なし'))
+            from manga.ux import details
+            with details('このコマの脚本版'): st.caption('脚本版：'+latest['id'])
             if st.button('次に画像が必要なコマへ',disabled=len(choices)<2):
                 following = choices[(keys.index(selected)+1)%len(choices)]
                 st.session_state[prefix+'_jump'] = (following['page'],following['panel'])
@@ -86,7 +91,7 @@ def render_manual_images(project, directory, navigate):
             if not people:
                 st.info('先に人物設定とバイブルを登録してください。')
                 return
-            selection['character_id'] = st.selectbox('基準画像を作る人物UUID',list(people),format_func=lambda i:people[i]['name']+' / '+i,key=prefix+'_person')
+            selection['character_id'] = st.selectbox('基準画像を作る人物UUID',list(people),format_func=lambda i:people[i]['name'],key=prefix+'_person')
         identity = digest(dict(kind=kind,selection=selection,version=latest['id']))
         if st.button('この対象のプロンプトと基準画像を準備',type='primary'):
             def build():
@@ -99,11 +104,12 @@ def render_manual_images(project, directory, navigate):
             current(directory,project.id,plan)
             from manga.prompt_ui import prompt_tools
             prompt_tools(plan['prompt'],prefix+'_'+identity+'_prompt','manual_prompt.txt',response_json=False)
-            st.json(receipt(plan),expanded=False)
+            from manga.ux import details
+            with details('対象確認票の詳細・内部ID'): st.json(receipt(plan),expanded=False)
             st.download_button('対象確認票をダウンロード',json.dumps(receipt(plan),ensure_ascii=False,indent=2).encode(),file_name=f"manual_p{plan['page']}_c{plan['panel']}_{plan['story_version_id']}.json",mime='application/json')
             if plan['reference_images']:
                 refs = {r['id']:r for r in plan['reference_images']}
-                identifier = st.selectbox('添付する基準画像',list(refs),format_func=lambda i:refs[i]['character_id']+' / '+i,key=prefix+'_ref')
+                identifier = st.selectbox('添付する基準画像',list(refs),format_func=lambda i:next((c['name'] for c in art['characters'] if c['id']==refs[i]['character_id']),'人物')+' / '+refs[i].get('view','参照画像'),key=prefix+'_ref')
                 if st.checkbox('基準画像を確認・ダウンロード',key=prefix+'_show_ref'):
                     from manga.video_sources import file_bytes
                     ref = refs[identifier]
@@ -116,7 +122,8 @@ def render_manual_images(project, directory, navigate):
             manifest = st.file_uploader('生成時の対象確認票（必須）',type=['json'],key=prefix+'_'+identity+'_receipt')
             st.caption('確認票のページ番号・コマ番号・人物UUID・脚本版を照合します。画像の外見と人物の一致は、取り込み後に人間が比較・確認してください。')
             upload_sha = hashlib.sha256(upload.getvalue()).hexdigest() if upload else None
-            if upload_sha: st.caption('取り込み対象のSHA-256：'+upload_sha)
+            if upload_sha:
+                with details('アップロード画像のSHA'): st.caption('取り込み対象のSHA-256：'+upload_sha)
             if st.button('検証して画像候補を取り込む',disabled=upload is None or manifest is None):
                 def import_image():
                     from manga.automation import Automation

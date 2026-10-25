@@ -34,6 +34,18 @@ def comparison(service,data,prefix,navigate):
     st.write('変更理由（生成元の親版から）：'+new['change_reason'])
     with st.expander('変更されたページ・コマ・描写・セリフの実差分'):
         st.json(compare_stories(old['story'],new['story']),expanded=False)
+    changes=compare_stories(old['story'],new['story'])
+    if changes:
+        st.subheader('変更前・変更後')
+        for change in changes[:30]:
+            st.caption(f"{change['page'] or '全体'}ページ / {change['panel'] or '全体'}コマ / {change['field']}")
+            left,right=st.columns(2)
+            with left:
+                with st.container(border=True): st.markdown('**変更前**'); st.write(change['before'])
+            with right:
+                with st.container(border=True): st.markdown('**変更後**'); st.write(change['after'])
+        if len(changes)>30: st.caption('残りの変更は実差分の詳細から確認できます。')
+    else: st.info('選択した2つの候補に本文の変更はありません。')
     if b:
         with st.expander('問題点・根拠・対象コマ・改善案'):st.json(b['payload'],expanded=False)
     page=st.selectbox('確認する候補ページ',list(range(1,len(new['story']['pages'])+1)),key=prefix+'_'+after+'_page')

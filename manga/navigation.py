@@ -1,11 +1,11 @@
 """制作の6工程と遅延読み込み。旧画面名は内部リンクの互換用に解決する。"""
 MENUS = {
     "企画・ストーリー": ["ホーム・進行状況", "プロジェクト管理", "AI企画・ストーリー", "生成・取り込み", "ページ編集", "ストーリー評価・改善", "比較・脚本確定", "参考作品", "参考作品の分析", "参考作品のAI候補", "ストーリー履歴", "参考作品の提案履歴"],
-    "キャラクター・作風": ["AI一括生成・採用", "AIキャラクター制作・一貫性管理", "手動設定", "基準画像・作風", "制作提案の履歴"],
+    "キャラクター・作風": ["AI一括生成・採用", "AIキャラクター制作・一貫性管理", "手動設定", "基準画像・作風", "制作提案の履歴", "人物一覧"],
     "絵コンテ・作画指示": ["AI一括生成・採用", "コマ一覧・制作へ", "AI評価", "AI改善", "制作提案の履歴"],
-    "イラスト制作": ["コマ制作ワークスペース", "手動画像制作", "AI画像生成・採用", "画像プロンプト一括出力", "画像履歴"],
+    "イラスト制作": ["コマ制作ワークスペース", "手動画像制作", "AI画像生成・採用", "画像プロンプト一括出力", "画像履歴", "ページ・コマ一覧"],
     "漫画ページ編集": [],
-    "完成・書き出し": ["品質チェック・修正管理", "PNG・PDF書き出し", "音声制作・字幕", "動画制作・MP4出力", "API予算管理", "保存先・容量・診断", "GitHub作品同期"],
+    "完成・書き出し": ["品質チェック・修正管理", "PNG・PDF書き出し", "音声制作・字幕", "動画制作・MP4出力", "API予算管理", "保存先・容量・診断", "GitHub作品同期", "音声・動画ガイド", "設定・管理ガイド"],
 }
 
 
@@ -35,6 +35,9 @@ def dispatch(menu, section, project, store, navigate):
     elif menu == "企画・ストーリー" and section == "プロジェクト管理":
         from manga.project_ui import render_project
         render_project(store)
+    elif section in ('人物一覧','ページ・コマ一覧','音声・動画ガイド','設定・管理ガイド') and project is not None:
+        from manga.ux_screens import characters,panels,media,settings
+        {'人物一覧':characters,'ページ・コマ一覧':panels,'音声・動画ガイド':media,'設定・管理ガイド':settings}[section](project,store.directory,navigate)
     elif section == "API予算管理":
         from manga.budget_ui import render_budget
         render_budget(project, store.directory)

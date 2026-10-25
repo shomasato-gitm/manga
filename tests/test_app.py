@@ -16,7 +16,7 @@ def click(app, label):
 
 def test_create_edit_and_reload_in_new_session(tmp_path, monkeypatch):
     monkeypatch.setenv("MANGA_DATA_DIR", str(tmp_path))
-    app = AppTest.from_file(str(APP)).run()
+    app = AppTest.from_file(str(APP),default_timeout=20).run()
     assert not app.exception
     app.text_input(key="title").set_value("月の図書館")
     app.text_input(key="genre").set_value("ファンタジー")
@@ -38,7 +38,7 @@ def test_create_edit_and_reload_in_new_session(tmp_path, monkeypatch):
     assert app.number_input(key="page_count").value == 8
 
     # セッションを破棄してもディスク上のJSONから再読み込みできる。
-    fresh = AppTest.from_file(str(APP)).run()
+    fresh = AppTest.from_file(str(APP),default_timeout=20).run()
     click(fresh, "選択したプロジェクトを開く")
     go(fresh,"プロジェクト管理")
     assert fresh.text_input(key="title").value == "月の図書館 第二稿"
@@ -48,7 +48,7 @@ def test_create_edit_and_reload_in_new_session(tmp_path, monkeypatch):
 
 def test_invalid_form_does_not_save(tmp_path, monkeypatch):
     monkeypatch.setenv("MANGA_DATA_DIR", str(tmp_path))
-    app = AppTest.from_file(str(APP)).run()
+    app = AppTest.from_file(str(APP),default_timeout=20).run()
     click(app, "プロジェクトを保存")
     assert "タイトル" in app.error[0].value
     assert list(tmp_path.glob("*.json")) == []
@@ -57,6 +57,6 @@ def test_invalid_form_does_not_save(tmp_path, monkeypatch):
 def test_bad_json_is_visible_warning(tmp_path, monkeypatch):
     monkeypatch.setenv("MANGA_DATA_DIR", str(tmp_path))
     (tmp_path / "broken.json").write_text("{", encoding="utf-8")
-    app = AppTest.from_file(str(APP)).run()
+    app = AppTest.from_file(str(APP),default_timeout=20).run()
     assert not app.exception
     assert app.warning

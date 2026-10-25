@@ -11,6 +11,7 @@ import streamlit as native
 
 _SCOPE = ContextVar("manga_ui_scope", default="global")
 _FORM = ContextVar("manga_ui_form", default="")
+_EXPANDER = ContextVar("manga_ui_expander", default=0)
 INPUTS = {"text_input", "text_area", "number_input", "checkbox", "selectbox", "multiselect", "radio", "slider", "color_picker"}
 
 
@@ -24,15 +25,19 @@ def scope(name):
 
 
 class UI:
-    def __init__(self, target=native):
+    def __init__(self, target=native, kind=None):
         self.target = target
+        self.kind = kind
 
     def __enter__(self):
+        self._context_token = _EXPANDER.set(_EXPANDER.get()+1) if self.kind == "expander" else None
         self.target.__enter__()
         return self
 
     def __exit__(self, *args):
-        return self.target.__exit__(*args)
+        try: return self.target.__exit__(*args)
+        finally:
+            if self._context_token is not None: _EXPANDER.reset(self._context_token)
 
     def __getattr__(self, name):
         if name == "sidebar":
@@ -44,10 +49,22 @@ class UI:
         if name == "form_submit_button":
             return self.submit
         function = getattr(self.target, name)
+        if name in ('json','caption'):
+            def present(*args,**kwargs):
+                import re
+                standard=native.session_state.get('ux_mode','標準モード')=='標準モード'
+                text=str(args[0]) if args else ''
+                technical=name=='json' or bool(re.search(r'[0-9a-f]{8}-[0-9a-f-]{27,}|SHA-?256|[0-9a-f]{64}',text))
+                warning=any(word in text for word in ('権利','課金','予算','未確認','警告','未確定','要確認'))
+                if standard and technical and not warning and not _EXPANDER.get():
+                    with self.target.expander('内部データ・技術情報（詳細）'):
+                        return function(*args,**kwargs)
+                return function(*args,**kwargs)
+            return present
         if name in INPUTS:
             return lambda *args, **kwargs: self.input(name, function, *args, **kwargs)
         if name in ("container", "empty", "expander"):
-            return lambda *args, **kwargs: UI(function(*args, **kwargs))
+            return lambda *args, **kwargs: UI(function(*args, **kwargs), kind=name)
         if name in ("columns", "tabs"):
             return lambda *args, **kwargs: [UI(item) for item in function(*args, **kwargs)]
         return function
@@ -71,6 +88,8 @@ class UI:
         key=kwargs.pop("key",f"button_{_SCOPE.get()}_{label}")
         kwargs["key"]=f"{key}_epoch_{native.session_state.get('_action_epoch',0)}"
         kwargs["disabled"]=kwargs.get("disabled",False) or native.session_state.get("_operation_busy",False)
+        if 'help' not in kwargs and any(v in label for v in ('保存','生成','採用','確認','実行','復元','準備')):
+            kwargs['help']='先に確認項目を承認してください。素材や版の不足理由は、この画面の案内・警告で確認できます。' if any(v in label for v in ('採用','確認','実行','生成')) else '必要な入力・変更内容を確認してください。未保存の入力は保持されます。'
         return self.target.button(label,**kwargs)
 
     def input(self, name, function, *args, **kwargs):

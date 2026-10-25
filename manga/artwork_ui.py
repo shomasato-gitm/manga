@@ -90,7 +90,11 @@ def _characters(store, data, prefix, notice_key, references=False):
     if not references:
         with st.form(f"{key}_character_form"):
             values = {}
+            current_group=None
             for field, label in CHARACTER_FIELDS.items():
+                group='プロフィール' if field in ('name','role','age','gender','personality','relationship') else '衣装・持ち物' if field in ('clothing','accessories') else '外見・特徴'
+                if group!=current_group:
+                    st.markdown('**'+group+'**'); current_group=group
                 value = character.get(field, "") if character else ""
                 if field in ("clothing", "personality", "features"):
                     values[field] = st.text_area(label, value=value, max_chars=2000, key=f"{key}_{field}")

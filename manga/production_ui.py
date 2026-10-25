@@ -28,7 +28,6 @@ def render_dashboard(project, directory, navigate):
                 st.session_state['video_'+project.id+'_'+identifier+'_view'] = '出力履歴'
         navigate(item['menu'],item['section'])
     st.caption('保存済みデータから9工程を判定します。画像API送信は無効・音声は無料モック・動画は既存FFmpegを利用します。')
-    st.progress(sum(r['state'] == '完了' for r in rows)/len(rows), text=f"完了工程 {sum(r['state'] == '完了' for r in rows)}/{len(rows)}")
     st.subheader('次にやること')
     if result['recoveries']:
         recovery = result['recoveries'][0]
@@ -45,7 +44,27 @@ def render_dashboard(project, directory, navigate):
             navigate(step['menu'],step['section'])
     else:
         st.success('全9工程の成果物と最終確認がそろっています。')
-    st.dataframe([{'工程':r['label'],'状態':r['state'],'完了数 / 全体数':f"{r['done']} / {r['total']}",'次に必要な操作':r['action'],'不足データ・理由':' / '.join(r['missing'])} for r in rows],hide_index=True,use_container_width=True)
+    if st.button('制作を再開する',type='primary'):
+        if result['recoveries']: open_recovery(result['recoveries'][0])
+        elif result['next_step']: navigate(result['next_step']['menu'],result['next_step']['section'])
+        else: navigate('完成・書き出し','品質チェック・修正管理')
+    st.progress(sum(r['state'] == '完了' for r in rows)/len(rows), text=f"完了工程 {sum(r['state'] == '完了' for r in rows)}/{len(rows)}")
+    unfinished_count=sum(not p['selected'] or p['stale'] or not p['prompt_ready'] for p in result['panels'])
+    columns=st.columns(3)
+    columns[0].metric('制作ページ',len({p['page'] for p in result['panels']}))
+    columns[1].metric('未完成のコマ',unfinished_count)
+    columns[2].metric('要再確認の工程',len(result['updated']))
+    from manga.ux import progress_card
+    st.subheader('工程ごとの進み具合')
+    for offset in range(0,len(rows),3):
+        for column,row in zip(st.columns(3),rows[offset:offset+3]):
+            with column:
+                with st.container(border=True):
+                    progress_card(row['label'],row['done'],row['total'],row['state'])
+                    if row['missing']: st.caption(row['missing'][0])
+                    if st.button('この工程を開く',key=prefix+'_card_'+row['key']): navigate(row['menu'],row['section'])
+    with st.expander('工程ごとの詳しい条件'):
+        st.dataframe([{'工程':r['label'],'状態':r['state'],'完了数 / 全体数':f"{r['done']} / {r['total']}",'次に必要な操作':r['action'],'不足データ・理由':' / '.join(r['missing'])} for r in rows],hide_index=True,use_container_width=True)
     for row in rows:
         with st.expander(row['label']+' / '+row['state']+f" / {row['done']}/{row['total']}"):
             st.write(row['action'])
