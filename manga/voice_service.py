@@ -12,13 +12,14 @@ from manga.voice_storage import VoiceStore
 
 
 class VoiceService:
-    def __init__(self,directory,project_id,*,polly=None):
+    def __init__(self,directory,project_id,*,polly=None,voicevox=None):
         self.directory=directory;self.project_id=project_id
         self.store=VoiceStore(directory,project_id)
         self.stories=StoryStore(directory,project_id)
         self.artwork=ArtworkStore(directory,project_id)
         self.editorial=EditorialStore(directory,project_id)
         self.polly=polly
+        self.voicevox=voicevox
 
     def source(self):
         history=self.stories.load_history()
@@ -42,12 +43,17 @@ class VoiceService:
             if not settings:
                 row['warnings'].append('この話者の声設定を保存してください。')
                 row.update(needs_review=True,settings=None,cache_key=None,asset=None,status='要確認');continue
-            settings=dict(settings,emotion=row.get('emotion',settings['emotion']))
+            settings=dict(settings,emotion=row.get('emotion',settings['emotion']) if settings['provider'] in ('mock','aws-polly') else 'normal')
             if row['needs_review']:
                 row.update(settings=settings,cache_key=None,asset=None,status='要確認');continue
             row['settings']=settings;row['cache_key']=cache_key(row,settings)
             chosen=assets.get(data['assignments'].get(row['id']))
-            if not chosen or chosen['cache_key']!=row['cache_key']:
+            if settings['provider'] in ('voicevox','manual-wav'):
+                from manga.voice_local import matches
+                review=data['audio_reviews'].get(chosen['id']) if chosen else None
+                if not chosen or not matches(chosen,row,latest['id']) or not review or review['sha256']!=chosen['info']['sha256']:
+                    chosen=None
+            elif not chosen or chosen['cache_key']!=row['cache_key']:
                 chosen=next((a for a in reversed(data['assets']) if a['cache_key']==row['cache_key']),None)
             row['asset']=chosen
             pending=next((j for j in reversed(data['jobs']) if j['cache_key']==row['cache_key'] and j['state'] not in ('ready','not_sent','closed')),None)
@@ -55,6 +61,8 @@ class VoiceService:
                 path=self.store.safe_path(chosen['path'])
                 row['status']='再利用可' if path.is_file() else '音声欠損・要確認'
             else:row['status']='請求・保存の確認待ち' if pending else '未生成'
+            if not chosen and settings['provider'] in ('voicevox','manual-wav'):
+                row['status']='処理中・保存の復旧待ち' if pending else '候補あり・試聴／正式割り当て待ち' if any(matches(a,row,latest['id']) for a in data['assets'] if a['settings']['provider'] in ('voicevox','manual-wav')) else '音声の準備待ち'
             row['needs_review']=bool(row['warnings'])
         return dict(version=latest,artwork=artwork,confirmed=confirmed,rows=rows,
                     token=digest(dict(version_id=latest['id'],story=latest['story'],speakers=self.speakers(artwork),settings_revision=data['settings_revision'])))
@@ -96,11 +104,16 @@ class VoiceService:
 
     def review_audio(self,asset_id,*,expected_revision):
         from manga.models import now_iso
-        with self.store.locked():
+        with self.store.locked(sources=True):
             data=self.store.checked(expected_revision)
             asset=next((a for a in data['assets'] if a['id']==asset_id),None)
             if not asset:raise ValueError('確認する音声がありません。')
             self.audio_bytes(asset)
+            if asset['settings']['provider'] in ('voicevox','manual-wav'):
+                from manga.voice_local import matches
+                plan=self.plan(data)
+                if not any(matches(asset,r,plan['version']['id']) for r in plan['rows']):raise ValueError('脚本・話者・声設定が変更されています。現在の発話で候補を用意してください。')
+                if not asset['provenance']['rights']['confirmed']:raise ValueError('ソフトと音声固有の利用条件が未確認です。確認して新しい候補として取り込んでください。')
             data['audio_reviews'][asset_id]=dict(sha256=asset['info']['sha256'],confirmed_at=now_iso())
             self.store.save(data,'audio_review',asset_id=asset_id)
 
@@ -110,6 +123,11 @@ class VoiceService:
             row=next((r for r in plan['rows'] if r['id']==utterance_id),None)
             asset=next((a for a in data['assets'] if a['id']==asset_id),None)
             if not row or not asset or row['cache_key']!=asset['cache_key']:raise ValueError('現在の発話・声設定と音声候補が一致しません。')
+            if asset['settings']['provider'] in ('voicevox','manual-wav'):
+                from manga.voice_local import matches
+                review=data['audio_reviews'].get(asset_id)
+                if not matches(asset,row,plan['version']['id']) or not review or review['sha256']!=asset['info']['sha256']:
+                    raise ValueError('現在の対象と一致する候補を試聴・確認してから、別操作で正式割り当てしてください。')
             self.audio_bytes(asset)
             before=data['assignments'].get(utterance_id);data['assignments'][utterance_id]=asset_id
             self.store.save(data,'audio_selection',before=before,utterance_id=utterance_id,asset_id=asset_id)
@@ -119,7 +137,26 @@ class VoiceService:
         info=inspect_wav(content)
         if any(info[key]!=asset['info'][key] for key in ('sha256','frames','sample_rate','channels','duration_ms')):
             raise ValueError('保存済み音声の内容が変わっています。元ファイルを削除せず、明示的な再生成を確認してください。')
+        if asset['settings']['provider'] in ('voicevox','manual-wav'):
+            from manga.voice_local import original_bytes
+            original_bytes(self,asset)
         return content
+
+    def voice_target(self,utterance_id):
+        from manga.voice_local import target_for
+        return target_for(self,utterance_id)
+
+    def local_candidates(self,utterance_id):
+        from manga.voice_local import candidates
+        return candidates(self,utterance_id)
+
+    def import_wav(self,utterance_id,content,*,target,rights,expected_revision):
+        from manga.voice_local import prepare
+        return prepare(self,utterance_id,content=content,target=target,rights=rights,expected_revision=expected_revision)
+
+    def preview_voicevox(self,utterance_id,*,target,rights,expected_revision,consent=False,regenerate=False):
+        from manga.voice_local import prepare
+        return prepare(self,utterance_id,target=target,rights=rights,expected_revision=expected_revision,consent=consent,regenerate=regenerate)
 
     def estimate(self,ids,*,regenerate=False):
         from decimal import Decimal
@@ -132,6 +169,8 @@ class VoiceService:
         total=Decimal('0');calls=0;seen=set()
         for row in selected:
             if row['needs_review']:raise ValueError('話者・読み・声設定の要確認項目を解決してください。')
+            if row['settings']['provider'] in ('voicevox','manual-wav'):
+                raise ValueError('VOICEVOX・WAV取り込みは1発話ずつ「日本語音声の準備」で操作してください。自動処理は実行しません。')
             if row['asset'] and not regenerate:continue
             if not regenerate and row['cache_key'] in seen:continue
             seen.add(row['cache_key'])

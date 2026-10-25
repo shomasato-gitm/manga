@@ -7,9 +7,43 @@ import shutil
 import struct
 import subprocess
 import wave
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 MAX_WAV_BYTES = 25*1024*1024
 MAX_SECONDS = 600
+
+
+def inspect_source_wav(content):
+    """受入は自己完結したPCM WAVのみ。FFmpegへ任意URL/プレイリストを渡さない。"""
+    if not isinstance(content,bytes) or not 44<=len(content)<=MAX_WAV_BYTES or content[:4]!=b'RIFF' or content[8:12]!=b'WAVE':
+        raise ValueError('PCM WAVファイル（25MiB以下）を選択してください。')
+    try:
+        with wave.open(io.BytesIO(content),'rb') as wav:
+            n,rate,ch,width=wav.getnframes(),wav.getframerate(),wav.getnchannels(),wav.getsampwidth()
+            if wav.getcomptype()!='NONE' or ch not in (1,2) or width not in (1,2,3,4) or not 8000<=rate<=96000 or not 0<n<=rate*MAX_SECONDS:
+                raise ValueError('PCM WAVは1〜2チャンネル、8〜96kHz、10分以下にしてください。')
+            if len(wav.readframes(n))!=n*ch*width:raise ValueError('元WAVが欠損しています。')
+    except (wave.Error,EOFError):raise ValueError('未対応または壊れたWAVです。PCM WAVとして書き出してください。') from None
+    return dict(sha256=hashlib.sha256(content).hexdigest(),frames=n,sample_rate=rate,channels=ch,size=len(content))
+
+
+def normalize_wav(content):
+    inspect_source_wav(content)
+    executable=shutil.which('ffmpeg')
+    if not executable:raise ValueError('WAV変換にFFmpegが必要です。MacへFFmpegを導入して再開してください。')
+    with TemporaryDirectory(prefix='manga-voice-') as folder:
+        source=Path(folder)/'source.wav';target=Path(folder)/'normalized.wav'
+        source.write_bytes(content)
+        try:
+            subprocess.run([executable,'-nostdin','-v','error','-n','-protocol_whitelist','file','-f','wav','-i',str(source),
+                            '-map','0:a:0','-map_metadata','-1','-vn','-ac','1','-ar','16000','-c:a','pcm_s16le',
+                            '-threads','1','-f','wav',str(target)],capture_output=True,timeout=60,check=True)
+            if target.stat().st_size>MAX_WAV_BYTES:raise ValueError('変換後WAVが容量上限を超えました。')
+            result=target.read_bytes()
+        except (OSError,subprocess.SubprocessError):raise ValueError('WAVを変換できません。元ファイルを保持して停止しました。形式とFFmpegを確認してください。') from None
+        inspect_wav(result)
+        return result
 
 
 def pcm_wav(pcm,sample_rate=16000):

@@ -33,7 +33,7 @@ def voice_settings(raw):
     provider = raw.get('provider','mock')
     engine = raw.get('engine','mock')
     voice = raw.get('voice_id','mock-1')
-    if provider not in ('mock','aws-polly') or not isinstance(voice,str) or not voice or len(voice)>80:
+    if provider not in ('mock','aws-polly','voicevox','manual-wav') or not isinstance(voice,str) or not voice or len(voice)>80:
         raise ValueError('音声プロバイダー・声IDが不正です。')
     if provider=='mock' and (engine!='mock' or voice not in MOCK_VOICES):
         raise ValueError('確認用モックの声を選択してください。')
@@ -46,7 +46,25 @@ def voice_settings(raw):
     emotion = raw.get('emotion','normal')
     if emotion not in EMOTIONS:
         raise ValueError('感情を選択してください。')
-    return dict(provider=provider,engine=engine,voice_id=voice,speed=float(speed),emotion=emotion)
+    result = dict(provider=provider,engine=engine,voice_id=voice,speed=float(speed),emotion=emotion)
+    if provider=='manual-wav':
+        if engine!='manual' or voice!='manual' or speed!=1 or emotion!='normal':
+            raise ValueError('取り込みWAVは元の読み・速度を使います。声設定は手動取り込みを選択してください。')
+    if provider=='voicevox':
+        from manga.models import validate_id
+        from manga.voicevox import ORIGINS
+        validate_id(voice)
+        if engine!='local' or raw.get('origin') not in ORIGINS or emotion!='normal':
+            raise ValueError('VOICEVOXの許可済み接続先・通常感情を選択してください。演技はスタイルで指定します。')
+        style=raw.get('style_id')
+        if type(style) is not int or not 0<=style<=2**31-1:raise ValueError('VOICEVOXスタイルIDが不正です。')
+        result.update(origin=raw['origin'],style_id=style)
+        for key,default,low,high in (('pitch',0,-.15,.15),('intonation',1,0,2),('volume',1,0,2)):
+            value=raw.get(key,default)
+            if type(value) not in (int,float) or not math.isfinite(value) or not low<=value<=high:
+                raise ValueError('VOICEVOXの音高・抑揚・音量が設定範囲外です。')
+            result[key]=float(value)
+    return result
 
 
 def cache_key(utterance,settings):

@@ -43,11 +43,14 @@ def validate_voice(data,project_id):
         if job['request_id']!=job['id'] or job['state'] not in STATES:raise ValueError('音声ジョブの状態が不正です。')
         validate_id(job['asset_id']);validate_id(job['story_version_id'])
         if voice_settings(job['settings'])!=job['settings']:raise ValueError('音声ジョブの声設定が不正です。')
-        if job['settings']['provider']!='mock':
+        if job['settings']['provider']=='aws-polly':
             from manga.voice_pricing import price_quote
             price_quote(job['pricing'],job['settings']['engine'])
         from manga.voice_models import cache_key
         if job['cache_key']!=cache_key(job['utterance'],job['settings']):raise ValueError('音声ジョブの生成元とハッシュが一致しません。')
+        if job['settings']['provider'] in ('voicevox','manual-wav'):
+            from manga.voice_local import validate_local_job
+            validate_local_job(job,project_id)
     assets={a['id']:a for a in data['assets']}
     for asset in assets.values():
         if asset['path']!=f"voice/audio/{asset['id']}.wav" or asset['job_id'] not in jobs:
@@ -57,6 +60,12 @@ def validate_voice(data,project_id):
         source=jobs[asset['job_id']]
         if asset['id']!=source['asset_id'] or asset['cache_key']!=source['cache_key'] or asset['settings']!=source['settings'] or asset['speaker_id']!=source['utterance']['speaker_id']:
             raise ValueError('音声素材と生成ジョブの人物・設定が一致しません。')
+        if source['settings']['provider'] in ('voicevox','manual-wav'):
+            if asset.get('provenance')!=source['provenance'] or asset['story_version_id']!=source['story_version_id']:
+                raise ValueError('取り込み音声の出典・脚本版が一致しません。')
+            rights=source['provenance']['rights']
+            if asset.get('mock') is not False or asset.get('rights')!=dict(rights,status='user-attested' if rights['confirmed'] else 'unverified'):
+                raise ValueError('音声候補の利用条件が生成元と一致しません。')
     for identifier,asset_id in data['assignments'].items():
         validate_id(identifier)
         if asset_id not in assets:raise ValueError('採用する音声が履歴にありません。')
