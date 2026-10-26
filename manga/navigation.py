@@ -40,7 +40,7 @@ def dispatch(menu, section, project, store, navigate):
         {'人物一覧':characters,'ページ・コマ一覧':panels,'音声・動画ガイド':media,'設定・管理ガイド':settings}[section](project,store.directory,navigate)
     elif section == "API予算管理":
         from manga.budget_ui import render_budget
-        render_budget(project, store.directory)
+        render_budget(project, store.directory, navigate)
     elif section == "音声制作・字幕":
         from manga.voice_ui import render_voice
         render_voice(project,store.directory,navigate)

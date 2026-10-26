@@ -61,9 +61,27 @@ def initial_diagnostic(service,data,raw,prefix):
         identifier=st.selectbox('請求・保存を照合する診断',list(reversed(labels)),format_func=labels.get,key=prefix+'_diagnostic_recover')
         latest=next(h for h in history if h['diagnosis_id']==identifier);st.write(LABELS[latest['state']])
         if latest['reason']:st.warning(MESSAGES[latest['reason']])
+        _stages(service,identifier)
         if latest['state']=='success':
             st.success('この診断ではモデルから有効な応答がありました。無料枠の適用・残枠・今後の権限は別に本人確認してください。')
             st.info('モデル利用条件を確認できた場合のみ、上のJSONのaccount_access_reviewedを本人の判断でtrueにし、従来の確認チェックから保存してください。診断はこの項目を変更しません。')
         else:st.warning('HTTPエラーや通信失敗でも予算予約を自動解放しません。予算画面で実際の請求を照合してください。')
         if st.button('診断の保存・請求を照合する（再送なし）',key=prefix+'_diagnostic_recover_button'):
             action(lambda:recover(service,identifier),'保存・請求の照合結果を反映しました。通信は再送していません。')
+
+
+def _stages(service,identifier):
+    from manga.gemini_diagnostic_trace import history,STAGES
+    st.write('照合用リクエストID：'+identifier)
+    records=history(service,identifier)
+    if not records:
+        st.info('段階別ログがない旧記録です。既存の分類だけでは通信失敗の正確な発生箇所を特定できません。未送信・無課金とは判断しません。')
+        return
+    st.markdown('**診断の段階別記録（再送なし）**')
+    states={'started':'開始（完了は未記録）','completed':'完了記録あり','failed':'失敗記録あり'}
+    st.dataframe([{'段階':STAGES[r['stage']],'状態':states[r['outcome']],'日時':r['created_at'],
+        'HTTPステータス':str(r['http_status']) if r['http_status'] is not None else '記録なし',
+        '分類':MESSAGES[r['reason']] if r['reason'] else ''} for r in records],hide_index=True)
+    recorded={r['stage'] for r in records}
+    st.caption('未記録の段階：'+('、'.join(label for stage,label in STAGES.items() if stage not in recorded) or 'なし'))
+    st.caption('送信処理の開始はGoogleへの到達証明ではありません。未記録は未実行の証明ではありません。請求額は別途照合してください。本文・APIキー・ヘッダー・生の例外は記録しません。')
