@@ -48,11 +48,14 @@ def evidence(card):return quote(card).execution_evidence(card['provider'],card['
 
 
 def charge(card,response):
-    if response.get('model') not in card['returned_model_ids']:raise ValueError('応答モデルを確認できません。')
+    return charge_from_usage(quote(card),card['returned_model_ids'],response)
+
+
+def charge_from_usage(q,returned_model_ids,response):
+    if response.get('model') not in returned_model_ids:raise ValueError('応答モデルを確認できません。')
     usage=response.get('usage')
     if not isinstance(usage,dict):raise ValueError('請求対象tokenが不明です。')
     inp,out=usage.get('input_tokens'),usage.get('output_tokens')
     if type(inp) is not int or type(out) is not int or not 0<inp<=10000000 or not 0<=out<=10000000:raise ValueError('請求対象tokenが不正です。')
-    q=quote(card)
     # Conservative JPY equivalent, not an invoice or discounted cache price.
     return PriceQuote(q.rates,q.fx_jpy_per_usd,'1',q.tax_multiplier).estimate_jpy(max_input_tokens=inp,max_output_tokens=out)

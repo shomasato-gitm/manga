@@ -25,6 +25,8 @@ def claim_provider_call(provider,model,*,payload_sha256=None):
         value=_execution.get()
         if value is None or value['provider']!=provider or value['model']!=model:
             raise ReservationConflict('予算の実行権と送信先が一致しません。')
+        if value.get('payload_constraint') is not None and value['payload_constraint']!=payload_sha256:
+            raise ReservationConflict('固定の承認済み本文以外には、この予算実行権を使用できません。')
         if value.get('provider_call_claimed'):
             raise ReservationConflict('この実行権では既に1リクエストを送信しています。再送しません。')
         value['provider_call_claimed']=True
@@ -95,7 +97,8 @@ class BudgetedExecutor:
             raise ReservationConflict("同じリクエストIDの再送はできません。")
         claim = self.ledger.claim_execution(request_id,now=now)
         try:
-            token=_execution.set(dict(project_id=project_id,request_id=request_id,provider=provider,model=model,limits=dict(usage_limits)))
+            token=_execution.set(dict(project_id=project_id,request_id=request_id,provider=provider,model=model,limits=dict(usage_limits),
+                                     payload_constraint=getattr(price_quote,'payload_constraint',None)))
             try:
                 response = operation()
             finally:
