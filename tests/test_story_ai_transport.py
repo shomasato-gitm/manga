@@ -14,14 +14,14 @@ class Response:
     def read1(self,size):return self.data.read(size)
 
 
-def test_transport_uses_fixed_https_no_redirect_no_automatic_retry(monkeypatch):
+def test_transport_uses_fixed_https_no_redirect_no_automatic_retry(monkeypatch,tmp_path):
     import manga.story_ai_provider as provider
     captured=[]
     class Opener:
         def open(self,request,timeout):
             captured.append((request,timeout));return Response(b'{"status":"completed"}')
     monkeypatch.setattr(provider,'build_opener',lambda handler:Opener())
-    assert transport({'input':'日本語'},'test-secret')['status']=='completed'
+    assert send_guarded(tmp_path,{'model':'test-story-model','input':'日本語'})['status']=='completed'
     request,timeout=captured[0]
     assert request.full_url=='https://api.openai.com/v1/responses' and request.get_method()=='POST' and timeout==30
     assert b'test-secret' not in request.data and request.headers['Authorization']=='Bearer test-secret'
@@ -29,7 +29,7 @@ def test_transport_uses_fixed_https_no_redirect_no_automatic_retry(monkeypatch):
 
 
 @pytest.mark.parametrize('mode',['timeout','oversize','invalid_json','deadline'])
-def test_transport_errors_are_sanitized_and_bounded(monkeypatch,mode):
+def test_transport_errors_are_sanitized_and_bounded(monkeypatch,mode,tmp_path):
     import manga.story_ai_provider as provider
     calls=[]
     class Opener:
@@ -40,7 +40,7 @@ def test_transport_errors_are_sanitized_and_bounded(monkeypatch,mode):
     monkeypatch.setattr(provider,'build_opener',lambda handler:Opener())
     if mode=='deadline':
         values=iter([0,121]);monkeypatch.setattr(provider.time,'monotonic',lambda:next(values))
-    with pytest.raises(StoryProviderError) as error:transport({},'test-secret')
+    with pytest.raises(StoryProviderError) as error:send_guarded(tmp_path,{'model':'test-story-model'})
     assert 'secret' not in str(error.value) and len(calls)==1
 
 
@@ -58,3 +58,13 @@ def test_size_check_happens_before_reservation(ai_workspace,monkeypatch):
     created=job(service,'concepts','openai-responses');result=service.run_job(created['id'])
     assert result['stop_reason']=='input_invalid' and not calls
     request=service.store.load()['requests'][0];assert open_budget(service.directory).request_status(request['id']) is None
+
+
+def send_guarded(tmp_path,body):
+    from text_guard_fakes import guarded
+    from manga.budget.guard import claim_provider_call
+    from manga.voice_models import digest
+    def operation():
+        claim_provider_call('openai-responses','test-story-model',payload_sha256=digest(body))
+        return transport(body,'test-secret')
+    return guarded(tmp_path,operation)

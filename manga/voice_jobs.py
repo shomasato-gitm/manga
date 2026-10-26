@@ -62,6 +62,7 @@ def generate(service,ids,*,regenerate=False,approval=None,progress=None):
     if estimate['paid_calls']:
         if not service.paid_enabled():raise ValueError('有料TTSは既定で無効です。別途の明示承認前に実行しません。')
         if approval!=estimate['approval_key']:raise ValueError('現在の対象・上限見積に対する明示承認が必要です。')
+        if estimate['paid_calls']!=1:raise ValueError('有料音声は1発話ずつ見積・承認して実行してください。一括送信は行いません。')
         if not plan['confirmed']:raise ValueError('現在の脚本版を人間が確定してから有料音声を生成してください。')
         if service.polly is None or service.polly.keys is None:credentials()
         ledger=open_budget(service.directory)
@@ -72,6 +73,9 @@ def generate(service,ids,*,regenerate=False,approval=None,progress=None):
         if not preview['possible']:raise ValueError('作品・月間・プロバイダー予算、または請求確認待ちにより生成できません。')
     results=[]
     with service.store.locked(generation=True):
+        if estimate['paid_calls']:
+            current=service.estimate(ids,regenerate=regenerate)
+            if current['paid_calls'] and current['approval_key']!=approval:raise ValueError('この承認は使用済み、または音声履歴が更新されています。1発話の見積を取り直してください。')
         for index,identifier in enumerate(ids):
             with service.store.locked(sources=True):
                 data=service.store.load();current=service.plan(data)

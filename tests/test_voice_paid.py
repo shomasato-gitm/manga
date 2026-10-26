@@ -18,7 +18,7 @@ def approve(service,ids,regenerate=False):
 
 
 def test_paid_requires_feature_flag_and_specific_consent(voice_workspace,monkeypatch):
-    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)
+    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)[:1]
     monkeypatch.delenv('MANGA_ENABLE_PAID_TTS')
     with pytest.raises(ValueError,match='無効'):service.generate(ids,approval=approve(service,ids))
     monkeypatch.setenv('MANGA_ENABLE_PAID_TTS','1')
@@ -28,7 +28,7 @@ def test_paid_requires_feature_flag_and_specific_consent(voice_workspace,monkeyp
 
 def test_fake_api_is_guarded_and_cached_without_more_ledger_rows(voice_workspace,monkeypatch):
     service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)
-    result=service.generate(ids,approval=approve(service,ids))
+    result=[service.generate([i],approval=approve(service,[i]))[0] for i in ids]
     assert len(calls)==5 and len(result)==5
     ledger=open_budget(service.directory)
     summary=ledger.summary(service.project_id)
@@ -43,7 +43,7 @@ def test_fake_api_is_guarded_and_cached_without_more_ledger_rows(voice_workspace
 
 
 def test_timeout_retains_quote_and_never_retries(voice_workspace,monkeypatch):
-    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch,fail=True);ids=all_ids(service)
+    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch,fail=True);ids=all_ids(service)[:1]
     with pytest.raises(ValueError) as error:service.generate(ids,approval=approve(service,ids))
     assert 'dummy-sensitive' not in str(error.value)
     ledger=open_budget(service.directory);summary=ledger.summary(service.project_id)
@@ -86,7 +86,7 @@ def test_paid_metadata_failure_resumes_same_artifact_without_resending(voice_wor
 
 def test_500_cap_stops_before_a_job_or_transport(voice_workspace,monkeypatch):
     from uuid import uuid4
-    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)
+    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)[:1]
     ledger=open_budget(service.directory)
     ledger.reserve(project_id=service.project_id,request_id=str(uuid4()),provider='other',model='fake',kind='test',max_jpy='500')
     with pytest.raises(ValueError,match='予算'):service.generate(ids,approval=approve(service,ids))
@@ -96,13 +96,13 @@ def test_500_cap_stops_before_a_job_or_transport(voice_workspace,monkeypatch):
 def test_unconfirmed_current_story_cannot_use_paid_tts(voice_workspace,monkeypatch):
     service,cast,script,version=voice_workspace;calls=paid_setup(service,monkeypatch)
     service.stories.save(script,expected_version_id=version['id'])
-    ids=all_ids(service)
+    ids=all_ids(service)[:1]
     with pytest.raises(ValueError,match='確定'):service.generate(ids,approval=approve(service,ids))
     assert calls==[]
 
 
 def test_stale_approval_after_reading_change(voice_workspace,monkeypatch):
-    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)
+    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)[:1]
     approval=approve(service,ids);plan=service.plan();row=plan['rows'][0]
     service.save_edit(row['id'],row['speaker_id'],row['spoken_text']+'。','sad',expected_revision=service.store.load()['revision'],source_token=plan['token'])
     with pytest.raises(ValueError,match='承認'):service.generate(ids,approval=approval)
@@ -115,9 +115,10 @@ def test_identical_spoken_lines_are_quoted_and_sent_once(voice_workspace,monkeyp
     changed['pages'][0]['panels'][2]['dialogue']='悠真：「あのさ、美咲。」'
     current=service.stories.save(changed,expected_version_id=version['id'])
     service.editorial.finalize(expected_version_id=current['id'],expected_revision=1)
-    calls=paid_setup(service,monkeypatch);ids=all_ids(service)
+    calls=paid_setup(service,monkeypatch);ids=all_ids(service)[:1]
+    ids=all_ids(service)
     assert service.estimate(ids)['paid_calls']==4
-    result=service.generate(ids,approval=approve(service,ids))
+    result=[service.generate([i],approval=approve(service,[i]))[0] for i in ids]
     assert len(calls)==4 and sum(r['cache_hit'] for r in result)==1
 
 
@@ -151,10 +152,11 @@ def test_signing_is_deterministic_and_secrets_never_enter_url_or_body():
     with pytest.raises(ValueError):signed_request(b'{}','evil.example/',keys)
 
 
-def test_provider_error_is_sanitized():
+def test_provider_error_is_sanitized(tmp_path):
+    from text_guard_fakes import guarded
     def fail(request):raise RuntimeError('dummy-secret-value')
     adapter=PollyVoice(send=fail,keys=dict(AWS_ACCESS_KEY_ID='test',AWS_SECRET_ACCESS_KEY='dummy-secret-value'))
-    with pytest.raises(VoiceProviderError) as error:adapter.synthesize('<speak>確認</speak>',dict(engine='neural',voice_id='Takumi'))
+    with pytest.raises(VoiceProviderError) as error:guarded(tmp_path,lambda:adapter.synthesize('<speak>確認</speak>',dict(engine='neural',voice_id='Takumi')),provider='aws-polly')
     assert 'dummy-secret' not in str(error.value)
 
 
@@ -176,12 +178,12 @@ def test_confirmed_no_charge_allows_explicit_new_job_not_auto_retry(voice_worksp
 
 def test_concurrent_paid_jobs_use_one_cache_and_single_charges(voice_workspace,monkeypatch):
     from concurrent.futures import ThreadPoolExecutor
-    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)
+    service,*_=voice_workspace;calls=paid_setup(service,monkeypatch);ids=all_ids(service)[:1]
     approval=approve(service,ids)
     with ThreadPoolExecutor(max_workers=2) as pool:
         results=list(pool.map(lambda _:service.generate(ids,approval=approval),range(2)))
-    assert len(calls)==5 and len(service.store.load()['jobs'])==5
-    assert sum(x['cache_hit'] for batch in results for x in batch)==5
+    assert len(calls)==1 and len(service.store.load()['jobs'])==1
+    assert sum(x['cache_hit'] for batch in results for x in batch)==1
 
 
 def test_changed_ledger_location_cannot_reset_project_budget(voice_workspace,monkeypatch,tmp_path):

@@ -23,9 +23,10 @@ def adapter_with(monkeypatch,response):
     return voice_polly.PollyVoice(keys=dict(AWS_ACCESS_KEY_ID='fake',AWS_SECRET_ACCESS_KEY='dummy-key')),calls
 
 
-def test_http_payload_and_case_insensitive_usage_header(monkeypatch):
+def test_http_payload_and_case_insensitive_usage_header(monkeypatch,tmp_path):
+    from text_guard_fakes import guarded
     adapter,calls=adapter_with(monkeypatch,Response(b'\0\0'*100))
-    pcm,count=adapter.synthesize('<speak>確認</speak>',dict(engine='neural',voice_id='Takumi'))
+    pcm,count=guarded(tmp_path,lambda:adapter.synthesize('<speak>確認</speak>',dict(engine='neural',voice_id='Takumi')),provider='aws-polly')
     assert count==2 and len(pcm)==200 and len(calls)==1
     request,timeout=calls[0]
     body=json.loads(request.data)
@@ -34,7 +35,8 @@ def test_http_payload_and_case_insensitive_usage_header(monkeypatch):
 
 
 @pytest.mark.parametrize('kind',['content_type','too_large','deadline','socket_timeout'])
-def test_bad_http_response_fails_closed_without_secret_output(monkeypatch,kind):
+def test_bad_http_response_fails_closed_without_secret_output(monkeypatch,kind,tmp_path):
+    from text_guard_fakes import guarded
     response=Response(b'\0\0'*100)
     if kind=='content_type':response.headers['Content-Type']='application/json'
     if kind=='too_large':monkeypatch.setattr(voice_polly,'MAX_WAV_BYTES',10)
@@ -46,7 +48,7 @@ def test_bad_http_response_fails_closed_without_secret_output(monkeypatch,kind):
         response.read1=fail
     adapter,calls=adapter_with(monkeypatch,response)
     with pytest.raises(voice_polly.VoiceProviderError) as error:
-        adapter.synthesize('<speak>確認</speak>',dict(engine='neural',voice_id='Takumi'))
+        guarded(tmp_path,lambda:adapter.synthesize('<speak>確認</speak>',dict(engine='neural',voice_id='Takumi')),provider='aws-polly')
     assert 'dummy-sensitive-key' not in str(error.value) and len(calls)==1
 
 

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "provider": "gemini-text",
+  "model": "gemini-2.5-flash-lite",
+  "returned_model_ids": [
+    "gemini-2.5-flash-lite"
+  ],
+  "verified_on": "",
+  "pricing_url": "https://ai.google.dev/gemini-api/docs/pricing",
+  "model_url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite",
+  "terms_url": "https://ai.google.dev/gemini-api/terms",
+  "input_per_million_usd": "0.10",
+  "output_per_million_usd": "0.40",
+  "max_input_tokens": 1048576,
+  "max_output_tokens": 16384,
+  "thinking_budget": 0,
+  "fx_jpy_per_usd": null,
+  "tax_multiplier": null,
+  "safety_multiplier": "1.25",
+  "tax_note": "",
+  "free_tier_reviewed": false,
+  "free_tier_verified_on": "",
+  "availability_reviewed": false,
+  "structured_outputs_reviewed": false,
+  "commercial_use_reviewed": false,
+  "maximum_billing_reviewed": false,
+  "account_access_reviewed": false,
+  "external_data_reviewed": false
+}

@@ -19,7 +19,7 @@ def current_execution():
     return dict(value) if value is not None else None
 
 
-def claim_provider_call(provider,model):
+def claim_provider_call(provider,model,*,payload_sha256=None):
     """対応アダプターの1リクエスト制限。コピーした実行contextでも共有する。"""
     with _provider_call_lock:
         value=_execution.get()
@@ -28,6 +28,18 @@ def claim_provider_call(provider,model):
         if value.get('provider_call_claimed'):
             raise ReservationConflict('この実行権では既に1リクエストを送信しています。再送しません。')
         value['provider_call_claimed']=True
+        value['payload_sha256']=payload_sha256
+
+
+def claim_transport(provider,model,payload_sha256):
+    """アダプター検証済みの同じ本文だけをHTTPへ一度渡す。"""
+    with _provider_call_lock:
+        value=_execution.get()
+        if (value is None or value['provider']!=provider or value['model']!=model
+            or not value.get('provider_call_claimed') or value.get('payload_sha256')!=payload_sha256
+            or value.get('transport_claimed')):
+            raise ReservationConflict('承認済みアダプターの単発送信権がありません。直接送信・再送を拒否しました。')
+        value['transport_claimed']=True
 
 
 class BudgetedExecutor:
@@ -83,7 +95,7 @@ class BudgetedExecutor:
             raise ReservationConflict("同じリクエストIDの再送はできません。")
         claim = self.ledger.claim_execution(request_id,now=now)
         try:
-            token=_execution.set(dict(project_id=project_id,request_id=request_id,provider=provider,model=model))
+            token=_execution.set(dict(project_id=project_id,request_id=request_id,provider=provider,model=model,limits=dict(usage_limits)))
             try:
                 response = operation()
             finally:

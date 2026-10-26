@@ -18,7 +18,11 @@ def apply(service,request_id,response):
         job=next(j for j in data['jobs'] if j['id']==request['job_id'])
         if request['state']=='applied':return
         if response['status']!='completed':raise ValueError('APIの拒否・未完了回答です。自動再送せず、保存済み応答と課金を確認してください。')
-        payload=normalize_result(request['kind'],load_json_payload(response['text']),request)
+        raw=load_json_payload(response['text'])
+        if job['provider']!='mock':
+            from manga.story_ai_schemas import validate_structure,schema
+            validate_structure(raw,schema(request['kind'],(request.get('candidate') or {}).get('id')))
+        payload=normalize_result(request['kind'],raw,request)
         now=now_iso()
         if request['kind']=='concepts':
             ideas=[dict(idea,id=str(uuid5(UUID(request['id']),f'idea:{i}'))) for i,idea in enumerate(payload['ideas'])]
@@ -29,6 +33,17 @@ def apply(service,request_id,response):
             record=dict(id=request['result_id'],request_id=request_id,job_id=job['id'],created_at=now,concept_id=job['selected_concept_id'],cycle=request['cycle'],
                 story=payload['story'],page_hooks=payload['page_hooks'],change_reason=payload['change_reason'],warnings=payload['warnings'],
                 parent_id=previous['id'] if previous else None,changes=changes,decision='未評価')
+            if job['provider']!='mock':
+                from manga.page_dialogue import split_dialogue
+                names={c['name'] for c in request['context']['characters']}
+                names.update(a for b in request['context'].get('bibles',[]) for a in b['aliases'])
+                unknown=set()
+                for page in payload['story']['pages']:
+                    for panel in page['panels']:
+                        for line in split_dialogue(panel['dialogue']):
+                            if line.speaker and line.speaker not in names:unknown.add(line.speaker)
+                record['warnings']=list(record['warnings'])+(['未登録の話者：'+', '.join(sorted(unknown))+'。人物設定を確認してください。'] if unknown else [])
+                record['warnings'].append('登録人物の名前を照合しました。外見・衣装・性格との意味上の矛盾は人間がバイブルと比較してください。')
             data['candidates'].append(record);job.update(current_candidate_id=record['id'],phase='evaluate' if request['kind']=='draft' else 'reevaluate',cycle=request['cycle'])
         else:
             record=dict(id=request['result_id'],request_id=request_id,job_id=job['id'],candidate_id=request['candidate']['id'],created_at=now,payload=payload)

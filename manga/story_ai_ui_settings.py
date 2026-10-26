@@ -24,6 +24,8 @@ def configuration(service,data,project,prefix):
     config['reference_ids']=st.multiselect('参考にする作品（任意・3件まで）',list(refs),default=[r for r in values['reference_ids'] if r in refs],format_func=lambda i:refs[i]['title'],key=prefix+'_refs')
     st.caption('既存人物の設定を維持します。企画条件は独立保存し、プロジェクト設定を自動変更しません。正式採用前に作品設定のページ数を候補と合わせてください。')
     if st.button('AI制作条件を保存',type='primary'):action(lambda:service.configure(config,expected_revision=data['revision']),'制作条件を保存しました。次は企画案を生成します。')
+    from manga.story_ai_text_ui import gemini_configuration
+    gemini_configuration(service,data,config,prefix)
     with st.expander('有料APIのモデル・料金（公式確認後に設定）'):
         st.warning('実費テストは未承認です。設定を保存しても有料機能は有効になりません。APIキーはOPENAI_API_KEYから読み、JSONへ保存しません。')
         st.download_button('未記入のモデル・料金設定JSON',json.dumps(template(),ensure_ascii=False,indent=2),file_name='story_ai_pricing_template.json',mime='application/json')

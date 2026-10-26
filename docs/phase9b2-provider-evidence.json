@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "purpose": "research-only-not-execution-approval",
+  "checked_on": "2026-10-26",
+  "timezone": "Asia/Tokyo",
+  "real_api_tested": false,
+  "paid_calls": 0,
+  "free_calls": 0,
+  "model": "gemini-2.5-flash-lite",
+  "account_access": "unverified-restricted-to-existing-users",
+  "input_token_limit": 1048576,
+  "output_token_limit": 65536,
+  "prices_usd_per_million": {
+    "text_input": "0.10",
+    "text_output_including_thinking": "0.40"
+  },
+  "free_tier": "listed-conditionally-account-and-quota-unverified",
+  "sources": [
+    "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite",
+    "https://ai.google.dev/gemini-api/docs/pricing",
+    "https://ai.google.dev/api/generate-content",
+    "https://ai.google.dev/gemini-api/docs/structured-output",
+    "https://ai.google.dev/gemini-api/docs/thinking",
+    "https://ai.google.dev/gemini-api/terms",
+    "https://ai.google.dev/gemini-api/docs/billing",
+    "https://developers.openai.com/api/docs/models/gpt-5-mini"
+  ],
+  "openai_gpt5_mini": {
+    "input": "0.25",
+    "output": "2.00",
+    "free_tier": false,
+    "official_page_deprecated": true,
+    "account_access_verified": false
+  }
+}

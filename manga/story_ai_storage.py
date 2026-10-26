@@ -36,7 +36,7 @@ def validate_ai(raw,project_id):
     if any(s['concept_id'] not in idea_ids for s in raw['selections']):raise ValueError
     jobs={j['id']:j for j in raw['jobs']}
     for job in jobs.values():
-        if settings(job['settings'])!=job['settings'] or type(job['cycle']) is not int or not 0<=job['cycle']<=5 or job['kind'] not in ('concepts','story') or job['provider'] not in ('mock','openai-responses'):raise ValueError
+        if settings(job['settings'])!=job['settings'] or type(job['cycle']) is not int or not 0<=job['cycle']<=5 or job['kind'] not in ('concepts','story') or job['provider'] not in ('mock','openai-responses','gemini-text'):raise ValueError
     for request in raw['requests']:
         validate_id(request['result_id'])
         if request['job_id'] not in jobs or type(request['cycle']) is not int or not 0<=request['cycle']<=5 or request['kind'] not in ('concepts','draft','evaluation','improve'):raise ValueError

@@ -59,6 +59,10 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def transport(request):
+    from manga.budget.guard import claim_transport,current_execution
+    if not re.fullmatch(r'https://polly\.[a-z]{2}-[a-z]+-\d\.amazonaws\.com/v1/speech',request.full_url):
+        raise VoiceProviderError('Pollyの固定送信先以外を拒否しました。')
+    claim_transport('aws-polly',json.loads(request.data)['Engine'],hashlib.sha256(request.data).hexdigest())
     try:
         # urllib performs no automatic POST retries. Never log headers or raw errors.
         with build_opener(NoRedirect()).open(request,timeout=20) as response:
@@ -89,6 +93,13 @@ class PollyVoice:
         payload=json.dumps(dict(Engine=settings['engine'],VoiceId=settings['voice_id'],LanguageCode='ja-JP',
                                 OutputFormat='pcm',SampleRate='16000',TextType='ssml',Text=ssml),ensure_ascii=False,separators=(',',':')).encode()
         request=signed_request(payload,self.region,self.keys or credentials())
+        from manga.budget.guard import claim_provider_call
+        from manga.budget.guard import current_execution
+        from manga.voice_pricing import usage_limits
+        context=current_execution()
+        if not context or usage_limits(ssml)['max_items']>context['limits']['max_items']:
+            raise VoiceProviderError('この発話の最大文字数に対する予算実行権が必要です。')
+        claim_provider_call('aws-polly',settings['engine'],payload_sha256=hashlib.sha256(payload).hexdigest())
         try:
             pcm,headers=self.send(request)
             raw=headers.get('x-amzn-requestcharacters')
