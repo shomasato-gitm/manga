@@ -147,9 +147,11 @@ def run(service,raw,*,mode='bounded',approval=None,expected_revision,probe=None)
                 raise ValueError('前回の診断が処理中・結果不明です。再送せず請求・保存を照合してください。')
             if not BudgetedExecutor(ledger).dry_run(project_id=service.project_id,quote_jpy=plan['maximum_jpy'],provider=PROVIDER)['possible']:
                 raise ValueError('作品500円・月間5,000円の残額不足、または請求確認待ちのため送信できません。')
-            identifier=str(uuid4());service.store.write(f'story_ai/diagnostics/{identifier}.probe',b'probe')
+            identifier=str(uuid4())
             initial=dict(diagnosis_id=identifier,plan_sha256=plan['approval_key'],ledger_path=ledger_path,mode=mode,maximum_jpy=plan['maximum_jpy'])
             service.store.save(data,EVENT,**initial,state='processing',reason=None,receipt_sha256=None)
+            # 初回メタデータ保存前には成果物を置かない。失敗しても正本欠損扱いにしない。
+            service.store.write(f'story_ai/diagnostics/{identifier}.probe',b'probe')
         price=diagnostic_quote(card)
         def operation():
             response=(probe or Probe()).generate(identifier)

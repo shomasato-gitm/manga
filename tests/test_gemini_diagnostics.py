@@ -251,3 +251,20 @@ def test_pending_story_adoption_blocks_diagnostic_metadata_until_recovery(ai_wor
     # テスト用の採用保存が復旧した状態を模擬。診断はAPIを再送せず記録のみ再開する。
     pending.unlink();monkeypatch.setattr(service.store,'write',write)
     assert recover(service,record['diagnosis_id'])['state']=='success' and len(calls)==1
+
+
+def test_first_diagnostic_save_failure_does_not_orphan_a_new_store(ai_workspace,monkeypatch):
+    service=ai_workspace;probe,calls=prepare(service,monkeypatch)
+    service.store.path.unlink()  # このテスト専用作品を、AI設定を一度も保存していない状態にする。
+    save=service.store.save;write=service.store.write
+    monkeypatch.setattr(service.store,'save',lambda *a,**kw:(_ for _ in ()).throw(OSError('metadata failed')))
+    with pytest.raises(OSError):execute(service,probe)
+    assert service.store.load()['events']==[] and not list(service.store.root.glob('story_ai/diagnostics/*'))
+    monkeypatch.setattr(service.store,'save',save)
+    monkeypatch.setattr(service.store,'write',lambda *a,**kw:(_ for _ in ()).throw(OSError('probe failed')))
+    with pytest.raises(OSError):execute(service,probe)
+    record=diagnostic_history(service)[0]
+    assert record['state']=='processing' and not calls
+    assert recover(service,record['diagnosis_id'])['reason']=='not_sent'
+    monkeypatch.setattr(service.store,'write',write)
+    assert execute(service,probe)['state']=='success' and len(calls)==1
