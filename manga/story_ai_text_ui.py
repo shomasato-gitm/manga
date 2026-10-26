@@ -14,6 +14,8 @@ def gemini_configuration(service,data,config,prefix):
         from manga.editorial_ui_common import json_input,input_text
         from manga.story import load_json_payload
         raw=json_input('Gemini利用条件・料金JSON',prefix+'_gemini_card')
+        from manga.gemini_diagnostics_ui import initial_diagnostic
+        initial_diagnostic(service,data,raw,prefix)
         checked=st.checkbox('公式モデル・アカウント利用権限・送信範囲・料金を確認した',key=prefix+'_gemini_verified')
         if st.button('Gemini利用条件・料金を保存',disabled=not checked):
             action(lambda:service.configure(config,load_json_payload(input_text(raw)),expected_revision=data['revision']),'Gemini設定を保存しました。送信には別途1回ごとの承認が必要です。')

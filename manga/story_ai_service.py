@@ -107,6 +107,7 @@ class StoryAIService:
             if self.source(data['settings'])[1]!=estimate['source_token']:raise StorageError('制作データが変わりました。見積を確認し直してください。')
             if any(j['state'] in ('queued','running') for j in data['jobs']):raise StorageError('この作品のAI制作が実行中です。')
             paths={j['ledger_path'] for j in data['jobs'] if j['provider']!='mock'}
+            paths.update(e['ledger_path'] for e in data['events'] if e['kind']=='gemini_connection_diagnostic')
             if ledger_path and paths and paths!={ledger_path}:raise ValueError('予算台帳の保存先が生成履歴と異なります。元の共有台帳を確認してください。')
             if not new_request:
                 previous=next((j for j in reversed(data['jobs']) if j['job_key']==estimate['job_key']),None)

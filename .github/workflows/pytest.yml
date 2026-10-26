@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feature/github-studio-sync, feature/video-voice, feature/video-renderer, feature/ai-story-production, feature/ai-character-consistency, feature/ai-image-production, feature/ai-image-live, feature/gemini-image-readiness, feature/phase9b1-japanese-voice, feature/phase9b2-text-ai]
+    branches: [main, feature/github-studio-sync, feature/video-voice, feature/video-renderer, feature/ai-story-production, feature/ai-character-consistency, feature/ai-image-production, feature/ai-image-live, feature/gemini-image-readiness, feature/phase9b1-japanese-voice, feature/phase9b2-text-ai, feature/gemini-first-connection-diagnostics]
   workflow_dispatch:
 
 permissions:
