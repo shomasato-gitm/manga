@@ -22,6 +22,9 @@ def adopt(service,candidate_id,*,expected_revision,expected_story_id,confirmed=F
         if ProjectStore(service.directory).load(service.project_id).page_count!=len(selected['story']['pages']):raise ValueError('候補のページ数と作品設定が異なります。プロジェクト管理でページ数を合わせてから採用してください。')
         previous=next((a for a in reversed(data['adoptions']) if a['candidate_id']==candidate_id and a['story_version_id']==expected_story_id),None)
         if previous:return previous
+        job=next(j for j in data['jobs'] if j['id']==selected['job_id'])
+        if job['provider']!='mock' and service.source(job['settings'])[1]!=job['source_token']:
+            raise StorageError('候補生成後に作品・人物設定・バイブルが変わりました。差分を確認し、新しい条件で候補を作成してください。')
         now=now_iso();identifier=str(uuid4());story_id=str(uuid4())
         version=dict(id=story_id,saved_at=now,action='取り込み',restored_from=None,story=normalize_story(selected['story']).story)
         editorial=service.editorial.load();after_editorial=copy.deepcopy(editorial)

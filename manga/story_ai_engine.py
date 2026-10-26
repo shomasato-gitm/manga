@@ -25,6 +25,10 @@ def run_job(service,identifier):
                     update(service,identifier,state='stopped',stop_reason='user_cancelled');return next(j for j in service.store.load()['jobs'] if j['id']==identifier)
                 request=next_request(service,identifier)
                 execute(service,job,request)
+                if job['provider']!='mock':
+                    current=next(j for j in service.store.load()['jobs'] if j['id']==identifier)
+                    if current['phase']!='done':update(service,identifier,state='stopped',stop_reason='approval_required',error=None)
+                    return next(j for j in service.store.load()['jobs'] if j['id']==identifier)
         except StopStory as error:
             update(service,identifier,state='paused' if error.reason in ('provider_uncertain','artifact_pending') else 'stopped',stop_reason=error.reason,error=str(error))
             return next(j for j in service.store.load()['jobs'] if j['id']==identifier)
@@ -57,6 +61,7 @@ def resume(service,identifier,*,confirmed=False):
     with service.store.lock(generation=True),service.store.source_lock(),service.store.lock():
         data=service.store.load();job=next((j for j in data['jobs'] if j['id']==identifier),None)
         if not job or job['phase']=='done' or job['state'] in ('queued','running','completed'):raise ValueError('再開できる停止中の依頼を選択してください。')
+        if job['provider']!='mock':raise ValueError('実APIの続行には「次の1送信」の見積・個別承認が必要です。')
         if any(r['job_id']==identifier and r['state'] not in ('applied','queued','not_sent') for r in data['requests']):raise ValueError('未確定・不正な応答があります。先に復旧・請求を確認してください。')
         if service.source(job['settings'])[1]!=job['source_token']:raise ValueError('制作条件が古くなっています。新しい依頼を作成してください。')
         if job['provider']!='mock' and not service.paid_enabled():raise ValueError('有料機能は無効です。')

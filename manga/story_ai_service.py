@@ -28,6 +28,11 @@ class StoryAIService:
         context=dict(project=project.to_dict(),characters=[c for c in art['characters'] if not c['deleted_at']],
             references=generation_references(editorial,config['reference_ids']),base_story_id=history[-1]['id'] if history else None,
             artwork_revision=art['revision'],editorial_revision=editorial['revision'])
+        from manga.character_ai_storage import CharacterAIStore
+        bible_store=CharacterAIStore(self.directory,self.project_id)
+        if bible_store.path.exists():
+            latest={b['character_id']:b for b in bible_store.load()['bibles']}
+            context['bibles']=[{k:copy.deepcopy(b[k]) for k in ('id','character_id','story_version_id','profile','locked_fields','aliases','exceptions')} for b in latest.values()]
         generation={k:config[k] for k in ('genre','theme','mood','page_count','concept_count','reference_ids')}
         return context,digest(dict(context=context,generation=generation))
 
@@ -59,31 +64,39 @@ class StoryAIService:
                 if concept['id']==identifier:return copy.deepcopy(concept),batch
         raise ValueError('選択した企画が見つかりません。')
 
-    def estimate(self,kind,*,provider='mock',spend_cap='500',new_request=False):
-        if kind not in ('concepts','story') or provider not in ('mock','openai-responses'):raise ValueError('依頼の種類・プロバイダーを確認してください。')
+    def estimate(self,kind,*,provider='mock',spend_cap='500',new_request=False,mode='paid'):
+        if kind not in ('concepts','story') or provider not in ('mock','openai-responses','gemini-text'):raise ValueError('依頼の種類・プロバイダーを確認してください。')
         data=self.store.load()
         if data['settings'] is None:raise ValueError('先に制作条件を保存してください。')
         config=data['settings'];context,token=self.source(config);selected=None
+        if provider!='mock':
+            if not data['card'] or data['card']['provider']!=provider:raise ValueError('選択したAIの確認済み料金設定を先に保存してください。')
+            if provider=='gemini-text':
+                from manga.story_ai_gemini import check_mode
+                check_mode(data['card'],mode)
+            elif mode!='paid':raise ValueError('OpenAIの無料枠は確認できません。有料モードの個別確認が必要です。')
         if kind=='story':
             if not data['selections']:raise ValueError('先に企画を1案選択してください。')
             selected=data['selections'][-1]['concept_id'];_,batch=self.concept(data,selected)
             if batch['source_token']!=token:raise ValueError('選択企画の元データが古くなっています。')
-        calls=1 if kind=='concepts' else 2+2*config['max_cycles']
+        calls=1 if kind=='concepts' or provider!='mock' else 2+2*config['max_cycles']
         cap=Decimal(str(spend_cap))
         if not cap.is_finite() or not 0<cap<=500:raise ValueError('依頼上限は0円より大きく500円以下にしてください。')
         per=Decimal('0') if provider=='mock' else Decimal(evidence(data['card'])['computed_max_jpy'])
-        key=digest(dict(kind=kind,provider=provider,settings=config,source_token=token,selected_concept_id=selected,card=data['card'] if provider!='mock' else None,spend_cap=str(cap)))
+        key=digest(dict(kind=kind,provider=provider,settings=config,source_token=token,selected_concept_id=selected,card=data['card'] if provider!='mock' else None,spend_cap=str(cap),mode=mode if provider!='mock' else None))
         return dict(kind=kind,provider=provider,settings=copy.deepcopy(config),context=context,source_token=token,selected_concept_id=selected,
             card=copy.deepcopy(data['card']) if provider!='mock' else None,max_calls=calls,per_call_max_jpy=str(per),full_plan_max_jpy=str(per*calls),
-            spend_cap_jpy=str(cap),full_plan_fits=per*calls<=cap,job_key=key,new_request=new_request,approval_key=digest(dict(key=key,new_request=new_request)))
+            spend_cap_jpy=str(cap),full_plan_fits=per*calls<=cap,job_key=key,new_request=new_request,approval_key=digest(dict(key=key,new_request=new_request,revision=data['revision'] if provider!='mock' else None)))
 
-    def create_job(self,kind,*,expected_revision,provider='mock',spend_cap='500',new_request=False,approval=None):
-        estimate=self.estimate(kind,provider=provider,spend_cap=spend_cap,new_request=new_request)
+    def create_job(self,kind,*,expected_revision,provider='mock',spend_cap='500',new_request=False,approval=None,mode='paid'):
+        estimate=self.estimate(kind,provider=provider,spend_cap=spend_cap,new_request=new_request,mode=mode)
         ledger_path=None
         if provider!='mock':
-            if not self.paid_enabled() or approval!=estimate['approval_key']:raise ValueError('有料機能フラグと今回の見積・上限への明示承認が必要です。')
+            if not self.api_enabled(mode) or approval!=estimate['approval_key']:raise ValueError('API機能フラグと今回1送信の見積・送信範囲への明示承認が必要です。')
             if self.adapter is None:
-                from manga.story_ai_provider import api_key
+                from manga.story_ai_gemini import api_key as gemini_key
+                from manga.story_ai_provider import api_key as openai_key
+                api_key=gemini_key if provider=='gemini-text' else openai_key
                 api_key()
             ledger=open_budget(self.directory);ledger_path=str(ledger.path.resolve())
             if Decimal(estimate['per_call_max_jpy'])>Decimal(estimate['spend_cap_jpy']):raise ValueError('1呼出しの最大見積が依頼上限を超えます。未送信で停止しました。')
@@ -103,9 +116,33 @@ class StoryAIService:
                 settings=estimate['settings'],context=estimate['context'],source_token=estimate['source_token'],selected_concept_id=estimate['selected_concept_id'],
                 card=estimate['card'],ledger_path=ledger_path,spend_cap_jpy=estimate['spend_cap_jpy'],job_key=estimate['job_key'],
                 phase='concepts' if kind=='concepts' else 'draft',cycle=0,current_candidate_id=None,best_candidate_id=None,error=None,run_epoch=str(uuid4()),
-                approval=dict(plan_sha256=estimate['approval_key'],confirmed_at=now_iso(),max_calls=estimate['max_calls']) if provider!='mock' else None)
+                access_mode=mode if provider!='mock' else 'mock',
+                approval=dict(plan_sha256=estimate['approval_key'],confirmed_at=now_iso(),max_calls=1,phase='concepts' if kind=='concepts' else 'draft',request_id=None) if provider!='mock' else None)
             data['jobs'].append(job);self.store.save(data,'job_created',job_id=identifier)
             return copy.deepcopy(job)
+
+    def next_estimate(self,identifier):
+        data=self.store.load();job=next(j for j in data['jobs'] if j['id']==identifier)
+        if job['provider']=='mock' or job['phase']=='done' or job['state'] not in ('stopped','paused'):raise ValueError('次の1送信を確認できる停止中の依頼を選択してください。')
+        if any(r['job_id']==identifier and r['state'] not in ('applied','not_sent') for r in data['requests']):raise ValueError('未確定・不正な応答があります。保存・請求を先に確認してください。')
+        if self.source(job['settings'])[1]!=job['source_token']:raise ValueError('元の作品条件が変わりました。新しい依頼を準備してください。')
+        if job['provider']=='gemini-text':
+            from manga.story_ai_gemini import check_mode
+            check_mode(job['card'],job.get('access_mode','paid'))
+        maximum=evidence(job['card'])['computed_max_jpy']
+        return dict(max_jpy=maximum,phase=job['phase'],model=job['card']['model'],approval_key=digest(dict(job=job,revision=data['revision'])))
+
+    def approve_next(self,identifier,*,approval,expected_revision):
+        estimate=self.next_estimate(identifier)
+        if approval!=estimate['approval_key']:raise ValueError('今回の1送信に対する最新の明示承認が必要です。')
+        with self.store.source_lock(),self.store.lock():
+            data=self.store.checked(expected_revision);job=next(j for j in data['jobs'] if j['id']==identifier)
+            if self.source(job['settings'])[1]!=job['source_token'] or not self.api_enabled(job.get('access_mode','paid')):raise ValueError('制作条件・API有効設定を確認してください。')
+            if self.next_estimate(identifier)['approval_key']!=approval:raise ValueError('見積対象が変更されています。')
+            job.update(state='queued',run_epoch=str(uuid4()),error=None,stop_reason=None,
+                approval=dict(plan_sha256=approval,confirmed_at=now_iso(),max_calls=1,phase=job['phase'],request_id=None))
+            self.store.save(data,'single_call_approved',job_id=identifier)
+            return job
 
     def run_job(self,identifier):
         from manga.story_ai_engine import run_job
@@ -142,3 +179,7 @@ class StoryAIService:
 
     @staticmethod
     def paid_enabled():return os.environ.get('MANGA_ENABLE_PAID_STORY')=='1'
+
+    @staticmethod
+    def api_enabled(mode):
+        return os.environ.get('MANGA_ENABLE_TEXT_API')=='1' if mode=='verified-free' else StoryAIService.paid_enabled()

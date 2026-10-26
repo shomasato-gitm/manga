@@ -23,7 +23,8 @@ def test_mock_concepts_five_cycles_comparison_and_adoption_via_ui(ai_workspace,m
     service=ai_workspace;history=service.stories.load_history()
     monkeypatch.setattr(StoryAIService,'start',lambda self,identifier:self.run_job(identifier))
     app=open_studio();assert not app.exception and len(next(r for r in app.radio if r.label=='制作メニュー').options)==6
-    assert next(s for s in app.selectbox if s.label=='企画・脚本の生成方法').value=='mock'
+    assert next(s for s in app.selectbox if s.label=='企画・脚本の生成方法').value=='manual'
+    next(s for s in app.selectbox if s.label=='企画・脚本の生成方法').set_value('mock').run()
     view(app,'企画案の生成・比較');button(app,'企画案を自動生成');button(app,'この企画を明示選択する')
     assert not app.exception and not app.error
     view(app,'脚本制作・自動改善');button(app,'脚本生成・評価・自動改善を開始')

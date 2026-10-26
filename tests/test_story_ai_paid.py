@@ -20,6 +20,11 @@ def test_paid_requires_flag_and_exact_current_approval(ai_workspace,monkeypatch)
 def test_paid_five_cycles_use_gate_and_same_job_never_pays_twice(ai_workspace,monkeypatch):
     service=ai_workspace;calls=paid(service,monkeypatch);concepts(service,'openai-responses')
     created=job(service,'story','openai-responses');result=service.run_job(created['id'])
+    assert result['stop_reason']=='approval_required' and len(calls)==2
+    while result['phase']!='done':
+        approval=service.next_estimate(created['id'])
+        service.approve_next(created['id'],approval=approval['approval_key'],expected_revision=service.store.load()['revision'])
+        result=service.run_job(created['id'])
     assert result['cycle']==5 and len(calls)==13
     ledger=open_budget(service.directory);data=service.store.load()
     assert all(ledger.request_status(r['id'])['state']=='settled' for r in data['requests'])
@@ -57,6 +62,10 @@ def test_500_and_monthly_5000_stop_before_transport(ai_workspace,monkeypatch):
 def test_job_cap_stops_between_calls_despite_global_funds(ai_workspace,monkeypatch):
     service=ai_workspace;calls=paid(service,monkeypatch);concepts(service,'openai-responses')
     created=job(service,'story','openai-responses',spend_cap='40.1');result=service.run_job(created['id'])
+    assert result['stop_reason']=='approval_required'
+    approval=service.next_estimate(created['id'])
+    service.approve_next(created['id'],approval=approval['approval_key'],expected_revision=service.store.load()['revision'])
+    result=service.run_job(created['id'])
     assert result['stop_reason']=='budget_limit' and len(calls)==2 and len(service.store.load()['candidates'])==1
 
 

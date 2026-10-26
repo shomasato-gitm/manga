@@ -24,11 +24,16 @@ def next_request(service,job_id):
     with service.store.source_lock(),service.store.lock():
         data=service.store.load();job=next(j for j in data['jobs'] if j['id']==job_id)
         if service.source(job['settings'])[1]!=job['source_token']:raise StopStory('stale_sources','作品・人物・脚本・参考情報が変わりました。残りのAPIを送信せず停止しました。')
+        if job['provider']!='mock' and (not job.get('approval') or job['approval'].get('phase')!=job['phase']):
+            raise StopStory('approval_required','次の1送信の承認が必要です。以前の一括承認は使用しません。')
         kind={'evaluate':'evaluation','reevaluate':'evaluation'}.get(job['phase'],job['phase'])
         if kind=='improve' and job['cycle']>=min(5,job['settings']['max_cycles']):raise StopStory('improvement_limit','改善上限です。追加APIは送信しません。')
         cycle=job['cycle']+(1 if kind=='improve' else 0)
         existing=next((r for r in data['requests'] if r['job_id']==job_id and r['phase']==job['phase'] and r['cycle']==cycle),None)
-        if existing:return copy.deepcopy(existing)
+        if existing:
+            if job['provider']!='mock' and existing['state'] in ('queued','not_sent') and job['approval'].get('request_id') is None:
+                job['approval']['request_id']=existing['id'];service.store.save(data,'request_reapproved',request_id=existing['id'])
+            return copy.deepcopy(existing)
         if shutil.disk_usage(service.store.root).free<32*1024*1024:raise StopStory('storage_failure','AI応答保存の空き容量が不足しています。未送信で停止しました。')
         identifier=str(uuid4())
         request=dict(id=identifier,request_id=identifier,result_id=str(uuid4()),job_id=job_id,state='queued',created_at=now_iso(),
@@ -38,6 +43,7 @@ def next_request(service,job_id):
         if kind in ('improve','evaluation'):
             request['candidate']=copy.deepcopy(candidate(data,job['current_candidate_id'] if kind=='evaluation' else job['best_candidate_id']))
         if kind=='improve':request['evaluation']=copy.deepcopy(evaluation(data,request['candidate']['id']))
+        if job['provider']!='mock':job['approval']['request_id']=identifier
         data['requests'].append(request);service.store.save(data,'request_created',request_id=identifier)
         return copy.deepcopy(request)
 
@@ -63,7 +69,7 @@ def enforce_job_budget(service,job,ledger):
         elif status:raise StopStory('provider_uncertain','この依頼に請求未確定のリクエストがあります。自動再送しません。')
     per=Decimal(evidence(job['card'])['computed_max_jpy'])
     if used+per>Decimal(job['spend_cap_jpy']):raise StopStory('budget_limit','次の最大見積が依頼単位の残額を超えます。未送信で停止しました。')
-    if not BudgetedExecutor(ledger).dry_run(project_id=service.project_id,quote_jpy=per,provider='openai-responses')['possible']:
+    if not BudgetedExecutor(ledger).dry_run(project_id=service.project_id,quote_jpy=per,provider=job['provider'])['possible']:
         raise StopStory('budget_limit','作品・全作品月間の残額不足、または請求照合待ちです。未送信で停止しました。')
 
 
@@ -79,10 +85,17 @@ def execute(service,job,request):
     if request['state'] not in ('queued','not_sent'):raise StopStory('provider_uncertain','同じリクエストを再送しません。保存・請求の復旧を先に確認してください。')
     paid=job['provider']!='mock';ledger=ledger_for(service,job) if paid else None
     if paid:
-        if not service.paid_enabled():raise StopStory('paid_disabled','有料機能は無効です。APIを送信しません。')
+        job=next(j for j in service.store.load()['jobs'] if j['id']==job['id'])
+        if not service.api_enabled(job.get('access_mode','paid')):raise StopStory('paid_disabled','API機能は無効です。APIを送信しません。')
+        if job.get('approval',{}).get('request_id')!=request['id'] or job['approval'].get('phase')!=request['phase']:
+            raise StopStory('approval_required','今回の送信権がありません。個別承認してください。')
+        if job['provider']=='gemini-text':
+            from manga.story_ai_gemini import check_mode
+            check_mode(job['card'],job.get('access_mode','paid'))
         enforce_job_budget(service,job,ledger)
-    adapter=service.adapter or (ResponsesStoryAI() if paid else MockStoryAI())
-    if paid and isinstance(adapter,ResponsesStoryAI):
+    from manga.story_ai_gemini import GeminiStoryAI
+    adapter=service.adapter or (GeminiStoryAI() if job['provider']=='gemini-text' else ResponsesStoryAI() if paid else MockStoryAI())
+    if paid and isinstance(adapter,(ResponsesStoryAI,GeminiStoryAI)):
         try:adapter.prepare(request)
         except ValueError as error:raise StopStory('input_invalid',str(error)) from None
     # Probe the same immutable writer before risking a paid call.
@@ -94,7 +107,7 @@ def execute(service,job,request):
         service.store.write(f"story_ai/responses/{request['id']}.json",value)
         return response
     try:
-        response=BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=request['id'],provider='openai-responses',model=job['card']['model'],kind='story',
+        response=BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=request['id'],provider=job['provider'],model=job['card']['model'],kind='story',
             price_quote=quote(job['card']),usage_limits=limits(job['card']),operation=operation,actual_charge_jpy=lambda r:charge(job['card'],r)) if paid else operation()
     except Exception:
         try:status=ledger.request_status(request['id']) if paid else None

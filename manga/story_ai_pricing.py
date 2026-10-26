@@ -16,6 +16,9 @@ def template():
 
 
 def quote(card):
+    if isinstance(card,dict) and card.get('provider')=='gemini-text':
+        from manga.story_ai_gemini import quote as gemini_quote
+        return gemini_quote(card)
     try:
         if not isinstance(card,dict) or set(card)!=set(template()) or type(card['schema_version']) is not int or card['schema_version']!=1 or card['provider']!='openai-responses':raise ValueError
         if any(card[k] is not True for k in FLAGS):raise ValueError('公式のモデル提供・構造化出力・商用条件・最大請求量を確認してください。')
@@ -41,7 +44,7 @@ def quote(card):
 def limits(card):return dict(max_input_tokens=card['max_input_tokens'],max_output_tokens=card['max_output_tokens'],max_items=0,retry_limit=0)
 
 
-def evidence(card):return quote(card).execution_evidence('openai-responses',card['model'],limits(card))
+def evidence(card):return quote(card).execution_evidence(card['provider'],card['model'],limits(card))
 
 
 def charge(card,response):

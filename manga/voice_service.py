@@ -180,7 +180,7 @@ class VoiceService:
                 evidence=quote.execution_evidence('aws-polly',row['settings']['engine'],limits)
                 total+=Decimal(evidence['computed_max_jpy']);calls+=1
         return dict(max_jpy=total,paid_calls=calls,token=plan['token'],settings_revision=data['settings_revision'],
-                    ids=list(ids),regenerate=regenerate,approval_key=digest(dict(token=plan['token'],ids=list(ids),regenerate=regenerate,total=str(total))))
+                    ids=list(ids),regenerate=regenerate,approval_key=digest(dict(token=plan['token'],ids=list(ids),regenerate=regenerate,total=str(total),revision=data['revision'])))
 
     def generate(self,ids,*,regenerate=False,approval=None,progress=None):
         from manga.voice_jobs import generate

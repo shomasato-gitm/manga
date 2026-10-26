@@ -60,6 +60,8 @@ def generation_view(service,data,plan,prefix):
     approval=None;enabled=True
     if estimate['paid_calls']:
         enabled=service.paid_enabled() and plan['confirmed']
+        if estimate['paid_calls']>1:
+            enabled=False;st.warning('有料音声は1発話ずつ選んで見積・承認してください。一括送信は実行できません。')
         try:
             summary=open_budget(service.directory).summary(service.project_id)
             st.write(f"作品API残額：{summary['project_remaining_jpy']}円 ／ 月間残額：{summary['monthly_remaining_jpy']}円 ／ 請求額不明：{summary['uncertain_count']}件")

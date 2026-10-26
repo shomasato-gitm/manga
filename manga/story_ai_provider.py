@@ -32,6 +32,9 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def transport(body,key):
+    from manga.budget.guard import claim_transport
+    from manga.voice_models import digest
+    claim_transport('openai-responses',body.get('model'),digest(body))
     request=Request('https://api.openai.com/v1/responses',data=json.dumps(body,ensure_ascii=False,separators=(',',':')).encode(),
         headers={'Content-Type':'application/json','Authorization':'Bearer '+key},method='POST')
     try:
@@ -59,6 +62,12 @@ class ResponsesStoryAI:
 
     def generate(self,request):
         card=request['card'];body=self.prepare(request)
+        from manga.budget.guard import claim_provider_call,current_execution
+        from manga.voice_models import digest
+        execution=current_execution()
+        if not execution or execution['request_id']!=request['id'] or execution['limits']['max_output_tokens']!=card['max_output_tokens'] or execution['limits']['max_input_tokens']!=card['max_input_tokens']:
+            raise StoryProviderError('今回の出力上限に対する予算実行権が必要です。')
+        claim_provider_call('openai-responses',card['model'],payload_sha256=digest(body))
         try:
             raw=self.send(body,self.key or api_key())
             parts=[];status=raw.get('status')
