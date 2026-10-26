@@ -10,6 +10,8 @@ from manga.voice_ui import act
 
 
 def settings_view(service,data,plan,prefix):
+    from manga.voice_ui_local import connection_view,local_settings,PROVIDERS
+    connection_view(prefix)
     st.subheader('人物別の声設定')
     st.caption('確認用モックは日本語の人声ではなくトーンです。Pollyの感情は速度・音量による演技指定で、感情専用モデルの品質を保証しません。')
     st.caption('Standardのささやきは専用SSMLタグ、Neuralのささやきは小声・低速の近似です。怒り・悲しみも演技プリセットとして試聴確認してください。')
@@ -18,7 +20,10 @@ def settings_view(service,data,plan,prefix):
         existing=data['voices'].get(identifier,voice_settings(dict(voice_id=MOCK_VOICES[index%4])))
         with st.expander(name,expanded=index==0):
             key=f'{prefix}_{identifier}'
-            provider=st.selectbox(name+'のプロバイダー',('mock','aws-polly'),index=0 if existing['provider']=='mock' else 1,key=key+'_provider')
+            provider=st.selectbox(name+'のプロバイダー',list(PROVIDERS),index=list(PROVIDERS).index(existing['provider']),format_func=PROVIDERS.get,key=key+'_provider')
+            if provider in ('manual-wav','voicevox'):
+                voices[identifier]=local_settings(provider,existing,key,prefix)
+                continue
             if provider=='mock':
                 engine='mock'
                 current=existing['voice_id'] if existing['voice_id'] in MOCK_VOICES else MOCK_VOICES[index%4]
@@ -33,7 +38,9 @@ def settings_view(service,data,plan,prefix):
             speed=st.slider(name+'の速度',.5,1.5,value=existing['speed'],step=.05,key=key+'_speed')
             emotion=st.selectbox(name+'の基本感情',list(EMOTIONS),index=list(EMOTIONS).index(existing['emotion']),format_func=EMOTIONS.get,key=key+'_emotion')
             voices[identifier]=dict(provider=provider,engine=engine,voice_id=voice,speed=speed,emotion=emotion)
-    if st.button('人物別の声設定を保存',type='primary'):
+    incomplete=any(v is None for v in voices.values())
+    if incomplete:st.info('VOICEVOXの話者一覧を取得・選択するか、WAV手動取り込みを選択してください。')
+    if st.button('人物別の声設定を保存',type='primary',disabled=incomplete):
         act(lambda:service.save_voices(voices,expected_revision=data['revision']),'人物IDを保ったまま声設定を保存しました。')
     with st.expander('有料TTSの料金・利用条件（公式確認後に設定）'):
         st.warning('有料APIは別途の明示承認まで実行しません。料金設定だけで有効にはなりません。')

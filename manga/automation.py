@@ -123,11 +123,13 @@ class Automation:
                     identity=page_keys
                     if not self._output(digest(dict(kind=kind,identity=identity))): add(kind,identity)
             voice_data=self.voice.store.load(); vp=self.voice.plan()
-            if any(v['provider']!='mock' for v in voice_data['voices'].values()):
+            if any(v['provider']=='aws-polly' for v in voice_data['voices'].values()):
                 blocked.append('既存の有料音声設定があります。自動変更・有料TTSの実行はしません。')
             elif vp['rows'] and not any(r['speaker_id'] is None for r in vp['rows']) and not any(w!='この話者の声設定を保存してください。' for r in vp['rows'] for w in r['warnings']):
                 if any(not r['asset'] or r['status']!='再利用可' for r in vp['rows']):
-                    add('voice',dict(token=vp['token'],rows=[r['text_hash'] for r in vp['rows']]))
+                    if any(v['provider']!='mock' for v in voice_data['voices'].values()):
+                        blocked.append('音声制作でVOICEVOX・WAV候補を1発話ずつ準備し、試聴確認・正式割り当てしてください。')
+                    else:add('voice',dict(token=vp['token'],rows=[r['text_hash'] for r in vp['rows']]))
                 elif all_pages:
                     from manga.voice_timeline import timeline_is_current
                     records=voice_data['timelines']

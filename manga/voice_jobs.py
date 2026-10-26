@@ -33,10 +33,14 @@ def _publish(service,job_id):
                 terms_url=job['pricing']['terms_url'] if job['pricing'] else None,
                 reviewed_on=job['pricing']['verified_on'] if job['pricing'] else None,
                 status='test-only' if asset['mock'] else 'user-attested')
+            if 'provenance' in job:
+                asset['provenance']=copy.deepcopy(job['provenance'])
+                asset['rights']=dict(job['provenance']['rights'],status='user-attested' if job['provenance']['rights']['confirmed'] else 'unverified')
         if existing and (existing['job_id']!=job_id or existing['cache_key']!=job['cache_key'] or existing['info']['sha256']!=info['sha256']):
             raise StorageError('異なる音声素材の上書きを停止しました。')
         if not existing:data['assets'].append(asset)
-        data['assignments'][job['utterance']['id']]=asset['id']
+        if job['settings']['provider'] not in ('voicevox','manual-wav'):
+            data['assignments'][job['utterance']['id']]=asset['id']
         before=job['state'];job['state']='ready'
         store.save(data,'job_ready',before=before,job_id=job_id)
         return asset
@@ -61,7 +65,7 @@ def generate(service,ids,*,regenerate=False,approval=None,progress=None):
         if not plan['confirmed']:raise ValueError('現在の脚本版を人間が確定してから有料音声を生成してください。')
         if service.polly is None or service.polly.keys is None:credentials()
         ledger=open_budget(service.directory)
-        previous={j['ledger_path'] for j in service.store.load()['jobs'] if j['settings']['provider']!='mock'}
+        previous={j['ledger_path'] for j in service.store.load()['jobs'] if j['settings']['provider']=='aws-polly'}
         if previous and previous!={str(ledger.path.resolve())}:
             raise ValueError('予算台帳の保存先が生成履歴と異なります。元の台帳を確認し、無断で0円から再開しないでください。')
         preview=BudgetedExecutor(ledger).dry_run(project_id=service.project_id,quote_jpy=estimate['max_jpy'],provider='aws-polly')
@@ -131,7 +135,10 @@ def recover(service,job_id):
         data=service.store.load();job=next((j for j in data['jobs'] if j['id']==job_id),None)
         if job is None:raise ValueError('復旧対象の音声ジョブがありません。')
         if job['state']=='ready':return next(a for a in data['assets'] if a['job_id']==job_id)
-        if job['settings']['provider']!='mock':
+        if job['settings']['provider'] in ('voicevox','manual-wav'):
+            from manga.voice_local import recover_local
+            return recover_local(service,job)
+        if job['settings']['provider']=='aws-polly':
             ledger=open_budget(service.directory)
             if str(ledger.path.resolve())!=job['ledger_path']:raise ValueError('予算台帳の保存先が生成時と異なります。元の台帳で請求を照合してください。')
             status=ledger.request_status(job_id)
@@ -146,7 +153,7 @@ def close_resolved_job(service,job_id,*,confirmed=False):
         with service.store.locked():
             data=service.store.load();job=next((j for j in data['jobs'] if j['id']==job_id),None)
             if job is None or job['state'] in ('ready','closed'):raise ValueError('終了する未完了ジョブを選択してください。')
-            if job['settings']['provider']!='mock':
+            if job['settings']['provider']=='aws-polly':
                 ledger=open_budget(service.directory)
                 if str(ledger.path.resolve())!=job['ledger_path']:raise ValueError('予算台帳の保存先が生成時と異なります。')
                 status=ledger.request_status(job_id)

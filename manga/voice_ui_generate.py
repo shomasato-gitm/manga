@@ -17,7 +17,7 @@ def generation_view(service,data,plan,prefix):
     st.dataframe([{'ページ':r['page'],'コマ':r['panel'],'話者':r['speaker_name'] or '要確認','内容':r['text'],
                    '状態':'要確認' if r['needs_review'] else r['status']} for r in rows],hide_index=True,use_container_width=True)
     by_id={r['id']:r for r in rows}
-    label=lambda k:f"{by_id[k]['page']}ページ{by_id[k]['panel']}コマ：{by_id[k]['speaker_name'] or '要確認'}／{by_id[k]['text'][:25]}"
+    label=lambda k,lookup=by_id:f"{lookup[k]['page']}ページ{lookup[k]['panel']}コマ：{lookup[k]['speaker_name'] or '要確認'}／{lookup[k]['text'][:25]}"
     identifier=st.selectbox('確認・編集する発話',list(by_id),format_func=label,key=f'{prefix}_{page}_{all_pages}_utterance')
     row=by_id[identifier]
     for warning in row['warnings']:st.warning(warning)
@@ -27,11 +27,17 @@ def generation_view(service,data,plan,prefix):
                             format_func=lambda v:speakers.get(v,'要確認'),key=f'{prefix}_{identifier}_{row["text_hash"]}_speaker')
         text=st.text_area('読み上げ文・読み（字幕の原文は保持）',value=row['spoken_text'],key=f'{prefix}_{identifier}_{row["text_hash"]}_reading')
         default=row.get('settings') or {}
-        emotion=st.selectbox('この発話の感情',list(EMOTIONS),index=list(EMOTIONS).index(default.get('emotion','normal')),format_func=EMOTIONS.get,key=f'{prefix}_{identifier}_emotion')
+        if default.get('provider') in ('voicevox','manual-wav'):
+            emotion='normal'
+            st.caption('VOICEVOXの演技は人物別のスタイルで、WAVの演技は元音声で指定します。')
+        else:emotion=st.selectbox('この発話の感情',list(EMOTIONS),index=list(EMOTIONS).index(default.get('emotion','normal')),format_func=EMOTIONS.get,key=f'{prefix}_{identifier}_emotion')
         confirmed=st.checkbox('話者と読み上げ文を確認した',key=f'{prefix}_{identifier}_review')
         if st.button('発話設定を保存',disabled=not confirmed or speaker is None):
             act(lambda:service.save_edit(identifier,speaker,text,emotion,expected_revision=data['revision'],source_token=plan['token']),'発話設定を保存しました。元の脚本・字幕原文は変更していません。')
-    if row['asset'] and st.checkbox('選択した音声を試聴・WAV取得',key=f'{prefix}_{identifier}_preview'):
+    if row.get('settings') and row['settings']['provider'] in ('voicevox','manual-wav'):
+        from manga.voice_ui_local import local_generation_view
+        local_generation_view(service,data,plan,row,prefix)
+    if row['asset'] and row['settings']['provider'] in ('mock','aws-polly') and st.checkbox('選択した音声を試聴・WAV取得',key=f'{prefix}_{identifier}_preview'):
         try:
             content=service.audio_bytes(row['asset'])
             st.audio(content,format='audio/wav')
@@ -41,7 +47,10 @@ def generation_view(service,data,plan,prefix):
                 act(lambda:service.review_audio(row['asset']['id'],expected_revision=data['revision']),'人間による確認を記録しました。')
         except (ValueError,OSError,StorageError) as error:st.error(str(error))
     st.subheader('生成する発話を選ぶ')
-    selected=st.multiselect('音声生成対象',list(by_id),default=[r['id'] for r in rows if not r['needs_review'] and not r['asset']],format_func=label,key=f'{prefix}_{page}_{all_pages}_{data["settings_revision"]}_targets')
+    by_id={k:r for k,r in by_id.items() if r.get('settings') and r['settings']['provider'] in ('mock','aws-polly')}
+    if not by_id:
+        st.info('日本語音声は上の「確認・編集する発話」で1件ずつ準備し、全発話の正式割り当て後に「字幕・タイムライン」へ進みます。');return
+    selected=st.multiselect('音声生成対象',list(by_id),default=[r['id'] for r in by_id.values() if not r['needs_review'] and not r['asset']],format_func=label,key=f'{prefix}_{page}_{all_pages}_{data["settings_revision"]}_targets')
     regenerate=st.checkbox('既存音声を残して再生成する（有料APIでは再課金）',key=prefix+'_regenerate')
     if not selected:st.info('生成対象を選択してください。保存済み音声はAPIなしで再利用できます。');return
     try:estimate=service.estimate(selected,regenerate=regenerate)

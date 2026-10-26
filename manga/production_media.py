@@ -17,6 +17,7 @@ def media_token(directory, project_id):
     data = voice.store.load()
     video = VideoService(directory, project_id).store.load()
     paths = {a['path'] for a in data['assets']}
+    paths.update(a['provenance']['original_path'] for a in data['assets'] if a.get('provenance'))
     paths.update(p for t in data['timelines'] for p in t['paths'].values())
     paths.update(e['path'] for e in video['exports'])
     paths.update(a['path'] for a in video['audio'])

@@ -21,6 +21,12 @@ def exports_view(service,data,prefix):
         subtitles=service.store.read_blob(record['paths']['srt'],8*1024*1024)
         st.download_button('タイムラインJSONをダウンロード',content,file_name=f'voice_timeline_{identifier}.json',mime='application/json')
         st.download_button('字幕SRTをダウンロード',subtitles,file_name=f'voice_subtitles_{identifier}.srt',mime='text/plain')
+        import json
+        timeline=json.loads(content)
+        credits=list(dict.fromkeys(a.get('rights',{}).get('credit','') for a in timeline['assets'] if a.get('rights',{}).get('credit')))
+        if credits:
+            st.caption('音声クレジットは動画内・公開先の説明欄など、各音声の規約に従って掲載してください。MP4に自動挿入はされません。')
+            st.download_button('音声クレジット一覧を取得','\n'.join(credits)+'\n',file_name=f'voice_credits_{identifier}.txt',mime='text/plain')
         if st.checkbox('現在の脚本・音声・画像と照合',key=f'{prefix}_{identifier}_check'):
             if timeline_is_current(service,record):st.success('保存時と現在の制作データは一致しています。')
             else:st.warning('保存後に制作データが変わりました。最新の内容で出力し直してください。')
@@ -42,10 +48,11 @@ def history_view(service,data,prefix):
     st.write(f"状態：{job['state']} ｜ 元脚本版：{job['story_version_id']}")
     st.caption('請求照合用リクエストID：'+job['request_id'])
     if job['state']!='ready':
-        st.warning('未確定・保存途中のジョブは自動再送しません。請求不明時は予算台帳の明細照合が先です。')
+        local=job['settings']['provider'] in ('voicevox','manual-wav')
+        st.warning('保存途中の元WAVから再開できます。元WAVが保存されていない場合はこの処理を終了してから改めて準備してください。' if local else '未確定・保存途中のジョブは自動再送しません。請求不明時は予算台帳の明細照合が先です。')
         if st.button('音声保存を再開（APIを再送しない）'):
             act(lambda:service.recover(selected),'保存を再開しました。追加API呼び出しはありません。')
-        retry=st.checkbox('請求は照合済みで音声が使えない。次回生成の再課金を理解した',key=f'{prefix}_{selected}_close_review')
+        retry=st.checkbox('元WAVから復旧できないことを確認した（履歴は残す）' if local else '請求は照合済みで音声が使えない。次回生成の再課金を理解した',key=f'{prefix}_{selected}_close_review')
         if st.button('この未完了ジョブを履歴に残して終了',disabled=not retry):
             act(lambda:service.close_resolved_job(selected,confirmed=retry),'未完了ジョブを履歴に残して終了しました。新しい生成には改めて見積と承認が必要です。')
     else:
@@ -53,6 +60,9 @@ def history_view(service,data,prefix):
         if st.checkbox('この候補を試聴する',key=f'{prefix}_{selected}_history_audio'):
             try:st.audio(service.audio_bytes(asset),format='audio/wav')
             except (ValueError,OSError,StorageError) as error:st.error(str(error))
-        if st.button('現在の発話へこの保存候補を採用'):
+        local=asset['settings']['provider'] in ('voicevox','manual-wav')
+        reviewed=data['audio_reviews'].get(asset['id'],{}).get('sha256')==asset['info']['sha256']
+        if local and not reviewed:st.info('「音声生成・試聴」でこの音声候補を確認してから正式割り当てしてください。')
+        if st.button('現在の発話へこの保存候補を採用',disabled=local and not reviewed):
             act(lambda:service.select_asset(job['utterance']['id'],asset['id'],expected_revision=data['revision']),'現在の発話・声設定と一致する候補だけを採用しました。')
     with st.expander('履歴の詳細（APIキーは保存しません）'):st.json(job,expanded=False)

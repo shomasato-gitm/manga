@@ -34,7 +34,7 @@ def render_voice(project,directory,navigate=None):
         if navigate and st.button('ストーリーの確定画面へ'):
             navigate('企画・ストーリー','比較・脚本確定')
     st.caption(f"脚本版：{plan['version']['id']} ｜ 発話：{len(plan['rows'])}件 ｜ 保存音声：{len(data['assets'])}件")
-    if not service.paid_enabled():st.info('有料TTSは無効です。確認用トーンを生成でき、API課金は発生しません。')
+    if not service.paid_enabled():st.info('有料TTSは無効です。WAV手動取り込み・ローカルVOICEVOX・無料モックを選べます。')
     from manga.ux import wizard,details
     steps=('準備・話者設定','音声生成・試聴','字幕・タイムライン','履歴・復旧')
     view_key=f'voice_view_{project.id}'
