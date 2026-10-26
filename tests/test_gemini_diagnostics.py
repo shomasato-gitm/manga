@@ -268,3 +268,24 @@ def test_first_diagnostic_save_failure_does_not_orphan_a_new_store(ai_workspace,
     assert recover(service,record['diagnosis_id'])['reason']=='not_sent'
     monkeypatch.setattr(service.store,'write',write)
     assert execute(service,probe)['state']=='success' and len(calls)==1
+
+
+def test_recovery_returns_the_selected_diagnosis_not_a_later_success(ai_workspace,monkeypatch):
+    service=ai_workspace
+    def forbidden(*a):raise GeminiTransportError('forbidden')
+    probe,_=prepare(service,monkeypatch,send=forbidden);first=execute(service,probe)
+    ledger=open_budget(service.directory);ledger.reconcile_no_charge(first['diagnosis_id'],confirmed_no_charge=True)
+    good,_=prepare(service,monkeypatch);second=execute(service,good)
+    assert second['state']=='success'
+    recovered=recover(service,first['diagnosis_id'])
+    assert recovered['diagnosis_id']==first['diagnosis_id'] and recovered['state']=='unavailable'
+
+
+def test_tampered_receipt_does_not_replace_the_saved_checksum(ai_workspace,monkeypatch):
+    service=ai_workspace;probe,calls=prepare(service,monkeypatch);result=execute(service,probe)
+    path=service.store.safe(f"story_ai/diagnostics/{result['diagnosis_id']}.json")
+    value=json.loads(path.read_bytes());value['response']['status']='incomplete';path.write_text(json.dumps(value))
+    for _ in range(2):
+        recovered=recover(service,result['diagnosis_id'])
+        assert recovered['state']=='unavailable' and recovered['receipt_sha256']==result['receipt_sha256']
+    assert len(calls)==1

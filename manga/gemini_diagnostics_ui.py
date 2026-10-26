@@ -47,20 +47,23 @@ def initial_diagnostic(service,data,raw,prefix):
         enabled=enabled and report_now['key_format']
         consent=st.checkbox('料金・利用条件・送信内容・最大費用を確認し、この固定文の診断を1回だけ承認する',disabled=not enabled,key=prefix+'_'+plan['approval_key']+'_diagnostic_consent')
         if st.button('承認した初回接続診断を1回だけ実行',disabled=not enabled or not consent,key=prefix+'_live_diagnose'):
-            action(lambda:run(service,draft(),mode=mode,approval=plan['approval_key'],expected_revision=data['revision']),'診断結果を保存しました。下の結果・請求状態を確認してください。')
+            def send():
+                result=run(service,draft(),mode=mode,approval=plan['approval_key'],expected_revision=data['revision'])
+                st.session_state[prefix+'_diagnostic_recover']=result['diagnosis_id']
+            action(send,'診断結果を保存しました。下の結果・請求状態を確認してください。')
     except (ValueError,TypeError,ArithmeticError):
         st.caption('まだ実通信できません。まず「通信なしで設定を診断する」で不足項目を確認してください。利用権限を確認済みに偽って変更する必要はありません。')
     history=diagnostic_history(service)
     if history:
         st.markdown('**初回診断の履歴・結果**')
         st.caption('過去のキーでの結果です。現在のキーや無料枠の利用権限を保証しません。通常の脚本生成用設定や無料枠確認を自動更新しません。')
-        latest=history[-1];st.write(LABELS[latest['state']])
+        labels={h['diagnosis_id']:f"診断{i+1} ／ {LABELS[h['state']]}" for i,h in enumerate(history)}
+        identifier=st.selectbox('請求・保存を照合する診断',list(reversed(labels)),format_func=labels.get,key=prefix+'_diagnostic_recover')
+        latest=next(h for h in history if h['diagnosis_id']==identifier);st.write(LABELS[latest['state']])
         if latest['reason']:st.warning(MESSAGES[latest['reason']])
         if latest['state']=='success':
             st.success('この診断ではモデルから有効な応答がありました。無料枠の適用・残枠・今後の権限は別に本人確認してください。')
             st.info('モデル利用条件を確認できた場合のみ、上のJSONのaccount_access_reviewedを本人の判断でtrueにし、従来の確認チェックから保存してください。診断はこの項目を変更しません。')
         else:st.warning('HTTPエラーや通信失敗でも予算予約を自動解放しません。予算画面で実際の請求を照合してください。')
-        labels={h['diagnosis_id']:f"診断{i+1} ／ {LABELS[h['state']]}" for i,h in enumerate(history)}
-        identifier=st.selectbox('請求・保存を照合する診断',list(reversed(labels)),format_func=labels.get,key=prefix+'_diagnostic_recover')
         if st.button('診断の保存・請求を照合する（再送なし）',key=prefix+'_diagnostic_recover_button'):
             action(lambda:recover(service,identifier),'保存・請求の照合結果を反映しました。通信は再送していません。')

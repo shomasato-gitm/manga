@@ -65,3 +65,18 @@ def test_failed_diagnostic_is_not_success_and_shows_action(ai_workspace,monkeypa
     assert any('利用不可' in x.value for x in app.markdown)
     assert not any('有効な応答' in s.value for s in app.success)
     assert service.store.load()['card'] is None
+
+
+def test_selected_history_does_not_show_another_diagnosis_success(ai_workspace,monkeypatch):
+    from test_gemini_diagnostics import prepare,execute
+    from manga.story_ai_gemini import GeminiTransportError
+    from manga.budget.config import open_budget
+    service=ai_workspace
+    def forbidden(*a):raise GeminiTransportError('forbidden')
+    probe,_=prepare(service,monkeypatch,send=forbidden);first=execute(service,probe)
+    open_budget(service.directory).reconcile_no_charge(first['diagnosis_id'],confirmed_no_charge=True)
+    good,_=prepare(service,monkeypatch);execute(service,good)
+    app=open_studio();assert any('有効な応答' in s.value for s in app.success)
+    next(s for s in app.selectbox if s.label=='請求・保存を照合する診断').set_value(first['diagnosis_id']).run()
+    assert any('403' in w.value for w in app.warning)
+    assert not any('有効な応答' in s.value for s in app.success)

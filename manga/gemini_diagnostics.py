@@ -125,8 +125,9 @@ def _finish(service,initial,result,*,receipt_sha256=None):
         data=service.store.load()
         # 別画面で正式採用の保存が中断していたら、復旧対象の正本へ追記しない。
         data=service.store.checked(data['revision'])
-        service.store.save(data,EVENT,**{k:initial[k] for k in keep},state=result['state'],reason=result['reason'],receipt_sha256=receipt_sha256)
-        return diagnostic_history(service)[-1]
+        service.store.save(data,EVENT,**{k:initial[k] for k in keep},state=result['state'],reason=result['reason'],
+                           receipt_sha256=receipt_sha256 or initial.get('receipt_sha256'))
+        return next(h for h in diagnostic_history(service) if h['diagnosis_id']==initial['diagnosis_id'])
 
 
 def run(service,raw,*,mode='bounded',approval=None,expected_revision,probe=None):
