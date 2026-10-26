@@ -235,3 +235,19 @@ def test_normal_generation_card_cannot_use_diagnostic_execution_for_story(ai_wor
     with pytest.raises(ValueError,match='固定'):
         BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=request['id'],provider=PROVIDER,model=MODEL,kind='test',
             price_quote=diagnostic_quote(draft()),usage_limits=LIMITS,operation=lambda:service.adapter.generate(request),actual_charge_jpy=lambda _:'.01')
+
+
+def test_pending_story_adoption_blocks_diagnostic_metadata_until_recovery(ai_workspace,monkeypatch):
+    service=ai_workspace;probe,calls=prepare(service,monkeypatch);write=service.store.write
+    pending=service.store.safe('story_ai/adoption_pending.json')
+    def interrupted_adoption(path,content):
+        result=write(path,content)
+        if path.endswith('.json'):pending.write_text('{"state":"pending"}')
+        return result
+    monkeypatch.setattr(service.store,'write',interrupted_adoption)
+    with pytest.raises(StorageError,match='採用'):execute(service,probe)
+    record=diagnostic_history(service)[0]
+    assert record['state']=='processing' and len(calls)==1
+    # テスト用の採用保存が復旧した状態を模擬。診断はAPIを再送せず記録のみ再開する。
+    pending.unlink();monkeypatch.setattr(service.store,'write',write)
+    assert recover(service,record['diagnosis_id'])['state']=='success' and len(calls)==1

@@ -123,6 +123,8 @@ def _finish(service,initial,result,*,receipt_sha256=None):
     keep=('diagnosis_id','plan_sha256','ledger_path','mode','maximum_jpy')
     with service.store.lock():
         data=service.store.load()
+        # 別画面で正式採用の保存が中断していたら、復旧対象の正本へ追記しない。
+        data=service.store.checked(data['revision'])
         service.store.save(data,EVENT,**{k:initial[k] for k in keep},state=result['state'],reason=result['reason'],receipt_sha256=receipt_sha256)
         return diagnostic_history(service)[-1]
 
