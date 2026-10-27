@@ -13,6 +13,7 @@ def initial_diagnostic(service,data,raw,prefix,selected_model=None):
     st.caption('①通信なしで不足条件を確認 → ②料金・利用条件を確認 → ③固定文の実通信を個別承認 → ④結果を確認して料金設定へ戻る')
     st.info('APIキー設定やAI Studioの無料枠表示だけでは、このモデルの利用権限は確認できません。通信成功も無料枠の保証ではありません。')
     st.caption('この診断は固定文による疎通確認です。JSON構造化出力の設定は送信せず、通常の企画・脚本JSONの生成可否は確認しません。')
+    credential_check(prefix)
     def draft():
         try:return input_text(raw)
         except (ValueError,UnicodeError):return None
@@ -72,6 +73,32 @@ def initial_diagnostic(service,data,raw,prefix,selected_model=None):
         else:st.warning('HTTPエラーや通信失敗でも予算予約を自動解放しません。予算画面で実際の請求を照合してください。')
         if st.button('診断の保存・請求を照合する（再送なし）',key=prefix+'_diagnostic_recover_button'):
             action(lambda:recover(service,identifier),'保存・請求の照合結果を反映しました。通信は再送していません。')
+
+
+def credential_check(prefix):
+    with st.container(border=True):
+        st.markdown('**APIキーの読み込みを確認（通信なし）**')
+        st.caption('スタジオはGEMINI_API_KEYだけを読みます。GOOGLE_API_KEYへの自動切替や、.envの自動読込は行いません。')
+        if st.button('キーの読み込み状態を確認する（通信なし）',key=prefix+'_credential_check'):
+            from manga.gemini_credentials import credential_report
+            report=credential_report()
+            st.write('スタジオの読込先：GEMINI_API_KEY ／ '+('設定あり' if report['key_set'] else '未設定'))
+            labels={'same':'一致（同じアプリプロセス内）','changed':'不一致（起動後に変更あり）','not_recorded':'比較できません（起動時記録なし）'}
+            st.write('起動時との比較：'+labels[report['startup_comparison']])
+            stages={'app_first_run':'アプリ初回実行時（StreamlitのSecrets読込後の場合があります）','before_streamlit':'Streamlit起動前（調査用起動）','not_recorded':'記録なし'}
+            st.caption('比較の基準：'+stages[report['startup_stage']])
+            st.write('GOOGLE_API_KEY：'+('設定あり' if report['google_key_set'] else '未設定'))
+            st.write('2つの環境変数：'+{'same':'一致','different':'不一致','not_comparable':'比較できません（片方または両方が未設定）'}[report['google_comparison']])
+            if report['startup_comparison']=='changed':st.warning('起動後にキーが変わっています。Streamlit Secretsや起動設定を確認し、スタジオを停止して同じターミナルから起動し直してください。変更元はこの比較だけでは特定できません。')
+            if report['google_comparison']=='different':st.warning('直接テストがGoogle公式SDKの場合、GOOGLE_API_KEYが優先されます。スタジオとは別のキーになり得ます。成功したテストがどの変数を使用したか確認してください。')
+            hints={'whitespace':'空白・改行が含まれる','too_long':'長さが読込上限を超える','non_ascii':'ASCII以外の文字が含まれる',
+                   'control':'制御文字が含まれる','quote':'端に引用符が含まれる','assignment':'変数名やexport文が値に含まれる'}
+            for kind,found in report['format_hints'].items():
+                if found:st.warning(hints[kind]+'可能性があります。安全な設定元で確認してください。値を自動修正しません。')
+            if not report['key_set']:st.warning('GEMINI_API_KEYが未設定です。起動するターミナルで設定し、スタジオを起動し直してください。')
+            st.info('認証・無料枠の利用権限は未確認です。この比較は過去の直接接続に使ったキーとの一致を証明しません。通信0回・予算予約0回。')
+        st.caption('StreamlitはSecretsのトップレベル値を環境変数へ反映することがあります。キーの値・一部分・ハッシュは表示・記録せず、比較結果を作品・台帳・ログへ保存しません。')
+        st.caption('通常起動で一致でも、Secrets読込前のターミナルとの一致は証明できません。必要なら同じターミナルでpython -m manga.gemini_startupから起動し直してください。予算台帳や作品の保存先は変更しません。')
 
 
 def _stages(service,identifier):

@@ -3,6 +3,9 @@ import os
 import time
 from pathlib import Path
 
+from manga.gemini_credentials import capture_startup
+capture_startup()
+
 from manga.ui_runtime import ui as st, scope, record_screen
 from manga.ui_data import project_list
 from manga.storage import ProjectStore, StorageError
