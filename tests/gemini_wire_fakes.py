@@ -42,8 +42,9 @@ class Wire:
             auth_header_count=len(headers.get('x-goog-api-key',[])),
             query_key_present='key' in parse_qs(parsed.query),content_type_json=headers.get('content-type')==[b'application/json'],
             role_user=body['contents'][0].get('role')=='user',
-            candidate_count_1=config.get('candidateCount')==1,max_output_256=config.get('maxOutputTokens')==256,
-            thinking_minimal=config.get('thinkingConfig')=={'thinkingLevel':'minimal'},
+            candidate_count_1_explicit=config.get('candidateCount')==1,
+            max_output_256_explicit=config.get('maxOutputTokens')==256,max_output_64_explicit=config.get('maxOutputTokens')==64,
+            thinking_minimal_explicit=config.get('thinkingConfig')=={'thinkingLevel':'minimal'},
             structured_output_present=any(k in config for k in ('responseFormat','responseMimeType','responseJsonSchema','responseSchema')),
             timeout_30=self.connections[index]['timeout']==30)
 

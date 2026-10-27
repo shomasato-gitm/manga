@@ -35,32 +35,45 @@ def execute(service):
     return run(service,card,mode='verified-free',approval=plan['approval_key'],expected_revision=plan['revision'])
 
 
-def minimal_reference(*,query=False):
-    # 公式の最小REST構造を比較用に作る。ユーザーの成功コマンドの復元ではない。
-    # 実送信には使わない（上限未指定）。キーは常にこのファイルのフェイクのみ。
-    body={'contents':[{'parts':[{'text':'Reply with exactly OK.'}]}]}
+def minimal_reference(variant):
+    # 成功時のメソッド・認証・生成設定だけを本人報告に合わせる。
+    # contentsは未提供なので同じ固定文を仮に使用。実際の本文・キーの復元ではない。
+    # すべてオフライン専用。実送信の予算・承認契約へ流用しない。
+    query=variant=='official-minimal-query'
+    body={'contents':[{'role':'user','parts':[{'text':'Connection diagnostic only. Reply with exactly OK.'}]}]}
+    if variant=='reported-success':body['generationConfig']={'maxOutputTokens':64}
     headers={'Content-Type':'application/json'}
     if not query:headers['x-goog-api-key']=KEY
     request=Request(URL+('?key='+KEY if query else ''),data=json.dumps(body).encode(),headers=headers,method='POST')
     with build_opener(NoRedirect()).open(request,timeout=30) as response:response.read()
 
 
-@pytest.mark.parametrize('query',[False,True])
-def test_minimal_rest_comparison_report_is_redacted_and_offline(ai_workspace,wire,query,capsys):
-    wire.response=raw35();minimal_reference(query=query)
+@pytest.mark.parametrize('variant',['reported-success','official-minimal-header','official-minimal-query'])
+def test_minimal_rest_comparison_report_is_redacted_and_offline(ai_workspace,wire,variant,capsys):
+    query=variant=='official-minimal-query'
+    wire.response=raw35();minimal_reference(variant)
     reference=wire.safe_summary();result=execute(ai_workspace);studio=wire.safe_summary()
     assert result['state']=='success' and len(wire.connections)==2
     assert reference['post'] and reference['http11'] and reference['path_matches'] and reference['content_type_json']
     assert reference['auth_header_count']==(0 if query else 1) and reference['query_key_present'] is query
     assert studio==dict(post=True,http11=True,path_matches=True,auth_header_count=1,query_key_present=False,
-        content_type_json=True,role_user=True,candidate_count_1=True,max_output_256=True,thinking_minimal=True,
+        content_type_json=True,role_user=True,candidate_count_1_explicit=True,max_output_256_explicit=True,max_output_64_explicit=False,thinking_minimal_explicit=True,
         structured_output_present=False,timeout_30=True)
     method,target,version,headers,body=wire.request()
     assert headers['x-goog-api-key']==[KEY.encode()] and headers['host']==[b'generativelanguage.googleapis.com']
     assert 'authorization' not in headers and KEY not in target and KEY not in json.dumps(body)
     assert body==probe_body('gemini-3.5-flash-lite')
     # -s指定でMacでも閲覧可能。比較の基準と状態以外を出力しない。
-    report=dict(reference_kind='official-minimal-shape-not-user-capture',real_network_calls=0,
+    if variant=='reported-success':
+        ref_method,ref_target,ref_version,ref_headers,ref_body=wire.request(0)
+        assert (ref_method,ref_target,ref_version)==(method,target,version)
+        assert ref_body['generationConfig']=={'maxOutputTokens':64}
+        assert ref_body['contents']==body['contents']  # 未提供の本文を共通にし、既知の設定差だけを比較。
+        assert ref_headers['x-goog-api-key']==headers['x-goog-api-key']
+        assert {k:v for k,v in ref_headers.items() if k!='content-length'}=={k:v for k,v in headers.items() if k!='content-length'}
+        assert {k for k in studio if studio[k]!=reference[k]}=={
+            'candidate_count_1_explicit','max_output_256_explicit','max_output_64_explicit','thinking_minimal_explicit'}
+    report=dict(reference_kind=variant+'-synthetic-contents-and-key-not-real-capture',real_network_calls=0,
                 key_identity_with_past_success='unverified',reference=reference,studio=studio,
                 different_fields=[k for k in studio if studio[k]!=reference[k]])
     assert KEY not in json.dumps(report) and OTHER not in json.dumps(report)
