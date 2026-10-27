@@ -1,0 +1,42 @@
+{
+  "verified_on": "2026-10-27",
+  "timezone": "Asia/Tokyo",
+  "model": "gemini-3.5-flash-lite",
+  "stage": "stable",
+  "api": "v1beta/generateContent",
+  "max_input_tokens": 1048576,
+  "max_output_tokens_including_thoughts": 65536,
+  "pricing": {
+    "tier": "standard",
+    "currency": "USD",
+    "unit": "1000000 tokens",
+    "text_input": "0.30",
+    "output_including_thoughts": "2.50",
+    "free_tier_listed": true,
+    "free_tier_eligibility_verified_by_app": false,
+    "account_quota": null,
+    "free_quota_can_be_used_to_improve_products": true
+  },
+  "thinking": {
+    "thinkingLevel": "minimal",
+    "fully_off": false,
+    "maxOutputTokens_includes_thoughts": true
+  },
+  "structured_output": {
+    "supported": true,
+    "wire": "generationConfig.responseFormat.text",
+    "mimeType": "APPLICATION_JSON",
+    "schema": "existing manga.story_ai_schemas.schema output"
+  },
+  "disabled_features": ["tools", "search", "maps", "explicit_cache", "batch", "flex", "priority", "images", "audio", "automatic_retry", "automatic_model_switch"],
+  "sources": {
+    "model": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite",
+    "pricing": "https://ai.google.dev/gemini-api/docs/pricing",
+    "api": "https://ai.google.dev/api/generate-content",
+    "thinking": "https://ai.google.dev/gemini-api/docs/generate-content/thinking",
+    "structured_output": "https://ai.google.dev/gemini-api/docs/generate-content/structured-output",
+    "rate_limits": "https://ai.google.dev/gemini-api/docs/rate-limits",
+    "terms": "https://ai.google.dev/gemini-api/terms"
+  },
+  "note": "Official documentation facts only. This is not account consent, billing proof, or production configuration. Codex did not call Gemini."
+}

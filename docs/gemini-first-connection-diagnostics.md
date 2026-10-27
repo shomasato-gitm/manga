@@ -1,5 +1,7 @@
 # Gemini初回接続診断
 
+新規の3.5設定・料金・Mac手順は[Phase 9-B3](phase9b3-gemini35.md)を参照。以下の固定JSON応答・思考OFF・2.5単価の例は旧2.5互換モードに対応する。3.5は固定文へのOK応答と思考minimalを使う。
+
 通信・請求が不明になった場合は[段階別ログと既存未確定分の安全な照合手順](gemini-diagnostic-recovery.md)を参照。
 HTTP 400については[公式仕様との照合・最小固定文診断・Mac再確認手順](gemini-diagnostic-http400.md)を参照。
 

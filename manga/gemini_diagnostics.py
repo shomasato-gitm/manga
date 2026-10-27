@@ -16,9 +16,11 @@ from manga.story_ai_storage import AIStoryStore
 from manga.voice_models import digest
 from manga.gemini_diagnostic_trace import Trace,capture,emit,DiagnosticStorageError
 from manga.gemini_http_errors import BAD_REQUEST_MESSAGES
+from manga.gemini_models import LEGACY_MODEL,get_model
 
 PROVIDER='gemini-text'
 EVENT='gemini_connection_diagnostic'
+# 旧2.5呼出元の互換名。実行時はmodel別のdiagnostic_limits/probe_promptを使う。
 LIMITS=dict(max_input_tokens=INPUT_LIMIT,max_output_tokens=256,max_items=0,retry_limit=0)
 PROMPT='Connection diagnostic only. Return exactly this JSON: {"ok":true}'
 MESSAGES={
@@ -41,10 +43,19 @@ MESSAGES={
 MESSAGES.update(BAD_REQUEST_MESSAGES)
 
 
-def probe_body():
+def diagnostic_limits(model):
+    return dict(max_input_tokens=get_model(model).input_limit,max_output_tokens=256,max_items=0,retry_limit=0)
+
+
+def probe_prompt(model):
+    return PROMPT if get_model(model).legacy else 'Connection diagnostic only. Reply with exactly OK.'
+
+
+def probe_body(model=LEGACY_MODEL):
     # 疎通だけを調べる。通常脚本のJSON構造化出力指定はこの診断へ混ぜない。
-    return dict(contents=[dict(role='user',parts=[dict(text=PROMPT)])],generationConfig=dict(candidateCount=1,maxOutputTokens=256,
-        thinkingConfig=dict(thinkingBudget=0)))
+    profile=get_model(model)
+    return dict(contents=[dict(role='user',parts=[dict(text=probe_prompt(profile.id))])],generationConfig=dict(candidateCount=1,maxOutputTokens=256,
+        thinkingConfig=profile.thinking_config))
 
 
 def parse_card(raw):
@@ -56,7 +67,7 @@ def parse_card(raw):
     return value
 
 
-def offline_report(raw=None):
+def offline_report(raw=None,*,selected_model=None):
     """キーの存在/形式だけを返す。モデル・無料枠の実際の権限は確認しない。"""
     import os
     key_set=bool(os.environ.get('GEMINI_API_KEY'))
@@ -68,10 +79,14 @@ def offline_report(raw=None):
     except (ValueError,TypeError,UnicodeError,RecursionError):
         result['missing']=['設定JSONが未入力、または形式が不正です。ファイルを選択するか、JSONを貼り付けてください。'];return result
     result['json_status']='形式確認済み'
-    if set(card)!=set(template()):result['missing'].append('設定項目に不足・余分な項目があります。Geminiのひな形と比較してください。')
-    if card.get('model')==MODEL:
-        result['model_information']='確認済み（2026-10-26時点の同梱の公式資料。現在の提供・アカウント権限は未確認）'
-    else:result['missing'].append('この版で公式確認したモデルIDは gemini-2.5-flash-lite です。')
+    try:
+        profile=get_model(card.get('model'))
+        if set(card)!=set(template(profile.id)):result['missing'].append('設定項目に不足・余分な項目があります。選択モデルのひな形と比較してください。')
+        result['model_information']=f'確認済み（{profile.verified_on}時点の同梱の公式資料。現在のアカウント権限は未確認）'
+    except ValueError:
+        result['missing'].append('対応モデルの料金JSONを使用してください。2.5と3.5の設定を混ぜないでください。');profile=None
+    matched=selected_model is None or card.get('model')==selected_model
+    if not matched:result['missing'].append('画面で選択したモデルと料金JSONのmodelが異なります。対象モデルのひな形から確認してください。')
     if card.get('account_access_reviewed') is True:result['account_access']='確認済み（本人申告・通信未検証）'
     try:check_free_tier(card);result['free_tier']='確認済み（本人申告・実際の利用権限は未確認）'
     except ValueError:result['missing'].append('無料枠の適用・残枠・課金設定の本人確認は未確認です。AI Studioの表示だけではモデル権限は確認できません。')
@@ -79,8 +94,8 @@ def offline_report(raw=None):
         if flag!='account_access_reviewed' and card.get(flag) is not True:
             result['missing'].append(dict(availability_reviewed='公式モデル提供情報',structured_outputs_reviewed='JSON出力のAPI仕様',commercial_use_reviewed='利用規約・作品の利用目的',maximum_billing_reviewed='最大課金量と料金',external_data_reviewed='外部送信とデータ利用条件')[flag]+'を確認してください。')
     try:
-        diagnostic_quote(card).execution_evidence(PROVIDER,MODEL,LIMITS);result['send_ready']=key_format
-    except (ValueError,TypeError,ArithmeticError):result['missing'].append('料金確認日・単価・為替・税・安全係数が不足、期限切れ、または不正です。通信前に確認してください。')
+        diagnostic_quote(card).execution_evidence(PROVIDER,profile.id,diagnostic_limits(profile.id));result['send_ready']=key_format and matched
+    except (ValueError,TypeError,ArithmeticError,AttributeError):result['missing'].append('料金確認日・単価・為替・税・安全係数が不足、期限切れ、または不正です。通信前に確認してください。')
     if not key_format:result['missing'].append('APIキーを環境変数に設定し直してください。値は表示・保存しません。')
     return result
 
@@ -92,15 +107,17 @@ def diagnostic_history(service):
     return list(latest.values())
 
 
-def preview(service,raw,mode='bounded'):
+def preview(service,raw,mode='bounded',*,selected_model=None):
     card=parse_card(raw);price=diagnostic_quote(card)
+    model=price.rates.model;limits=diagnostic_limits(model)
+    if selected_model is not None and model!=selected_model:raise ValueError('画面で選択したモデルと料金JSONのmodelを一致させてください。')
     if mode not in ('bounded','verified-free'):raise ValueError('診断の利用モードが不正です。')
     if mode=='verified-free':check_free_tier(card)
-    evidence=price.execution_evidence(PROVIDER,MODEL,LIMITS)
+    evidence=price.execution_evidence(PROVIDER,model,limits)
     data=service.store.load()
-    return dict(model=MODEL,mode=mode,maximum_jpy=evidence['computed_max_jpy'],limits=dict(LIMITS),
-        approval_key=digest(dict(card=card,mode=mode,revision=data['revision'],body=probe_body(),project_id=service.project_id)),
-        revision=data['revision'],body=probe_body())
+    return dict(model=model,mode=mode,maximum_jpy=evidence['computed_max_jpy'],limits=limits,
+        approval_key=digest(dict(card=card,mode=mode,revision=data['revision'],body=probe_body(model),project_id=service.project_id)),
+        revision=data['revision'],body=probe_body(model))
 
 
 class Probe:
@@ -108,18 +125,21 @@ class Probe:
 
     def generate(self,identifier):
         context=current_execution()
-        if not context or context['request_id']!=identifier or context['limits']!=LIMITS or context.get('payload_constraint')!=digest(probe_body()):
+        model=context['model'] if context else LEGACY_MODEL
+        if not context or context['request_id']!=identifier or context['limits']!=diagnostic_limits(model) or context.get('payload_constraint')!=digest(probe_body(model)):
             raise ValueError('固定文診断の単発送信権が必要です。')
-        body=probe_body();claim_provider_call(PROVIDER,MODEL,payload_sha256=digest(body))
+        body=probe_body(model);claim_provider_call(PROVIDER,model,payload_sha256=digest(body))
         from manga.story_ai_gemini import transport
         raw=(self.send or transport)(body,api_key())
         try:
             emit('response_validation','started')
-            response=parse_response(raw)
+            response=parse_response(raw,model=model)
             try:
-                value=load_json_payload(response['text']);ok=isinstance(value,dict) and set(value)=={'ok'} and value['ok'] is True
+                if get_model(model).legacy:
+                    value=load_json_payload(response['text']);ok=isinstance(value,dict) and set(value)=={'ok'} and value['ok'] is True
+                else:ok=response['text'].strip()=='OK'
             except ValueError:ok=False
-            valid=ok and response['model']==MODEL and response['usage'] is not None and response['status']=='completed'
+            valid=ok and response['model']==model and response['usage'] is not None and response['status']=='completed'
             emit('response_validation','completed' if valid else 'failed',reason=None if valid else 'invalid_response')
             return dict(model=response['model'],usage=response['usage'],status=response['status'],response_valid=ok)
         except DiagnosticStorageError:raise
@@ -134,6 +154,7 @@ def _finish(service,initial,result,*,receipt_sha256=None):
         # 別画面で正式採用の保存が中断していたら、復旧対象の正本へ追記しない。
         data=service.store.checked(data['revision'])
         service.store.save(data,EVENT,**{k:initial[k] for k in keep},state=result['state'],reason=result['reason'],
+                           **({'model':initial['model']} if 'model' in initial else {}),
                            receipt_sha256=receipt_sha256 or initial.get('receipt_sha256'))
         return next(h for h in diagnostic_history(service) if h['diagnosis_id']==initial['diagnosis_id'])
 
@@ -145,6 +166,7 @@ def run(service,raw,*,mode='bounded',approval=None,expected_revision,probe=None)
     api_key()
     with service.store.lock(generation=True):
         plan=preview(service,card,mode)
+        model=plan['model'];limits=plan['limits']
         if approval is None or approval!=plan['approval_key']:raise ValueError('この固定文・モデル・最大費用の1回限りの承認が必要です。')
         ledger=open_budget(service.directory);ledger_path=str(ledger.path.resolve())
         with service.store.lock():
@@ -157,7 +179,7 @@ def run(service,raw,*,mode='bounded',approval=None,expected_revision,probe=None)
             if not BudgetedExecutor(ledger).dry_run(project_id=service.project_id,quote_jpy=plan['maximum_jpy'],provider=PROVIDER)['possible']:
                 raise ValueError('作品500円・月間5,000円の残額不足、または請求確認待ちのため送信できません。')
             identifier=str(uuid4())
-            initial=dict(diagnosis_id=identifier,plan_sha256=plan['approval_key'],ledger_path=ledger_path,mode=mode,maximum_jpy=plan['maximum_jpy'])
+            initial=dict(diagnosis_id=identifier,plan_sha256=plan['approval_key'],ledger_path=ledger_path,mode=mode,maximum_jpy=plan['maximum_jpy'],model=model)
             service.store.save(data,EVENT,**initial,state='processing',reason=None,receipt_sha256=None)
             # 初回メタデータ保存前には成果物を置かない。失敗しても正本欠損扱いにしない。
         trace=Trace(service,identifier)
@@ -177,11 +199,11 @@ def run(service,raw,*,mode='bounded',approval=None,expected_revision,probe=None)
             return response
         def charge(response):
             emit('budget_settlement','started')
-            return charge_from_usage(price,[MODEL],response)
+            return charge_from_usage(price,[model],response)
         try:
             with capture(trace):
-                response=BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=identifier,provider=PROVIDER,model=MODEL,kind='connection-diagnostic',
-                    price_quote=price,usage_limits=dict(LIMITS),operation=operation,actual_charge_jpy=charge)
+                response=BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=identifier,provider=PROVIDER,model=model,kind='connection-diagnostic',
+                    price_quote=price,usage_limits=dict(limits),operation=operation,actual_charge_jpy=charge)
                 emit('budget_settlement','completed')
         except Exception as error:
             reason=error.category if isinstance(error,GeminiTransportError) and error.category in MESSAGES else 'storage_error' if isinstance(error,DiagnosticStorageError) else 'network_error' if isinstance(error,OSError) else 'invalid_response'
@@ -210,8 +232,11 @@ def recover(service,identifier):
         ledger=open_budget(service.directory)
         if str(ledger.path.resolve())!=initial['ledger_path']:raise ValueError('元の共有予算台帳で照合してください。')
         status=ledger.request_status(identifier)
+        model=get_model(initial.get('model',LEGACY_MODEL)).id
         if status is None:
             return _finish(service,initial,dict(state='unavailable',reason='not_sent'))
+        if status['project_id']!=service.project_id or status['provider']!=PROVIDER or status['model']!=model:
+            raise ValueError('診断のモデル・作品と元の予算台帳が一致しません。再送・自動精算せず確認してください。')
         if status and status['project_id']==service.project_id and status['state']=='cancelled':
             return _finish(service,initial,dict(state='unavailable',reason='interrupted'))
         if not status or status['project_id']!=service.project_id or status['state']!='settled':
@@ -221,7 +246,7 @@ def recover(service,identifier):
             if receipt['diagnosis_id']!=identifier or receipt['plan_sha256']!=initial['plan_sha256']:raise ValueError
             if initial.get('receipt_sha256') and hashlib.sha256(content).hexdigest()!=initial['receipt_sha256']:raise ValueError
             response=receipt['response']
-            if set(response)!= {'model','usage','status','response_valid'} or response['model']!=MODEL or type(response['response_valid']) is not bool:raise ValueError
+            if set(response)!= {'model','usage','status','response_valid'} or response['model']!=model or type(response['response_valid']) is not bool:raise ValueError
         except (ValueError,KeyError,TypeError,StorageError):
             return _finish(service,initial,dict(state='unavailable',reason='invalid_response'))
         state='success' if response['status']=='completed' and response['response_valid'] else 'unavailable'
