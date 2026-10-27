@@ -77,6 +77,11 @@ class CharacterProposals(AssistantStore):
             proposal = self.proposal(data, proposal_id)
             request = self.request(data, proposal['request_id'])
             if request['kind'] != 'characters': raise ValueError('人物提案を選択してください。')
+            if request.get('character_ai',{}).get('provider')=='gemini-text' and request['character_ai'].get('state')!='saved':
+                raise ValueError('人物応答と請求・保存の照合が完了していません。先に復旧を確認してください。')
+            if request.get('character_ai',{}).get('provider')=='gemini-text':
+                from manga.character_ai_generation import verify_receipt
+                verify_receipt(self.root.parent,self.project_id,request)
             self.finalized(request['story_version_id'])
             if proposal['decisions'].get(item_id) != '確認待ち': raise ValueError('確認待ちの提案だけを採用できます。二重登録しません。')
             item = next(i for i in proposal['payload']['items'] if i['id'] == item_id)
@@ -95,6 +100,8 @@ class CharacterProposals(AssistantStore):
                 if key not in values: raise ValueError('採用項目の値が不足しています。')
                 merged[key] = values[key]
             merged = character_fields(merged)
+            if current is not None and 'relationships' not in current and 'relationships' not in fields:
+                merged.pop('relationships', None)
             aliases = {b['character_id']: b['aliases'] for b in bible_data['bibles']}
             if current is None and matches(merged['name'], artwork['characters'], aliases) and distinct_confirmed is not True:
                 raise ValueError('既存人物との重複候補です。同じ人物を選択するか、別人としての登録を確認してください。')

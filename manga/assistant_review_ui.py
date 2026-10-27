@@ -37,7 +37,7 @@ def _edit(kind, item, request, key):
         else:
             labels = REFERENCE_FIELDS
         for name, label in labels.items():
-            changed["fields"][name] = st.text_area(f"提案：{label}", value=item["fields"][name], max_chars=100 if name == "name" else 2000, key=f"{key}_{name}")
+            changed["fields"][name] = st.text_area(f"提案：{label}", value=item["fields"].get(name,""), max_chars=100 if name == "name" else 2000, key=f"{key}_{name}")
         if kind == "references":
             for name, label in REFERENCE_AI_FIELDS.items():
                 if name == "confirmation_status":

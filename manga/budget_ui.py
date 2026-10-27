@@ -51,6 +51,11 @@ def render_budget(project, projects_directory, navigate=None):
         st.error('未確定明細を安全に読み込めません。台帳を変更・初期化せず、保存先とバックアップを確認してください。')
     if navigate and st.button('Gemini初回診断の保存・請求照合へ戻る'):
         navigate('企画・ストーリー','AI企画・ストーリー')
+    if navigate and st.button('AIキャラクターの保存・請求照合へ戻る'):
+        prefix='character_ai_'+project.id
+        st.session_state[prefix+'_method']='Gemini 3.5 Flash-Lite'
+        st.session_state[prefix+'_stage_pending']='抽出・照合'
+        navigate('キャラクター・作風','AIキャラクター制作・一貫性管理')
 
 
 def _recovery(ledger,project_id):
@@ -62,7 +67,7 @@ def _recovery(ledger,project_id):
         st.info('請求未確定のリクエストはありません。')
     else:
         st.dataframe([{'リクエストID':r['request_id'],'作品UUID':r['project_id'],'提供元':r['provider'],
-            'モデル':r['model'],'用途':r['kind'],'状態':'請求不明' if r['state']=='uncertain' else '予約中',
+            'モデル':r['model'],'用途':'人物設定生成' if r['kind']=='character-settings' else r['kind'],'状態':'請求不明' if r['state']=='uncertain' else '予約中',
             '最大予約額（円）':_money(r['quote_jpy']),'作成日時':r['created_at'],'更新日時':r['updated_at']} for r in rows],hide_index=True)
         labels={r['request_id']:f"{r['request_id']} ／ {'この作品' if r['project_id']==project_id else '別作品'} ／ {_money(r['quote_jpy'])}円" for r in rows}
         identifier=st.selectbox('照合する未確定リクエスト',list(labels),format_func=labels.get,key='budget_recovery_request')
@@ -116,7 +121,7 @@ def _manual_form(ledger,row):
         try:
             ledger.reconcile_manual(identifier,project_id=row['project_id'],outcome='charge' if outcome=='請求額が確定' else 'no_charge',
                 actual_jpy=amount,charged_at=charged_at,confirmed_statement=statement,confirmed_request=selected)
-            st.session_state['_budget_reconcile_notice']='この1件の請求照合を保存しました。診断画面の「診断の保存・請求を照合する（再送なし）」へ戻ってください。APIは送信していません。見積超過等があれば停止を継続します。'
+            st.session_state['_budget_reconcile_notice']='この1件の請求照合を保存しました。元の制作画面で保存・請求照合（再送なし）を再開してください。APIは送信していません。見積超過等があれば停止を継続します。'
         except (ValueError,sqlite3.Error,OSError):
             st.session_state['_budget_reconcile_error']='請求照合を保存できません。金額・請求日・確認内容・現在の状態と台帳を確認してください。自動再送・自動解除は行いません。'
     st.button('確認済みの請求結果をこの1件に反映（再送なし）',disabled=not (statement and selected),key=consent+'_apply',on_click=apply)

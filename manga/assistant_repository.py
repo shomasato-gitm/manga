@@ -46,6 +46,9 @@ def validate_assistant(data, project_id):
             raise ValueError
         if not isinstance(request["theme"], str) or not isinstance(request["prompt"], str):
             raise ValueError
+        if request.get('character_ai',{}).get('provider')=='gemini-text':
+            from manga.character_ai_gemini import validate_record
+            validate_record(request)
         requests[request["id"]] = request
     for proposal in data["proposals"]:
         request = requests[proposal["request_id"]]

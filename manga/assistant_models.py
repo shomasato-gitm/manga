@@ -63,7 +63,8 @@ def normalize_item(kind, item, request):
     checked = dict(id=item_id, questions=questions(item.get("questions", [])))
     if kind == "characters":
         values = obj(item.get("fields"), "キャラクター設定")
-        required_fields(values, CHARACTER_ALL_FIELDS)
+        # Phase 10-Aの関係設定は任意追加。保存済みの旧提案には要求しない。
+        required_fields(values, {k:v for k,v in CHARACTER_ALL_FIELDS.items() if k != 'relationships'})
         fields = character_fields(values)
         existing_id = item.get("existing_id")
         if existing_id is not None:
