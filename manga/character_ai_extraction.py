@@ -16,6 +16,16 @@ def matching_key(name):
     return value[:match.start()] if match and match.start() else value
 
 
+def feature_matches(values,characters,*,exclude=None):
+    result=[]
+    for person in characters:
+        if person['deleted_at'] or person['id']==exclude:continue
+        same=[k for k in ('hairstyle','hair_color','eye_color','body_type','clothing','features','visual_identity')
+              if values.get(k) and person.get(k) and name_key(values[k])==name_key(person[k])]
+        if 'visual_identity' in same or len(same)>=3:result.append(dict(character_id=person['id'],name=person['name'],fields=same))
+    return result
+
+
 def matches(name, characters, aliases=None):
     """完全一致も候補にすぎない。名字／名前だけの一致は弱い候補として返す。"""
     result = []
@@ -56,6 +66,13 @@ def extract(story, artwork, *, additional_names=(), aliases=None):
 
     known = [c['name'] for c in artwork['characters'] if not c['deleted_at']]
     known += [alias for c in artwork['characters'] if not c['deleted_at'] for alias in (aliases or {}).get(c['id'], [])]
+    # 未登録でも明確な話者名があれば、その人の描写も抽出根拠に含める。
+    # 代名詞・曖昧な呼称は増やさず、既存UUIDとの同定も行わない。
+    for _, panel in panels:
+        for utterance in split_dialogue(panel['dialogue']):
+            if not utterance.needs_review and utterance.speaker and matching_key(utterance.speaker) not in AMBIGUOUS:
+                known.append(utterance.speaker)
+    known=list(dict.fromkeys(known))
     for page, panel in panels:
         for utterance in split_dialogue(panel['dialogue']):
             if utterance.needs_review or not utterance.speaker or matching_key(utterance.speaker) in AMBIGUOUS:

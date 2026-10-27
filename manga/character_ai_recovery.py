@@ -23,7 +23,9 @@ def validate_recovery(journal):
         if character_fields(target) != change['after']: raise ValueError
         if previous:
             if {k:v for k,v in previous.items() if k not in (*character_fields(previous), 'updated_at')} != {k:v for k,v in target.items() if k not in (*character_fields(target), 'updated_at')}: raise ValueError
-            if {k:previous.get(k, '') for k in CHARACTER_ALL_FIELDS} != change['before']: raise ValueError
+            # Phase 10-A以前の保存途中ジャーナルには任意のrelationships項目がない。
+            before_fields={k:previous.get(k,'') for k in CHARACTER_ALL_FIELDS if k!='relationships' or k in change['before']}
+            if before_fields != change['before']: raise ValueError
         elif target['references'] or target['primary_reference_id'] is not None or target['deleted_at'] is not None:
             raise ValueError
         old_proposals = {p['id']:p for p in before['proposals']}

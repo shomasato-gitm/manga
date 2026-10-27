@@ -61,6 +61,26 @@ class CharacterAIService:
         self.stories = self.proposals.stories
         self.project_id = self.store.project_id
 
+    def inspect_characters(self,version_id,additional_names=()):
+        from manga.character_ai_generation import inspect
+        return inspect(self,version_id,additional_names)
+
+    def preview_gemini(self,project,version_id,**kwargs):
+        from manga.character_ai_generation import preview
+        return preview(self,project,version_id,**kwargs)
+
+    def generate_gemini(self,project,version_id,**kwargs):
+        from manga.character_ai_generation import generate
+        return generate(self,project,version_id,**kwargs)
+
+    def recover_gemini(self,identifier):
+        from manga.character_ai_generation import recover
+        return recover(self,identifier)
+
+    def character_budget(self):
+        from manga.character_ai_generation import budget_summary
+        return budget_summary(self)
+
     def snapshot(self, *, hashed=False):
         latest = self.proposals.latest()
         artwork = self.artwork.load()

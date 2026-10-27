@@ -19,6 +19,9 @@ def bible_editor(service, version_id, data, enabled, prefix, navigate):
     if current and bible_stale(current, service.proposals.latest(), person, refs):
         st.warning('バイブルは古い状態です。元の人物設定・脚本・参照画像の変更を再確認してください。')
     st.subheader(person['name']+'の固定設定')
+    with st.expander('正式採用済みのプロフィール・性格・人物関係'):
+        from manga.artwork_models import CHARACTER_ALL_FIELDS
+        st.table([dict(項目=CHARACTER_ALL_FIELDS[k],正式設定=person.get(k,'') or '未設定') for k in ('name','gender','role','personality','relationships')])
     st.dataframe([dict(項目=label, 現在の正式設定=person.get(k, '') or '未指定・要確認', 前のバイブル=current['profile'].get(k, '') if current else '') for k,label in FIXED_FIELDS.items()], hide_index=True)
     st.caption('場面で変化する要素：'+'・'.join(VARIABLE_ELEMENTS)+'。衣装・成長・回想等の変更は対象コマ付きの例外として確認します。')
     options = [k for k in FIXED_FIELDS if person.get(k)]

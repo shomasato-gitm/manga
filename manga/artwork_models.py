@@ -8,7 +8,7 @@ CHARACTER_FIELDS = {
     "hair_color": "髪色", "eye_color": "目の色", "body_type": "体格",
     "clothing": "服装", "personality": "性格", "features": "特徴",
 }
-CHARACTER_EXTRA_FIELDS = {"height": "身長", "role": "物語上の役割", "visual_identity": "視覚的な差別化"}
+CHARACTER_EXTRA_FIELDS = {"height": "身長", "role": "物語上の役割", "visual_identity": "視覚的な差別化", "relationships": "他の登場人物との関係"}
 CHARACTER_ALL_FIELDS = {**CHARACTER_FIELDS, **CHARACTER_EXTRA_FIELDS}
 DIRECTION_FIELDS = {
     "location": "場所", "time_of_day": "時間帯", "expression": "表情",
