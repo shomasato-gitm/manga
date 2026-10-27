@@ -11,6 +11,7 @@ def initial_diagnostic(service,data,raw,prefix):
     st.subheader('初回接続診断')
     st.caption('①通信なしで不足条件を確認 → ②料金・利用条件を確認 → ③固定文の実通信を個別承認 → ④結果を確認して料金設定へ戻る')
     st.info('APIキー設定やAI Studioの無料枠表示だけでは、このモデルの利用権限は確認できません。通信成功も無料枠の保証ではありません。')
+    st.caption('この診断は固定文による疎通確認です。JSON構造化出力の設定は送信せず、通常の企画・脚本JSONの生成可否は確認しません。')
     def draft():
         try:return input_text(raw)
         except (ValueError,UnicodeError):return None
