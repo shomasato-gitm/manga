@@ -354,6 +354,54 @@ class BudgetLedger:
             return dict(project_id=row[0],provider=row[2],model=row[3],kind=row[4],
                         quote_jpy=_units_to_yen(row[5]),actual_jpy=_units_to_yen(row[6]) if row[6] is not None else None,state=row[7])
 
+    def pending_requests(self):
+        """全作品の未確定明細。金額・状態を変えず、秘密情報・実行権の値は返さない。"""
+        with self._transaction() as db:
+            rows=db.execute('''SELECT r.request_id,r.project_id,r.provider,r.model,r.kind,r.state,
+                r.quote_units,r.created_at,r.updated_at,r.month_key,e.claim_id IS NOT NULL
+                FROM api_budget_requests r LEFT JOIN api_budget_executions e ON r.request_id=e.request_id
+                WHERE r.state IN ('reserved','uncertain') ORDER BY r.created_at,r.request_id''').fetchall()
+        return [dict(request_id=r[0],project_id=r[1],provider=r[2],model=r[3],kind=r[4],state=r[5],
+                     quote_jpy=_units_to_yen(r[6]),created_at=r[7],updated_at=r[8],month=r[9],execution_claimed=bool(r[10])) for r in rows]
+
+    def reconcile_manual(self, request_id, *, project_id, outcome, actual_jpy=None, charged_at=None,
+                         confirmed_statement=False, confirmed_request=False):
+        """確定した提供元明細を人間が照合。精算と監査記録を同一トランザクションで保存する。"""
+        validate_id(project_id)
+        request_id=_check_label(request_id,'リクエストID')
+        if confirmed_statement is not True or confirmed_request is not True:
+            raise ValueError('提供元の確定した請求結果と、この作品・リクエスト・金額の個別確認が必要です。')
+        if outcome not in ('charge','no_charge'):
+            raise ValueError('請求額確定または無課金確定を選んでください。不明のまま照合できません。')
+        if outcome=='charge':
+            actual=_yen_to_units(actual_jpy,positive=True)
+            if charged_at is None:raise ValueError('確定明細の請求日を指定してください。')
+            billed,month=_now_and_month(charged_at)
+            if datetime.fromisoformat(billed).date()>datetime.now(_TOKYO).date():
+                raise ValueError('請求日は本日以前にしてください。')
+        else:
+            if actual_jpy is not None and _yen_to_units(actual_jpy)!=0:raise ValueError('無課金の金額は0円です。')
+            actual=0;billed=None;month=None
+        with self._transaction() as db:
+            row=self._get(db,request_id)
+            if row is None or row[0]!=project_id or row[7]!='uncertain':
+                raise ReservationConflict('この作品の請求不明の1件だけを照合できます。状態が変わった場合は画面を更新してください。')
+            if db.execute('SELECT 1 FROM api_budget_reconciliations WHERE request_id=?',(request_id,)).fetchone():
+                raise ReservationConflict('このリクエストは照合済みです。上書きしません。')
+            at,_=_now_and_month()
+            db.execute("UPDATE api_budget_requests SET state='settled',actual_units=?,updated_at=?,month_key=? WHERE request_id=?",
+                       (actual,at,month or row[1],request_id))
+            db.execute('INSERT INTO api_budget_reconciliations VALUES (?,?,?,?,?)',
+                       (request_id,outcome,actual,billed or at,at))
+
+    def reconciliation_history(self):
+        with self._transaction() as db:
+            rows=db.execute('''SELECT a.request_id,r.project_id,a.outcome,a.actual_units,a.charged_at,a.confirmed_at
+                FROM api_budget_reconciliations a JOIN api_budget_requests r ON a.request_id=r.request_id
+                ORDER BY a.confirmed_at,a.request_id''').fetchall()
+        return [dict(request_id=r[0],project_id=r[1],outcome=r[2],actual_jpy=_units_to_yen(r[3]),
+                     charged_at=r[4],confirmed_at=r[5]) for r in rows]
+
     def acknowledge_overrun(self, request_id, *, confirmed_reviewed=False, reason=''):
         """Operator-only acknowledgement, preserving the actual charge and audit trail."""
         if confirmed_reviewed is not True or not isinstance(reason,str) or not reason.strip() or len(reason)>1000:

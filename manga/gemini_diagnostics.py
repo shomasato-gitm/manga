@@ -14,6 +14,7 @@ from manga.story_ai_gemini import MODEL,INPUT_LIMIT,FLAGS,template,api_key,diagn
 from manga.story_ai_pricing import charge_from_usage
 from manga.story_ai_storage import AIStoryStore
 from manga.voice_models import digest
+from manga.gemini_diagnostic_trace import Trace,capture,emit,DiagnosticStorageError
 
 PROVIDER='gemini-text'
 EVENT='gemini_connection_diagnostic'
@@ -27,15 +28,15 @@ MESSAGES={
     'bad_request':'400：診断パラメーターを受け付けられませんでした。公式API仕様とアプリの版を確認してください。自動で条件を変えて再送しません。',
     'server_error':'提供元でエラーが発生しました。送信結果と請求を確認してください。',
     'network_error':'通信・タイムアウト等により結果が不明です。接続環境とGoogle側の利用明細を確認するまで再送しません。',
+    'connection_timeout':'接続・HTTP応答待ちがタイムアウトしました。接続確立前か応答待ちかはこの記録だけでは特定できません。Googleへの到達・請求も不明のため再送しません。',
+    'response_timeout':'HTTP応答を受信後、本文の受信がタイムアウトしました。処理結果・請求をGoogle側で確認するまで再送しません。',
+    'budget_error':'利用量の計算・予算精算を完了できませんでした。保存済み結果と共有台帳・Google側の請求を照合してください。再送しません。',
     'invalid_response':'応答の形式・モデル・利用量を確認できません。診断成功とは扱わず、請求と保存状態を確認してください。',
     'http_error':'APIが診断を受け付けませんでした。Google側の利用状況と請求を確認してください。',
     'interrupted':'診断が中断しました。保存済み記録と請求を照合してください。再送は行いません。',
     'storage_error':'応答の保存が完了しませんでした。保存先・容量と請求を照合し、保存済み応答から再開してください。APIは再送しません。',
     'not_sent':'予算台帳にこの診断の予約・実行記録がなく、送信前に停止しています。履歴を残し、新しい見積を個別承認して診断できます。',
 }
-
-
-class DiagnosticStorageError(ValueError):pass
 
 
 def probe_body():
@@ -110,11 +111,15 @@ class Probe:
         from manga.story_ai_gemini import transport
         raw=(self.send or transport)(body,api_key())
         try:
+            emit('response_validation','started')
             response=parse_response(raw)
             try:
                 value=load_json_payload(response['text']);ok=isinstance(value,dict) and set(value)=={'ok'} and value['ok'] is True
             except ValueError:ok=False
+            valid=ok and response['model']==MODEL and response['usage'] is not None and response['status']=='completed'
+            emit('response_validation','completed' if valid else 'failed',reason=None if valid else 'invalid_response')
             return dict(model=response['model'],usage=response['usage'],status=response['status'],response_valid=ok)
+        except DiagnosticStorageError:raise
         except Exception:raise GeminiTransportError('invalid_response') from None
 
 
@@ -152,24 +157,46 @@ def run(service,raw,*,mode='bounded',approval=None,expected_revision,probe=None)
             initial=dict(diagnosis_id=identifier,plan_sha256=plan['approval_key'],ledger_path=ledger_path,mode=mode,maximum_jpy=plan['maximum_jpy'])
             service.store.save(data,EVENT,**initial,state='processing',reason=None,receipt_sha256=None)
             # 初回メタデータ保存前には成果物を置かない。失敗しても正本欠損扱いにしない。
-            service.store.write(f'story_ai/diagnostics/{identifier}.probe',b'probe')
+        trace=Trace(service,identifier)
         price=diagnostic_quote(card)
+        trace.record('pre_send','started')
+        try:service.store.write(f'story_ai/diagnostics/{identifier}.probe',b'probe')
+        except (OSError,StorageError):
+            trace.failed('storage_error');raise
         def operation():
+            emit('pre_send','completed')
             response=(probe or Probe()).generate(identifier)
             receipt=dict(diagnosis_id=identifier,plan_sha256=initial['plan_sha256'],response=response)
+            emit('result_storage','started')
             try:service.store.write(f'story_ai/diagnostics/{identifier}.json',json.dumps(receipt,allow_nan=False).encode())
             except (OSError,StorageError):raise DiagnosticStorageError('応答保存を確認してください。') from None
+            emit('result_storage','completed')
             return response
+        def charge(response):
+            emit('budget_settlement','started')
+            return charge_from_usage(price,[MODEL],response)
         try:
-            response=BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=identifier,provider=PROVIDER,model=MODEL,kind='connection-diagnostic',
-                price_quote=price,usage_limits=dict(LIMITS),operation=operation,actual_charge_jpy=lambda r:charge_from_usage(price,[MODEL],r))
+            with capture(trace):
+                response=BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=identifier,provider=PROVIDER,model=MODEL,kind='connection-diagnostic',
+                    price_quote=price,usage_limits=dict(LIMITS),operation=operation,actual_charge_jpy=charge)
+                emit('budget_settlement','completed')
         except Exception as error:
             reason=error.category if isinstance(error,GeminiTransportError) and error.category in MESSAGES else 'storage_error' if isinstance(error,DiagnosticStorageError) else 'network_error' if isinstance(error,OSError) else 'invalid_response'
+            if trace.last and trace.last[0]=='budget_settlement' and not isinstance(error,DiagnosticStorageError):reason='budget_error'
+            trace.failed(reason)
             state='unavailable' if reason in ('forbidden','not_found','rate_limited','unauthorized','bad_request') else 'uncertain'
-            return _finish(service,initial,dict(state=state,reason=reason))
+            trace.record('history_storage','started')
+            result=_finish(service,initial,dict(state=state,reason=reason))
+            trace.record('history_storage','completed')
+            return result
         payload=service.store.read(f'story_ai/diagnostics/{identifier}.json')
         state='success' if response['status']=='completed' and response['response_valid'] else 'unavailable'
-        return _finish(service,initial,dict(state=state,reason=None if state=='success' else 'invalid_response'),receipt_sha256=hashlib.sha256(payload).hexdigest())
+        trace.record('history_storage','started')
+        try:result=_finish(service,initial,dict(state=state,reason=None if state=='success' else 'invalid_response'),receipt_sha256=hashlib.sha256(payload).hexdigest())
+        except (OSError,StorageError):
+            trace.failed('storage_error');raise
+        trace.record('history_storage','completed')
+        return result
 
 
 def recover(service,identifier):

@@ -4,7 +4,7 @@ import os
 import time
 from decimal import Decimal
 from urllib.request import Request,build_opener
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from manga.budget import PriceQuote,PriceRates
 from manga.budget.guard import claim_provider_call,claim_transport,current_execution
@@ -111,20 +111,35 @@ def transport(body,key):
     claim_transport(provider,MODEL,digest(body))
     req=Request('https://generativelanguage.googleapis.com/v1beta/models/'+MODEL+':generateContent',
         data=json.dumps(body,ensure_ascii=False,allow_nan=False).encode(),headers={'Content-Type':'application/json','x-goog-api-key':key},method='POST')
+    from manga.gemini_diagnostic_trace import emit, DiagnosticStorageError
+    received=False
     try:
+        emit('sending','started')
         with build_opener(NoRedirect()).open(req,timeout=30) as response:
+            received=True
+            code=getattr(response,'status',None)
+            emit('sending','completed')
+            emit('http_response','completed',http_status=code if type(code) is int else None)
             deadline=time.monotonic()+120;chunks=[];size=0
             while True:
-                if time.monotonic()>deadline:raise ValueError
+                if time.monotonic()>deadline:raise TimeoutError
                 chunk=response.read1(min(65536,1048577-size))
                 if not chunk:break
                 chunks.append(chunk);size+=len(chunk)
                 if size>1048576:raise ValueError
+            emit('response_validation','started')
             return load_json_payload(b''.join(chunks).decode())
+    except DiagnosticStorageError:raise
     except HTTPError as error:
         category={400:'bad_request',401:'unauthorized',403:'forbidden',404:'not_found',429:'rate_limited'}.get(error.code,'server_error' if 500<=error.code<=599 else 'http_error')
+        emit('sending','completed')
+        emit('http_response','completed',http_status=error.code,reason=category)
         raise GeminiTransportError(category) from None
     except ValueError:raise GeminiTransportError('invalid_response') from None
+    except (TimeoutError,URLError) as error:
+        timed_out=isinstance(error,TimeoutError) or isinstance(getattr(error,'reason',None),TimeoutError)
+        category=('response_timeout' if received else 'connection_timeout') if timed_out else 'network_error'
+        raise GeminiTransportError(category) from None
     except Exception:raise GeminiTransportError('network_error') from None
 
 

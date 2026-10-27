@@ -28,6 +28,8 @@ def test_budget_screen_requires_a_project(monkeypatch, tmp_path):
 def test_budget_screen_uses_shared_runtime_directory(monkeypatch, tmp_path):
     shown = []
     ui = SimpleNamespace(
+        session_state={},
+        info=shown.append,
         subheader=shown.append,
         caption=shown.append,
         write=shown.append,

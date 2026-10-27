@@ -25,6 +25,16 @@ def initialize(db, policy):
         request_id TEXT PRIMARY KEY, claimed_at TEXT NOT NULL, claim_id TEXT NOT NULL)''')
     db.execute('''CREATE TABLE IF NOT EXISTS api_budget_overrun_reviews (
         request_id TEXT PRIMARY KEY, reason TEXT NOT NULL, reviewed_at TEXT NOT NULL)''')
+    # 既存の予約・精算・実行権を変更しない追加テーブル。導入済みの欠損は再作成しない。
+    recovery = {'api_budget_recovery_version', 'api_budget_reconciliations'}
+    if tables & recovery and not recovery <= tables:
+        raise BudgetStateError('請求照合履歴の管理テーブルが欠損しています。再作成せず停止しました。')
+    db.execute('CREATE TABLE IF NOT EXISTS api_budget_recovery_version (id INTEGER PRIMARY KEY CHECK(id=1), version INTEGER NOT NULL)')
+    if not tables & recovery:
+        db.execute('INSERT INTO api_budget_recovery_version VALUES (1,1)')
+    db.execute('''CREATE TABLE IF NOT EXISTS api_budget_reconciliations (
+        request_id TEXT PRIMARY KEY, outcome TEXT NOT NULL, actual_units INTEGER NOT NULL,
+        charged_at TEXT NOT NULL, confirmed_at TEXT NOT NULL)''')
     if not exists:
         # Old "reserved" did not distinguish unsent from already dispatched.
         # Keep the original rows and money; only add a conservative legacy claim.
@@ -37,6 +47,8 @@ def initialize(db, policy):
 
 
 def validate(db, policy):
+    if db.execute('SELECT id,version FROM api_budget_recovery_version').fetchall() != [(1,1)]:
+        raise BudgetStateError('請求照合履歴の版が不正です。初期化せず確認してください。')
     if db.execute('SELECT id, policy FROM api_budget_policy').fetchall() != [(1, policy)]:
         raise BudgetStateError('共有台帳の予算設定が一致しません。全プロセスで同じ上限・プロバイダー設定を使用してください。')
     bad = db.execute('''SELECT 1 FROM api_budget_requests WHERE
@@ -54,6 +66,10 @@ def validate(db, policy):
             ON a.request_id=r.request_id WHERE r.request_id IS NULL LIMIT 1''').fetchone()
     bad = bad or db.execute('''SELECT 1 FROM api_budget_executions e JOIN api_budget_requests r
         ON e.request_id=r.request_id WHERE r.state='cancelled' LIMIT 1''').fetchone()
+    bad = bad or db.execute('''SELECT 1 FROM api_budget_reconciliations a LEFT JOIN api_budget_requests r
+        ON a.request_id=r.request_id WHERE r.request_id IS NULL OR r.state!='settled'
+        OR a.actual_units!=r.actual_units OR a.outcome NOT IN ('charge','no_charge')
+        OR (a.outcome='charge' AND a.actual_units<=0) OR (a.outcome='no_charge' AND a.actual_units!=0) LIMIT 1''').fetchone()
     if bad:
         raise BudgetStateError('予算台帳の状態が不整合です。作り直さずバックアップと請求明細を確認してください。')
     for raw, units, provider, model in db.execute('''SELECT q.evidence, r.quote_units, r.provider, r.model

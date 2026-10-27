@@ -55,6 +55,8 @@ def render_story_ai(project,directory,navigate=None):
             from manga.story_ai_ui_compare import comparison
             comparison(service,data,prefix,navigate)
         if navigate and st.button('STEP 7：最新脚本を確認・正式確定する'):navigate('企画・ストーリー','比較・脚本確定')
+        if navigate and any(e['kind']=='gemini_connection_diagnostic' for e in data['events']) and st.button('請求未確定の明細・手動照合へ'):
+            navigate('完成・書き出し','API予算管理')
     except (ValueError,OSError,StorageError) as error:st.error(str(error))
     except sqlite3.Error:st.error('予算台帳を安全に読み込めません。初期化せず、保存先とバックアップを確認してください。')
     except (KeyError,TypeError,AttributeError):st.error('AI制作JSONの項目・対象の版を確認してください。既存のデータは変更していません。')
