@@ -69,12 +69,10 @@ def parse_card(raw):
 
 def offline_report(raw=None,*,selected_model=None):
     """キーの存在/形式だけを返す。モデル・無料枠の実際の権限は確認しない。"""
-    import os
-    key_set=bool(os.environ.get('GEMINI_API_KEY'))
-    try:api_key();key_format=True
-    except ValueError:key_format=False
+    from manga.gemini_credentials import credential_report
+    credential=credential_report();key_set=credential['key_set'];key_format=credential['format_ok']
     result=dict(key_set=key_set,key_format=key_format,json_status='未確認',model_information='未確認',
-        account_access='未確認',free_tier='未確認',send_ready=False,missing=[],network_calls=0,budget_reservations=0)
+        account_access='未確認',free_tier='未確認',send_ready=False,missing=[],network_calls=0,budget_reservations=0,credential=credential)
     try:card=parse_card(raw)
     except (ValueError,TypeError,UnicodeError,RecursionError):
         result['missing']=['設定JSONが未入力、または形式が不正です。ファイルを選択するか、JSONを貼り付けてください。'];return result

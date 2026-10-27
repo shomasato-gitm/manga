@@ -1,6 +1,5 @@
 """Geminiテキスト専用。ツール・画像・キャッシュ・リトライ・モデル切替なし。"""
 import json
-import os
 import time
 from decimal import Decimal
 from urllib.request import Request,build_opener
@@ -14,6 +13,7 @@ from manga.story_ai_prompts import SYSTEM,prompt
 from manga.story_ai_schemas import schema
 from manga.voice_models import digest
 from manga.gemini_models import LEGACY_MODEL,get_model
+from manga.gemini_credentials import api_key
 
 # 旧呼出元・保存形式の互換名。新規UIの既定値や送信先の判定には使わない。
 MODEL=LEGACY_MODEL
@@ -84,12 +84,6 @@ def check_free_tier(card):
     except (ValueError,TypeError,KeyError):age=99
     if card.get('free_tier_reviewed') is not True or not 0<=age<=1:
         raise ValueError('このアカウントの無料枠・残枠・課金設定・データ利用条件を本日確認してください。有料へ自動切替しません。')
-
-
-def api_key():
-    value=os.environ.get('GEMINI_API_KEY','')
-    if not value or len(value)>512 or any(c.isspace() for c in value):raise StoryProviderError('GEMINI_API_KEYをMacの環境変数へ設定してください。値は画面・JSONへ入力しないでください。')
-    return value
 
 
 def payload(request):

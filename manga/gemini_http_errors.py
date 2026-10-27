@@ -3,7 +3,7 @@ import json
 
 MAX_ERROR_BYTES = 16384
 BAD_REQUEST_MESSAGES = {
-    'bad_request_api_key': '400：Googleの構造化エラーはAPIキーの無効を示しています。Macのキー設定と発行プロジェクトを確認してください。キーの値は貼り付けないでください。',
+    'bad_request_api_key': '400：Googleの構造化エラーはAPIキーの無効を示しています。無効の理由やキーの読込元は、この分類だけでは特定できません。「APIキーの読み込みを確認（通信なし）」で起動時・環境変数を比較し、発行プロジェクトを確認してください。キーの値は貼り付けないでください。',
     'bad_request_precondition': '400：Googleは実行の前提条件が満たされていないと回答しました。対象プロジェクトの利用条件・地域・請求設定等を確認してください。どの条件かはこの分類だけでは断定できません。',
     'bad_request_json_schema': '400：Googleの検証詳細がJSONスキーマの指定を指しています。アプリの版と構造化出力の対応を確認してください。スキーマを自動変更して再送しません。',
     'bad_request_thinking': '400：Googleの検証詳細が思考設定を指しています。対象モデルのthinkingConfig・thinkingLevel・thinkingBudgetの対応を確認してください。モデルや予算を自動変更しません。',

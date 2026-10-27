@@ -1086,4 +1086,6 @@ HTTP 400は[公式仕様との照合とMac再確認手順](docs/gemini-diagnosti
 新規のGemini設定は`gemini-3.5-flash-lite`を案内します。[3.5料金ひな形](examples/story_ai/gemini_35_text_pricing_template.json)と[無料枠で診断・企画・8ページ24コマ脚本を確認するMac手順](docs/phase9b3-gemini35.md)を追加しました。
 3.5は思考minimalを使い、思考分を含む費用上限を個別に承認します。既存の2.5設定・履歴・未確定請求は自動変更せず、404でも別モデルへ自動再送しません。Codexの自動テストはフェイクのみで、ユーザー報告のMac疎通成功とアプリ内の実機検証は区別します。
 
+直接接続は成功するのにスタジオでAPIキー無効になる場合は、[キー読込経路の調査とMacでの通信なし比較](docs/gemini-key-loading.md)を使用してください。環境変数の値・一部分・ハッシュを出さず、Streamlit起動前からの変更と`GOOGLE_API_KEY`との不一致を確認できます。認証元やリクエスト仕様は自動変更しません。
+
 「企画・脚本 → AI企画・ストーリー」は手動モードが既定です。Geminiテキスト接続、既存OpenAI、無料モックを選択し、実APIは1送信ずつ見積・承認します。[API設定・料金・送信範囲・復旧手順](docs/phase9b2-text-ai.md)を参照してください。接続実装済み・実通信未検証です。
