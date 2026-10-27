@@ -1,6 +1,7 @@
 # Gemini初回接続診断
 
 通信・請求が不明になった場合は[段階別ログと既存未確定分の安全な照合手順](gemini-diagnostic-recovery.md)を参照。
+HTTP 400については[公式仕様との照合・最小固定文診断・Mac再確認手順](gemini-diagnostic-http400.md)を参照。
 
 「企画・脚本 → AI企画・ストーリー → 制作条件 → Geminiの接続・無料枠・料金設定」に追加。
 料金JSONを保存できる前から使える。**接続実装済み・実通信未検証**。Codexによる本物のGemini送信・無料枠消費・API費用はいずれも0。
@@ -34,7 +35,7 @@ AI Studioに無料枠が表示されていても、特定モデルを使える�
 ただし、他の確認・料金項目を未確認のまま送信できるわけではない。
 
 - `availability_reviewed`：公式モデルの提供案内を本人が確認。アカウント権限の確認とは別。
-- `structured_outputs_reviewed`：診断で使うJSON出力等のAPI仕様を確認。
+- `structured_outputs_reviewed`：通常生成のJSON構造化出力等のAPI仕様を本人が確認。診断ではこの確認を省略しないが、構造化出力機能の実通信検証は行わない。
 - `commercial_use_reviewed` / `external_data_reviewed`：利用目的・規約・外部送信とデータ利用条件を確認。
 - `maximum_billing_reviewed`：料金、モデルの最大入力幅、出力上限、追加機能不使用、最大料金を確認。
 - `verified_on`、入力/出力単価、`fx_jpy_per_usd`、`tax_multiplier`、`safety_multiplier`、`tax_note`：最新公式料金と本人の支払条件で設定。料金確認は30日以内。
@@ -62,6 +63,7 @@ Connection diagnostic only. Return exactly this JSON: {"ok":true}
 ```
 
 作品・脚本・人物・バイブル・参照画像・音声は送らない。APIキーは認証ヘッダーにのみ使う。
+診断ではresponseJsonSchema・responseSchema・responseMimeTypeを送らない。固定文へのJSONテキスト応答をローカルで検証するだけで、通常脚本の構造化出力機能は確認しない。思考OFFと候補数/出力上限は維持する。
 ツール・検索・外部キャッシュ・思考・複数候補・モデル自動切替・自動再試行は使わない。
 最大費用は文字数から小さく推測せず、従来どおりモデル全入力幅で保守的に算出する。
 公式参考単価の入力$0.10/出力$0.40（100万tokensあたり）、仮の為替150円/USD・税1.10・安全係数1.25なら、診断の最大予約は**21.648円**。

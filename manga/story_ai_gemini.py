@@ -132,6 +132,9 @@ def transport(body,key):
     except DiagnosticStorageError:raise
     except HTTPError as error:
         category={400:'bad_request',401:'unauthorized',403:'forbidden',404:'not_found',429:'rate_limited'}.get(error.code,'server_error' if 500<=error.code<=599 else 'http_error')
+        if error.code==400:
+            from manga.gemini_http_errors import read_bad_request
+            category=read_bad_request(error)
         emit('sending','completed')
         emit('http_response','completed',http_status=error.code,reason=category)
         raise GeminiTransportError(category) from None

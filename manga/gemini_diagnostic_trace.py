@@ -7,6 +7,7 @@ import json
 
 from manga.models import validate_id, now_iso
 from manga.storage import StorageError
+from manga.gemini_http_errors import BAD_REQUEST_MESSAGES
 
 STAGES = {
     'pre_send': '通信開始前・予算実行権の準備',
@@ -20,6 +21,7 @@ STAGES = {
 REASONS = {'unauthorized', 'forbidden', 'not_found', 'rate_limited', 'bad_request',
            'server_error', 'network_error', 'connection_timeout', 'response_timeout',
            'invalid_response', 'http_error', 'storage_error', 'budget_error', 'interrupted'}
+REASONS.update(BAD_REQUEST_MESSAGES)
 _sink = ContextVar('gemini_diagnostic_trace', default=None)
 
 

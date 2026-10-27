@@ -15,6 +15,7 @@ from manga.story_ai_pricing import charge_from_usage
 from manga.story_ai_storage import AIStoryStore
 from manga.voice_models import digest
 from manga.gemini_diagnostic_trace import Trace,capture,emit,DiagnosticStorageError
+from manga.gemini_http_errors import BAD_REQUEST_MESSAGES
 
 PROVIDER='gemini-text'
 EVENT='gemini_connection_diagnostic'
@@ -37,11 +38,13 @@ MESSAGES={
     'storage_error':'応答の保存が完了しませんでした。保存先・容量と請求を照合し、保存済み応答から再開してください。APIは再送しません。',
     'not_sent':'予算台帳にこの診断の予約・実行記録がなく、送信前に停止しています。履歴を残し、新しい見積を個別承認して診断できます。',
 }
+MESSAGES.update(BAD_REQUEST_MESSAGES)
 
 
 def probe_body():
+    # 疎通だけを調べる。通常脚本のJSON構造化出力指定はこの診断へ混ぜない。
     return dict(contents=[dict(role='user',parts=[dict(text=PROMPT)])],generationConfig=dict(candidateCount=1,maxOutputTokens=256,
-        thinkingConfig=dict(thinkingBudget=0),responseMimeType='application/json',responseJsonSchema=dict(type='object',properties=dict(ok=dict(type='boolean')),required=['ok'],additionalProperties=False)))
+        thinkingConfig=dict(thinkingBudget=0)))
 
 
 def parse_card(raw):
@@ -184,7 +187,7 @@ def run(service,raw,*,mode='bounded',approval=None,expected_revision,probe=None)
             reason=error.category if isinstance(error,GeminiTransportError) and error.category in MESSAGES else 'storage_error' if isinstance(error,DiagnosticStorageError) else 'network_error' if isinstance(error,OSError) else 'invalid_response'
             if trace.last and trace.last[0]=='budget_settlement' and not isinstance(error,DiagnosticStorageError):reason='budget_error'
             trace.failed(reason)
-            state='unavailable' if reason in ('forbidden','not_found','rate_limited','unauthorized','bad_request') else 'uncertain'
+            state='unavailable' if reason.startswith('bad_request') or reason in ('forbidden','not_found','rate_limited','unauthorized') else 'uncertain'
             trace.record('history_storage','started')
             result=_finish(service,initial,dict(state=state,reason=reason))
             trace.record('history_storage','completed')
