@@ -37,7 +37,7 @@ def render_story_ai(project,directory,navigate=None):
             st.session_state[prefix+'_mode']=mode
             import os
             st.caption('APIキー：'+('設定あり' if os.environ.get('GEMINI_API_KEY' if provider=='gemini-text' else 'OPENAI_API_KEY') else '未設定')+'（値は表示しません）')
-            st.info('接続実装済み・実通信未検証。公式資料の確認だけでは、このアカウントの利用権限は確認できません。')
+            st.info('開発・自動テストでは実APIへ送信していません。実アカウントの権限・無料枠は本人が確認してください。公式資料だけで確認済みとは扱いません。')
         if mode=='manual':
             st.info('ChatGPTで生成したJSONを従来の取り込み画面で確認できます。ここから自動送信は行いません。')
             if navigate and st.button('ChatGPTのJSON取り込み画面へ'):navigate('企画・ストーリー','生成・取り込み')

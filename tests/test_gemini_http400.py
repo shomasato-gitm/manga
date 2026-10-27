@@ -124,7 +124,7 @@ def test_old_body_approval_cannot_be_reused_and_max_quote_is_unchanged(ai_worksp
     import manga.gemini_diagnostics as module
     service=ai_workspace;probe,calls=prepare(service,monkeypatch);current=probe_body
     old=copy.deepcopy(current());old['generationConfig'].update(responseMimeType='application/json',responseJsonSchema=dict(type='object',properties={'ok':{'type':'boolean'}},required=['ok'],additionalProperties=False))
-    monkeypatch.setattr(module,'probe_body',lambda:copy.deepcopy(old));old_plan=preview(service,draft())
+    monkeypatch.setattr(module,'probe_body',lambda _model=None:copy.deepcopy(old));old_plan=preview(service,draft())
     monkeypatch.setattr(module,'probe_body',current);new_plan=preview(service,draft())
     assert old_plan['maximum_jpy']==new_plan['maximum_jpy'] and old_plan['approval_key']!=new_plan['approval_key']
     with pytest.raises(ValueError,match='承認'):run(service,draft(),approval=old_plan['approval_key'],expected_revision=service.store.load()['revision'],probe=probe)
@@ -146,7 +146,7 @@ def test_old_saved_response_recovers_after_probe_update_without_resend(ai_worksp
     import manga.gemini_diagnostics as module
     service=ai_workspace;probe,calls=prepare(service,monkeypatch);current=probe_body
     old=copy.deepcopy(current());old['generationConfig'].update(responseMimeType='application/json',responseJsonSchema=dict(type='object',properties={'ok':{'type':'boolean'}},required=['ok'],additionalProperties=False))
-    monkeypatch.setattr(module,'probe_body',lambda:copy.deepcopy(old));record=execute(service,probe)
+    monkeypatch.setattr(module,'probe_body',lambda _model=None:copy.deepcopy(old));record=execute(service,probe)
     monkeypatch.setattr(module,'probe_body',current)
     before=open_budget(service.directory).request_status(record['diagnosis_id'])
     assert recover(service,record['diagnosis_id'])['state']=='success' and len(calls)==1

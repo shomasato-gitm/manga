@@ -6,7 +6,7 @@ BAD_REQUEST_MESSAGES = {
     'bad_request_api_key': '400：Googleの構造化エラーはAPIキーの無効を示しています。Macのキー設定と発行プロジェクトを確認してください。キーの値は貼り付けないでください。',
     'bad_request_precondition': '400：Googleは実行の前提条件が満たされていないと回答しました。対象プロジェクトの利用条件・地域・請求設定等を確認してください。どの条件かはこの分類だけでは断定できません。',
     'bad_request_json_schema': '400：Googleの検証詳細がJSONスキーマの指定を指しています。アプリの版と構造化出力の対応を確認してください。スキーマを自動変更して再送しません。',
-    'bad_request_thinking': '400：Googleの検証詳細が思考設定を指しています。対象モデルのthinkingConfig・thinkingBudgetの対応を確認してください。モデルや予算を自動変更しません。',
+    'bad_request_thinking': '400：Googleの検証詳細が思考設定を指しています。対象モデルのthinkingConfig・thinkingLevel・thinkingBudgetの対応を確認してください。モデルや予算を自動変更しません。',
     'bad_request_mime_type': '400：Googleの検証詳細が応答形式の指定を指しています。responseMimeTypeとスキーマの組合せを確認してください。',
     'bad_request_output_limit': '400：Googleの検証詳細が出力上限を指しています。モデルの上限とmaxOutputTokensを確認してください。費用上限を自動で増やしません。',
     'bad_request_contents': '400：Googleの検証詳細が送信内容の構造を指しています。contents・role・partsのAPI仕様とアプリの版を確認してください。',
@@ -21,12 +21,15 @@ _FIELDS = {
     'generationConfig.thinkingConfig': 'bad_request_thinking',
     'generationConfig.responseMimeType': 'bad_request_mime_type',
     'generationConfig.maxOutputTokens': 'bad_request_output_limit',
+    'generationConfig.responseFormat.text.schema': 'bad_request_json_schema',
+    'generationConfig.responseFormat.text.mimeType': 'bad_request_mime_type',
     'contents': 'bad_request_contents',
     'generationConfig': 'bad_request_generation_config',
 }
 _ALIASES = {'generation_config':'generationConfig', 'response_json_schema':'responseJsonSchema',
             'response_schema':'responseSchema', 'thinking_config':'thinkingConfig',
             'response_mime_type':'responseMimeType', 'max_output_tokens':'maxOutputTokens'}
+_ALIASES.update(response_format='responseFormat',mime_type='mimeType')
 
 
 def classify_bad_request(raw):

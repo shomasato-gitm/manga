@@ -3,28 +3,42 @@ import json
 from manga.ui_runtime import ui as st
 from manga.story_ai_ui import action
 from manga.story_ai_gemini import template
+from manga.gemini_models import DEFAULT_MODEL,MODELS,get_model
 
 
 def gemini_configuration(service,data,config,prefix):
     with st.expander('Geminiの接続・無料枠・料金設定'):
-        st.warning('2.5 Flash-Liteは過去の利用者へアクセスを制限する公式案内があります。利用アカウントで提供状況を確認してください。')
+        saved=data.get('card') or {};initial=saved.get('model') if saved.get('model') in MODELS else DEFAULT_MODEL
+        model=st.selectbox('Geminiモデル（設定・診断）',list(MODELS),index=list(MODELS).index(initial),
+            format_func=lambda m:m+('（履歴・互換用）' if get_model(m).legacy else '（推奨）'),key=prefix+'_gemini_model')
+        profile=get_model(model)
+        st.caption('モデルを選んだだけでは保存済み設定・履歴を変更しません。対応する料金JSONを確認・保存してから通常生成に使用します。')
+        if saved.get('provider')=='gemini-text':st.write('保存済みの実行モデル：'+get_model(saved['model']).id)
+        if profile.legacy:st.warning('2.5 Flash-Liteは履歴・互換用です。404や利用不可でも3.5へ自動切替しません。3.5は別の料金・思考設定を確認して保存してください。')
+        else:st.info('3.5はthinkingLevel=minimalを使用します。思考OFFではなく、思考トークンも出力上限・費用に含まれます。')
         st.caption('無料枠でも有料単価の最大額を共有予算へ保守的に予約・記録します。無料枠を消費する接続試験は自動実行しません。')
-        st.markdown('[モデル](https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite) ｜ [料金](https://ai.google.dev/gemini-api/docs/pricing) ｜ [規約・データ利用](https://ai.google.dev/gemini-api/terms)')
-        st.download_button('Gemini料金設定のひな形を取得',json.dumps(template(),ensure_ascii=False,indent=2),file_name='gemini-text-pricing.json',mime='application/json')
+        st.markdown(f'[モデル]({profile.model_url}) ｜ [料金](https://ai.google.dev/gemini-api/docs/pricing) ｜ [規約・データ利用](https://ai.google.dev/gemini-api/terms)')
+        st.write(f'確認したStandard参考単価：入力 ${profile.input_rate} / 出力（思考分含む） ${profile.output_rate}（各100万tokens）。公式確認日：{profile.verified_on}')
+        st.download_button('Gemini料金設定のひな形を取得',json.dumps(template(model),ensure_ascii=False,indent=2),file_name=model+'-pricing.json',mime='application/json')
         from manga.editorial_ui_common import json_input,input_text
         from manga.story import load_json_payload
         raw=json_input('Gemini利用条件・料金JSON',prefix+'_gemini_card')
         from manga.gemini_diagnostics_ui import initial_diagnostic
-        initial_diagnostic(service,data,raw,prefix)
+        initial_diagnostic(service,data,raw,prefix,selected_model=model)
         checked=st.checkbox('公式モデル・アカウント利用権限・送信範囲・料金を確認した',key=prefix+'_gemini_verified')
         if st.button('Gemini利用条件・料金を保存',disabled=not checked):
-            action(lambda:service.configure(config,load_json_payload(input_text(raw)),expected_revision=data['revision']),'Gemini設定を保存しました。送信には別途1回ごとの承認が必要です。')
+            def save():
+                value=load_json_payload(input_text(raw))
+                if not isinstance(value,dict) or value.get('model')!=model:raise ValueError('画面で選択したモデルと料金JSONのmodelを一致させてください。保存済み設定は変更していません。')
+                service.configure(config,value,expected_revision=data['revision'])
+            action(save,'Gemini設定を保存しました。送信には別途1回ごとの承認が必要です。')
 
 
 def disclosure(card,phase):
     st.write(f"今回：{phase} ／ モデル：{card['model']} ／ 最大入力：{card['max_input_tokens']:,} tokens ／ 最大出力：{card['max_output_tokens']:,} tokens")
     st.caption('送る情報：作品名・企画条件、登録人物の設定テキスト、選択した参考技法、選択企画、評価・改善では対象候補の全文と評価。画像・音声ファイル・APIキーは本文に含めません。')
-    st.caption('追加課金機能：ツール・検索・外部キャッシュ・画像・音声・バッチは使用しません。Geminiは思考OFF、出力は1候補。最大入力はトークンの推測ではなくモデルの全入力幅で見積もります。')
+    st.caption('追加課金機能：ツール・検索・外部キャッシュ・画像・音声・バッチは使用しません。出力は1候補。最大入力はトークンの推測ではなくモデルの全入力幅で見積もります。')
+    if card['provider']=='gemini-text':st.caption('思考設定：'+get_model(card['model']).thinking_label)
     st.warning('無料APIも有料相当の保守的な予算枠を使います。請求書の金額ではありません。無料枠終了時の有料切替・モデル変更・自動リトライは行いません。')
 
 

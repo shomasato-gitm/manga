@@ -8,6 +8,8 @@ from ui_helpers import button
 
 
 def paste(app,value):
+    if value.get('model') in ('gemini-2.5-flash-lite','gemini-3.5-flash-lite'):
+        next(s for s in app.selectbox if s.label=='Geminiモデル（設定・診断）').set_value(value['model']).run()
     next(r for r in app.radio if r.label=='Gemini利用条件・料金JSONの入力方法').set_value('貼り付け').run()
     next(t for t in app.text_area if t.label=='Gemini利用条件・料金JSONを貼り付け').set_value(json.dumps(value)).run()
 
