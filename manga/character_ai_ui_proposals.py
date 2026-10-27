@@ -58,7 +58,7 @@ def review(service, version_id, enabled, prefix):
         adopted = [c for a in data['adoptions'] if a['proposal_id'] == proposal_id for c in a['changes'] if c['item_id'] == item_id]
         if adopted: st.caption('採用先の正式人物UUID：'+adopted[-1]['result_id'])
     _review_item(service, data, proposal_id, item_id, item, request, key, enabled, readonly)
-    if readonly and proposal['decisions'][item_id]=='採用済み' and st.button('STEP 5：採用人物のバイブルを確認する'):
+    if readonly and proposal['decisions'][item_id]=='採用済み' and st.button('STEP 5：採用人物のバイブルを確認する',disabled=not enabled):
         from manga.character_ai_ui_generation import go_stage
         if adopted:st.session_state[prefix+'_bible_person']=adopted[-1]['result_id']
         go_stage(prefix,'キャラクターバイブル')

@@ -52,6 +52,8 @@ class AssistantStore(AssistantRepository):
         with self.locked():
             data = self.checked(expected_revision)
             request = self.request(data, request_id)
+            if request.get('character_ai',{}).get('provider')=='gemini-text':
+                raise ValueError('Gemini人物依頼への手動応答の重複取り込みはできません。人物画面で保存済み応答を復旧してください。手動JSONは別の手動依頼で確認してください。')
             self.latest(request["story_version_id"])
             payload = normalize_payload(parsed, request)
             if request["kind"] in ("directions", "evaluation", "improvement"):

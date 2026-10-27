@@ -72,6 +72,8 @@ API応答は、既存の`AIStoryStore.write/read`で`story_ai/character_response
 
 API予算画面から人物画面への復帰ボタンを追加しました。過去の脚本版のAPI履歴も選べるので、脚本更新後の未確定請求を隠しません。元の共有台帳の保存先が異なる/欠損する場合、別の空台帳で送信せず停止します。アプリ終了直前に台帳の記録を残せなかった等、結果を証明できない状態は自動で未送信扱いにしません。
 
+過去版の生成履歴から現在版の採用へは誘導しません。Gemini専用依頼に旧手動取り込み画面から別の応答を重ねて保存することも禁止します。従来の手動JSON依頼・無料モックは維持し、Gemini候補の項目修正は既存の人物確認画面で行います。
+
 ## Macでの確認
 
 1. 作業ブランチへ切り替え、既存作品・共有台帳をバックアップします。`MANGA_DATA_DIR`と`MANGA_BUDGET_DB`を従来の永続保存先のままにします。台帳を削除・再作成しません。
@@ -94,7 +96,7 @@ Codexによる実API送信0回・無料枠消費0回・実費0円です。実機
 ## 変更ファイルと対象外
 
 - API契約・生成/復旧：`character_ai_gemini.py`、`character_ai_generation.py`、既存`character_ai_service.py`。
-- 人物の正本・候補・互換性：`artwork_models.py`、`assistant_models.py`、`assistant_repository.py`、`assistant_review_ui.py`、`character_ai_extraction.py`、`character_ai_proposals.py`、`character_ai_recovery.py`。
+- 人物の正本・候補・互換性：`artwork_models.py`、`assistant_models.py`、`assistant_repository.py`、`assistant_storage.py`、`assistant_review_ui.py`、`character_ai_extraction.py`、`character_ai_proposals.py`、`character_ai_recovery.py`。
 - 既存画面：`character_ai_ui.py`、`character_ai_ui_generation.py`、`character_ai_ui_proposals.py`、`character_ai_ui_bible.py`、`budget_ui.py`、`app.py`。
 - 専用fixtureとサービス/復旧/互換/画面テスト：`tests/character_gemini_fixtures.py`、`tests/test_character_ai_gemini*.py`。
 - 案内・CI：本資料、README、既存pytestワークフローの対象ブランチ追加。

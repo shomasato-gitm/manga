@@ -46,6 +46,15 @@ def test_adapter_direct_invocation_has_no_execution_right(character_gemini):
     assert not calls
 
 
+def test_manual_import_cannot_add_a_second_response_to_api_request(character_gemini):
+    from manga.assistant_storage import AssistantStore
+    _,service=character_gemini;adapter,calls=fake_adapter(service);result=generate(character_gemini,adapter=adapter)
+    before=service.proposals.path.read_bytes();store=AssistantStore(service.store.root.parent,service.project_id)
+    with pytest.raises(ValueError,match='重複取り込み'):
+        store.import_proposal(result['request']['id'],json.dumps(result['proposal']['original_payload']),expected_revision=store.load()['revision'])
+    assert service.proposals.path.read_bytes()==before and len(calls)==1
+
+
 @pytest.mark.parametrize('fault',['model','usage','incomplete'])
 def test_model_usage_and_completion_must_be_valid(character_gemini,fault):
     _,service=character_gemini

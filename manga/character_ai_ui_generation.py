@@ -69,7 +69,10 @@ def generation(service,project,version_id,enabled,prefix,names,new,navigate):
                 result=service.recover_gemini(row['id'])
                 if result['request']['character_ai']['state']!='saved':raise ValueError(ERRORS[result['request']['character_ai']['error']])
             action(resume,'保存済み応答と請求を照合しました。APIは再送していません。')
-        if meta['state']=='saved' and st.button('STEP 4：人物候補の修正・採用へ'):go_stage(prefix,'候補確認・採用')
+        if meta['state']=='saved':
+            if row['story_version_id']==version_id:
+                if st.button('STEP 4：人物候補の修正・採用へ'):go_stage(prefix,'候補確認・採用')
+            else:st.info('これは過去の脚本版の提案です。STEP 1で同じ版を選ぶと閲覧できます。現在の脚本への採用や自動適用はしません。')
 
 
 def show_extraction(extraction):

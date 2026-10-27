@@ -110,3 +110,14 @@ def test_unfinalized_source_disables_gemini_and_mock(character_gemini,monkeypatc
     select_gemini(app)
     assert not any(b.label=='Gemini 3.5で人物設定案を1回生成' and not b.disabled for b in app.button)
     assert any('未確定' in w.value for w in app.warning) and not calls and not app.exception
+
+
+def test_old_generation_history_never_offers_current_version_adoption(character_gemini,monkeypatch):
+    from character_gemini_fixtures import generate,fake_adapter
+    _,service=character_gemini;adapter,calls=fake_adapter(service);result=generate(character_gemini,adapter=adapter)
+    latest=service.proposals.latest();version=service.stories.save(latest['story'],expected_version_id=latest['id'])
+    service.proposals.editorial.finalize(expected_version_id=version['id'],expected_revision=service.proposals.editorial.load()['revision'])
+    app=open_studio();select_gemini(app)
+    assert not app.exception and any('過去の脚本版の提案' in i.value for i in app.info)
+    assert not any(b.label=='STEP 4：人物候補の修正・採用へ' for b in app.button)
+    assert len(calls)==1 and service.proposals.load()['proposals'][0]['request_id']==result['request']['id']
