@@ -136,7 +136,7 @@ def _publish(service,identifier):
         return dict(request=request,proposal=proposal)
 
 
-def generate(service,project,version_id,*,approval,expected_revision,mode='verified-free',additional_names=(),new_request=False,adapter=None):
+def generate(service,project,version_id,*,approval,expected_revision,mode='verified-free',additional_names=(),new_request=False,adapter=None,project_cap_jpy=None):
     if not StoryAIService.api_enabled(mode):raise ValueError('Gemini実送信は既定OFFです。既存のテキストAPI機能フラグと利用条件を確認してください。')
     store=text_store(service)
     with store.lock(generation=True):
@@ -162,7 +162,7 @@ def generate(service,project,version_id,*,approval,expected_revision,mode='verif
             return response
         try:
             BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=identifier,provider=PROVIDER,model=DEFAULT_MODEL,kind='character-settings',
-                price_quote=quote(meta['card']),usage_limits=limits(meta['card']),operation=operation,actual_charge_jpy=lambda response:charge(meta['card'],response))
+                price_quote=quote(meta['card']),usage_limits=limits(meta['card']),operation=operation,actual_charge_jpy=lambda response:charge(meta['card'],response),project_cap_jpy=project_cap_jpy)
         except BaseException as error:
             status=ledger.request_status(identifier)
             state='not_sent' if not started and status is None else 'uncertain'

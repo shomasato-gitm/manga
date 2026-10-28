@@ -72,7 +72,7 @@ class BudgetedExecutor:
 
     def run(
         self, *, project_id, request_id, provider, model, kind, quote_jpy=None,
-        operation, actual_charge_jpy, price_quote=None, usage_limits=None, now=None,
+        operation, actual_charge_jpy, price_quote=None, usage_limits=None, now=None, project_cap_jpy=None,
     ):
         """Operation is a *single* provider call. Do not auto-repeat failures.
 
@@ -91,7 +91,7 @@ class BudgetedExecutor:
         evidence['reserved_max_jpy'] = str(_units_to_yen(quote))
         state = self.ledger.reserve(
             project_id=project_id, request_id=request_id, provider=provider,
-            model=model, kind=kind, max_jpy=_units_to_yen(quote), now=now, evidence=evidence,
+            model=model, kind=kind, max_jpy=_units_to_yen(quote), now=now, evidence=evidence, project_cap_jpy=project_cap_jpy,
         )
         if state != "reserved":
             raise ReservationConflict("同じリクエストIDの再送はできません。")

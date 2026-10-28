@@ -145,9 +145,9 @@ class StoryAIService:
             self.store.save(data,'single_call_approved',job_id=identifier)
             return job
 
-    def run_job(self,identifier):
+    def run_job(self,identifier,*,project_cap_jpy=None):
         from manga.story_ai_engine import run_job
-        return run_job(self,identifier)
+        return run_job(self,identifier,project_cap_jpy=project_cap_jpy)
 
     def recover(self,identifier):
         from manga.story_ai_engine import recover
