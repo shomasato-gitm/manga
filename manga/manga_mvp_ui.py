@@ -1,4 +1,4 @@
-"""ホーム内の一括制作。既存制作画面と正本を再利用し、画像APIは有効化しない。"""
+"""ホーム内の一括制作。既存の制作画面・正本・個別の送信承認を再利用。"""
 from uuid import uuid4
 
 from manga.ui_runtime import ui as st, operation
@@ -33,16 +33,17 @@ def _create(project, directory, navigate):
     style = st.text_area('漫画の画風', value='白黒の日本漫画。読みやすい線画と整理された背景。', max_chars=2000, key='mvp_style')
     mode = st.selectbox('一括制作のテキストAI', ['mock', 'verified-free', 'paid'],
         format_func=lambda value: {'mock':'無料モック（動作確認用のテスト画像）', 'verified-free':'Gemini 3.5（本人確認済み無料枠）', 'paid':'Gemini 3.5（有料・個別見積）'}[value], key='mvp_mode')
-    st.info('画像APIの有料送信は無効です。Gemini利用時は画像APIの承認待ちで停止します。無料モックではPNG・PDFまで通せますが、本番品質ではありません。')
     with st.container(border=True):
-        st.caption('画像APIの比較・費用（送信は無効）')
+        st.caption('画像APIの出力単価を比較')
         from manga.manga_mvp_costs import image_comparison
         st.dataframe([{'モデル':r['model'], '1枚 USD':r['per_image_usd'], '24コマ USD':r['panels_usd'], '基準2枚を含む26枚 USD':r['total_usd']} for r in image_comparison()], hide_index=True)
-        st.caption('2026-10-28確認。出力部分だけの比較で、最大請求額ではありません。入力・参照画像・思考・税・再生成は別。モデル・最大料金の確定とユーザー承認まで画像APIは無効です。日本漫画の実品質は未検証です。')
+        st.caption('2026-10-28確認。出力部分だけの比較で、最大請求額ではありません。入力・参照画像・思考・税は別。画像AIを選んでも、条件確認・送信対象と最大料金の承認まで送信しません。日本漫画の実品質は未検証です。')
     nonce = st.session_state.setdefault('mvp_creation_nonce', str(uuid4()))
     try:
+        from manga.manga_mvp_image_ui import creation_settings
+        image_mode, image_config, cap = creation_settings()
         card = AIStoryStore(directory, project.id).load()['card'] if project and mode != 'mock' else None
-        plan = creation_plan(directory, dict(theme=theme, genre=genre, page_count=int(count), style=style), nonce, mode=mode, card=card)
+        plan = creation_plan(directory, dict(theme=theme, genre=genre, page_count=int(count), style=style), nonce, mode=mode, card=card, image_config=image_config, max_budget=cap, image_mode=image_mode)
     except (ValueError, OSError, StorageError) as error:
         st.caption(str(error))
         if mode != 'mock' and st.button('既存のGemini接続・料金設定を開く'):
@@ -50,10 +51,10 @@ def _create(project, directory, navigate):
         return
     st.write(f"テキストAPI：最大{plan['text_calls']}送信、1回最大{plan['per_call_max_jpy']}円、累計最大{plan['text_max_jpy']}円")
     st.caption('順序：企画3案 → 先頭案の脚本 → 制作脚本の保存・確定 → 人物設定 → 基準画像 → 作画指示・コマ画像 → セリフ合成 → PNG・PDF・ZIP。実APIの評価・自動改善は追加送信しません。')
-    st.caption('外部送信する範囲：入力テーマ・ジャンル・ページ数、生成した企画・脚本、人物抽出と設定テキスト。画像・音声・既存作品の素材は送信しません。')
+    st.caption('今回のテキスト送信範囲：入力テーマ・ジャンル・ページ数、生成した企画・脚本、人物抽出と設定テキスト。画像は後で対象・参照画像・料金を個別に承認するまで送信しません。')
     st.caption('保存先：' + plan['destination'])
     if mode != 'mock':
-        st.caption('作品累計500円・全作品月間5,000円の共通予算を使用。画像費用は未確定のため送信不可。無料枠にも有料相当額を予約します。')
+        st.caption('作品累計500円・全作品月間5,000円の共通予算を使用。画像費用も共通管理し、無料テキスト枠にも有料相当額を予約します。')
         st.write(f"作品残予算：{plan['budget']['project_remaining_jpy']}円 / 全作品の月間残予算：{plan['budget']['monthly_remaining_jpy']}円")
         st.caption('モデル：' + plan['card']['model'] + ' / 料金確認日：' + plan['card']['verified_on'])
         st.caption('最大入力は既存モデルの全入力幅、最大出力は保存済み料金JSONの上限（思考込み）。検索・キャッシュ・追加ツールは利用しません。')
@@ -82,7 +83,7 @@ def _progress_content(engine, navigate):
     from manga.manga_mvp_steps import waiting_images
     from manga.manga_mvp import LABELS
     from manga.image_ai_models import REVIEW_FIELDS
-    areas = {key:st.empty() for key in ('header', 'review', 'actions', 'links', 'history', 'outputs')}
+    areas = {key:st.empty() for key in ('header', 'review', 'images', 'actions', 'links', 'history', 'outputs')}
     try:
         plan = engine.plan()
         run = engine.load()
@@ -136,6 +137,9 @@ def _progress_content(engine, navigate):
                     if st.button('全対象の画像確認を記録（まだ採用しない）', disabled=not all(checks.values()) or not note.strip(), key='mvp_review'):
                         engine.review_images(plan['token'], checks, note)
                         st.rerun()
+            with areas['images'].container():
+                from manga.manga_mvp_image_ui import progress
+                progress(engine)
             with areas['actions'].container():
                 if st.button('確認済みの範囲で制作を再開', type='primary', disabled=not bool(plan['action']), key='mvp_resume'):
                     engine.start(plan['token'])

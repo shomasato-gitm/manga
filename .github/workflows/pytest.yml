@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feature/github-studio-sync, feature/video-voice, feature/video-renderer, feature/ai-story-production, feature/ai-character-consistency, feature/ai-image-production, feature/ai-image-live, feature/gemini-image-readiness, feature/phase9b1-japanese-voice, feature/phase9b2-text-ai, feature/gemini-first-connection-diagnostics, feature/gemini-diagnostic-recovery, feature/gemini-diagnostic-http400, feature/phase9b3-gemini35, fix/gemini-key-environment, fix/gemini-rest-auth-diagnostics, feature/phase10a-gemini-characters, feature/automatic-manga-mvp, feature/phase11-gemini-image]
+    branches: [main, feature/github-studio-sync, feature/video-voice, feature/video-renderer, feature/ai-story-production, feature/ai-character-consistency, feature/ai-image-production, feature/ai-image-live, feature/gemini-image-readiness, feature/phase9b1-japanese-voice, feature/phase9b2-text-ai, feature/gemini-first-connection-diagnostics, feature/gemini-diagnostic-recovery, feature/gemini-diagnostic-http400, feature/phase9b3-gemini35, fix/gemini-key-environment, fix/gemini-rest-auth-diagnostics, feature/phase10a-gemini-characters, feature/automatic-manga-mvp, feature/phase11-gemini-image, feature/phase11-manga-completion]
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
   pytest:
     name: pytest (Python ${{ matrix.python }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

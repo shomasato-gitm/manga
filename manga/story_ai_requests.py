@@ -81,7 +81,7 @@ def receipt(service,request):
     return value['response'],hashlib.sha256(content).hexdigest()
 
 
-def execute(service,job,request):
+def execute(service,job,request,*,project_cap_jpy=None):
     if request['state'] not in ('queued','not_sent'):raise StopStory('provider_uncertain','同じリクエストを再送しません。保存・請求の復旧を先に確認してください。')
     paid=job['provider']!='mock';ledger=ledger_for(service,job) if paid else None
     if paid:
@@ -108,7 +108,7 @@ def execute(service,job,request):
         return response
     try:
         response=BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=request['id'],provider=job['provider'],model=job['card']['model'],kind='story',
-            price_quote=quote(job['card']),usage_limits=limits(job['card']),operation=operation,actual_charge_jpy=lambda r:charge(job['card'],r)) if paid else operation()
+            price_quote=quote(job['card']),usage_limits=limits(job['card']),operation=operation,actual_charge_jpy=lambda r:charge(job['card'],r),project_cap_jpy=project_cap_jpy) if paid else operation()
     except Exception:
         try:status=ledger.request_status(request['id']) if paid else None
         except Exception:status={'state':'unknown'}
