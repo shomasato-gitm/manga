@@ -33,9 +33,37 @@ class ImageAIService:
             self.store.checked(self.store.load()['revision'])
             return prepare(self,plan,card,consent_reference_ids)[0]
 
-    def create_live_job(self,plan,card,consent_reference_ids,*,approval_token,confirmed=False,expected_revision,new_request=False):
+    def create_live_job(self,plan,card,consent_reference_ids,*,approval_token,confirmed=False,expected_revision,new_request=False,scope_id=None):
         from manga.image_ai_live_jobs import create
-        return create(self,plan,card,consent_reference_ids,approval_token=approval_token,confirmed=confirmed,expected_revision=expected_revision,new_request=new_request)
+        return create(self,plan,card,consent_reference_ids,approval_token=approval_token,confirmed=confirmed,expected_revision=expected_revision,new_request=new_request,scope_id=scope_id)
+
+    def save_lite_configuration(self,card,*,expected_revision):
+        from manga.gemini_image_scope import save_configuration
+        return save_configuration(self,card,expected_revision=expected_revision)
+
+    def lite_configuration(self):
+        from manga.gemini_image_scope import configuration
+        return configuration(self)
+
+    def preview_lite_scope(self,plans,card,*,project_cap='500'):
+        from manga.gemini_image_scope import preview
+        return preview(self,plans,card,project_cap=project_cap)
+
+    def approve_lite_scope(self,plans,card,**kwargs):
+        from manga.gemini_image_scope import approve
+        return approve(self,plans,card,**kwargs)
+
+    def confirm_lite_first(self,candidate_id,**kwargs):
+        from manga.gemini_image_scope import confirm_first
+        return confirm_first(self,candidate_id,**kwargs)
+
+    def lite_first_confirmed(self,card):
+        from manga.gemini_image_scope import has_first_review
+        return has_first_review(self,card)
+
+    def find_lite_scope(self,plan,card):
+        from manga.gemini_image_scope import find_scope
+        return find_scope(self,plan,card)
 
     def plan(self,kind,*,options=None,**selection):
         with self.store.locked():

@@ -18,6 +18,10 @@ def research():
 
 
 def validate_card(raw):
+    from manga.gemini_image_contract import MODEL
+    if isinstance(raw,dict) and raw.get('model')==MODEL:
+        from manga.gemini_image_contract import validate_card as validate_lite
+        return validate_lite(raw)
     keys = {'provider','model','returned_models','verified_on','source_url','protocol_url','terms_url','tax_note',
             'input_per_million_usd','output_per_million_usd','fx_jpy_per_usd','tax_multiplier','safety_multiplier',
             'max_input_tokens','max_output_tokens','max_thinking_tokens','max_reference_images','max_reference_bytes',
@@ -41,13 +45,23 @@ def validate_card(raw):
     return copy.deepcopy(raw)
 
 
-def price_quote(card,*,settlement=False):
+def price_quote(card,*,settlement=False,payload_sha256=None):
+    from manga.gemini_image_contract import MODEL
+    if card.get('model')==MODEL:
+        from manga.gemini_image_contract import quote
+        return quote(card,settlement=settlement,payload_sha256=payload_sha256)
     return PriceQuote(PriceRates(input_per_million_usd=card['input_per_million_usd'],output_per_million_usd=card['output_per_million_usd'],
                                 source_url=card['source_url'],verified_on=card['verified_on'],provider=PROVIDER,model=card['model'],tax_note=card['tax_note']),
                       card['fx_jpy_per_usd'], '1' if settlement else card['safety_multiplier'],card['tax_multiplier'])
 
 
 def bounds(card,*,for_estimate=False):
+    from manga.gemini_image_contract import MODEL
+    if card.get('model')==MODEL:
+        from manga.gemini_image_contract import bounds as lite_bounds
+        values=lite_bounds(card)
+        if for_estimate: values.pop('retry_limit')
+        return values
     values=dict(max_input_tokens=card['max_input_tokens'],max_output_tokens=card['max_output_tokens']+card['max_thinking_tokens'],max_items=0)
     if not for_estimate: values['retry_limit']=0
     return values
@@ -62,6 +76,10 @@ def quotation(card,*,now=None):
 def actual_charge(card,response):
     """全出力（思考含む）を最高出力単価で換算。usage不明を0と推測しない。"""
     from manga.image_ai_live_provider import LiveError
+    from manga.gemini_image_contract import MODEL
+    if card.get('model')==MODEL:
+        from manga.gemini_image_contract import actual_charge as lite_charge
+        return lite_charge(card,response)
     usage=response.get('usageMetadata')
     if response.get('modelVersion') not in card['returned_models']: raise LiveError('model_mismatch','応答モデルが未確認です。請求確認まで予約を保持します。')
     if not isinstance(usage,dict): raise LiveError('usage_unknown','usageが不明です。請求確認まで予約を保持します。')
