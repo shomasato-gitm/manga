@@ -127,7 +127,10 @@ def next_action(engine):
                 continue
             found = next((c for c in candidates if jobs[c['job_id']]['plan']['character_id'] == identifier), None)
             if not found:
-                if engine.load()['plan']['mode'] != 'mock':
+                from manga.manga_mvp_images import enabled, next_image
+                if enabled(engine):
+                    return next_image(engine, 'character', character_id=identifier)
+                if not mock_images(engine):
                     return None, '画像APIはモデル・最大料金・有料送信の承認待ちです。実装上無効のため送信しません。手動画像制作も利用できます。'
                 return action('reference', 'reference/' + identifier, character_id=identifier), ''
     pending = pending_candidates(engine, 'character')
@@ -154,7 +157,10 @@ def next_action(engine):
             if selected(engine, 'panel', f'{p}:{c}'):
                 continue
             if not any(jobs[i['job_id']]['plan']['page'] == p and jobs[i['job_id']]['plan']['panel'] == c for i in candidates):
-                if engine.load()['plan']['mode'] != 'mock':
+                from manga.manga_mvp_images import enabled, next_image
+                if enabled(engine):
+                    return next_image(engine, 'panel', page=p, panel=c)
+                if not mock_images(engine):
                     return None, '画像APIの有料送信は無効です。確認済みの手動画像を取り込むか、API選定の承認後に再開してください。'
                 return action('panel', f'panel/{p}:{c}', page=p, panel=c), ''
     pending = pending_candidates(engine, 'panel')
@@ -194,7 +200,7 @@ def story_job(engine, kind):
     if job['state'] == 'queued':
         if job['provider'] != 'mock':
             engine.api_consent()
-        service.run_job(job['id'])
+        service.run_job(job['id'], project_cap_jpy=engine.load()['plan'].get('max_budget_jpy', '500'))
     elif job['state'] in ('running', 'paused'):
         service.recover(job['id'])  # 保存済み応答の復旧だけ。HTTP再送なし。
     current = service.store.load()
@@ -241,7 +247,7 @@ def execute(engine, item):
             engine.api_consent()
             project = ProjectStore(engine.directory).load(engine.project_id)
             plan = chars.preview_gemini(project, latest['id'], mode=engine.load()['plan']['mode'])
-            result = chars.generate_gemini(project, latest['id'], mode=engine.load()['plan']['mode'], approval=plan['approval_key'], expected_revision=plan['revision'])
+            result = chars.generate_gemini(project, latest['id'], mode=engine.load()['plan']['mode'], approval=plan['approval_key'], expected_revision=plan['revision'], project_cap_jpy=engine.load()['plan'].get('max_budget_jpy', '500'))
             if not result['proposal']:
                 raise ValueError('人物応答または請求が未確認です。自動再送しません。')
         if not proposal(engine):
@@ -257,7 +263,11 @@ def execute(engine, item):
             expected_artwork_revision=service.artwork.load()['revision'], locked_fields=[], aliases=[], exceptions=[],
             reason='新規作品のMVP一括制作承認に基づく設定保存。外見・権利・公開品質は未確認。', confirmed=True)
     elif kind in ('reference', 'panel'):
-        if engine.load()['plan']['mode'] != 'mock':
+        from manga.manga_mvp_images import enabled, execute as execute_image
+        if enabled(engine):
+            execute_image(engine, 'character' if kind == 'reference' else 'panel', **args)
+            return
+        if not mock_images(engine):
             raise ValueError('画像APIは無効です。')
         plan = engine.images.plan('character' if kind == 'reference' else 'panel', **args)
         job = engine.images.create_job(plan, provider='mock', expected_revision=engine.images.store.load()['revision'])
@@ -288,3 +298,8 @@ def execute(engine, item):
 def _additional_names(latest):
     # 無料モックの既存ひな形が明記する2名。実APIの曖昧な人物には使わない。
     return [name for name in ('主人公', '友人') if any(name in panel['description'] for page in latest['story']['pages'] for panel in page['panels'])]
+
+
+def mock_images(engine):
+    plan = engine.load()['plan']
+    return plan.get('image_mode', 'mock' if plan['mode'] == 'mock' else 'manual') == 'mock'

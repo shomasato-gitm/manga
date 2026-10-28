@@ -168,7 +168,7 @@ class BudgetLedger:
             (request_id,),
         ).fetchone()
 
-    def reserve(self, *, project_id, request_id, provider, model, kind, max_jpy, now=None, evidence=None):
+    def reserve(self, *, project_id, request_id, provider, model, kind, max_jpy, now=None, evidence=None, project_cap_jpy=None):
         """Reserve the *maximum* possible charge BEFORE starting network I/O."""
         validate_id(project_id)
         request_id = _check_label(request_id, "リクエストID")
@@ -176,6 +176,9 @@ class BudgetLedger:
         model = _check_label(model, "モデル")
         kind = _check_label(kind, "用途")
         quote = _yen_to_units(max_jpy, positive=True)
+        cap = self.project_limit if project_cap_jpy is None else _yen_to_units(project_cap_jpy, positive=True)
+        if cap > self.project_limit:
+            raise ValueError('今回の作品上限で共通予算を拡張することはできません。')
         at, month = _now_and_month(now)
         evidence_json = json.dumps(evidence, sort_keys=True, allow_nan=False) if evidence is not None else None
         if evidence is not None:
@@ -196,7 +199,7 @@ class BudgetLedger:
 
             self._assert_open(db)
             checks = [
-                ("作品", self.project_limit, self._used(db, "project_id=?", (project_id,))),
+                ("作品", cap, self._used(db, "project_id=?", (project_id,))),
                 ("月間", self.monthly_limit, self._used(db, monthly_where(), (month,))),
             ]
             if provider in self.provider_limits:

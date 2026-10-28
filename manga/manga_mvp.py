@@ -29,7 +29,7 @@ LABELS = {
 }
 
 
-def creation_plan(directory, values, nonce, *, mode='mock', card=None):
+def creation_plan(directory, values, nonce, *, mode='mock', card=None, image_config=None, max_budget='500', image_mode=None):
     """通信・予約なし。利用者が承認する新規作品、操作範囲、最大3送信を固定する。"""
     from manga.artwork_models import text
     from manga.story_ai_models import settings
@@ -38,7 +38,21 @@ def creation_plan(directory, values, nonce, *, mode='mock', card=None):
         raise ValueError('制作方式を選択してください。')
     config = settings(dict(values, mood='テーマに沿った読みやすい短編', max_cycles=0, concept_count=3))
     style = text(values.get('style', ''), '画風', 2000, True)
-    identifier = str(uuid5(UUID(nonce), digest(dict(config=config, style=style, mode=mode))))
+    cap = Decimal(str(max_budget))
+    if not cap.is_finite() or not 0 < cap <= 500:
+        raise ValueError('作品の最大予算は0円より大きく500円以下で指定してください。')
+    identity = dict(config=config, style=style, mode=mode)
+    if image_mode is not None and image_mode not in ('mock', 'manual', 'gemini'):
+        raise ValueError('画像の制作方式を選んでください。')
+    if image_mode == 'gemini' and not image_config or image_config and image_mode not in (None, 'gemini'):
+        raise ValueError('画像AIと料金設定が一致しません。')
+    if image_mode is not None:
+        identity['image_mode'] = image_mode
+    if image_config:
+        from manga.image_ai_live_pricing import quotation
+        quotation(image_config)
+        identity.update(image_config=image_config, max_budget=str(cap))
+    identifier = str(uuid5(UUID(nonce), digest(identity)))
     maximum = Decimal('0')
     if mode != 'mock':
         from manga.story_ai_gemini import check_mode
@@ -50,13 +64,17 @@ def creation_plan(directory, values, nonce, *, mode='mock', card=None):
         maximum = Decimal(evidence(card)['computed_max_jpy'])
         if not StoryAIService.api_enabled(mode):
             raise ValueError('テキストAPIはOFFです。既存の利用条件と機能フラグを確認してください。')
-        if maximum * 3 > 500:
-            raise ValueError('テキスト3送信の最大額が作品500円を超えます。無料モックまたは手動制作を選択してください。')
+        if maximum * 3 > cap:
+            raise ValueError('テキスト3送信の最大額が作品の最大予算を超えます。無料モックまたは手動制作を選択してください。')
     result = dict(project_id=identifier, settings=config, style=style, mode=mode,
                   card=copy.deepcopy(card) if mode != 'mock' else None,
                   text_calls=0 if mode == 'mock' else 3, per_call_max_jpy=str(maximum),
                   text_max_jpy=str(maximum * 3), image_api_enabled=False,
                   destination=str(Path(directory) / identifier))
+    if image_config or cap != 500:
+        result.update(image_config=copy.deepcopy(image_config), max_budget_jpy=str(cap))
+    if image_mode is not None:
+        result['image_mode'] = image_mode
     if mode != 'mock':
         from manga.budget.config import open_budget
         summary = open_budget(directory).summary(identifier)
@@ -79,6 +97,7 @@ def create(directory, plan, *, approved=False):
         raise ValueError('制作方式・送信回数・最大額が不正です。')
     if plan['destination'] != str(directory / identifier) or plan['image_api_enabled'] is not False:
         raise ValueError('保存先または画像APIの停止設定が一致しません。')
+    _check_images(plan)
     if plan['mode'] != 'mock':
         from manga.story_ai_gemini import check_mode
         from manga.story_ai_pricing import evidence
@@ -133,6 +152,7 @@ class MangaMVP:
         if not isinstance(run, dict) or run.get('schema_version') != 1 or run.get('project_id') != self.project_id:
             raise StorageError('この作品の一括制作記録がありません。既存作品は上書きしません。')
         plan = run.get('plan', {})
+        _check_images(plan)
         if plan.get('project_id') != self.project_id or plan.get('mode') not in MODES or plan.get('image_api_enabled') is not False or run.get('approval_token') != plan.get('token') or digest({k:v for k,v in plan.items() if k != 'token'}) != plan.get('token'):
             raise StorageError('制作条件・承認の記録が一致しません。初期化せず確認してください。')
         per = Decimal(plan['per_call_max_jpy'])
@@ -168,6 +188,8 @@ class MangaMVP:
                     raise StorageError('保存済みの画風は上書きしません。')
                 self.story.artwork.save_style(run['plan']['style'], expected_revision=0)
             if self.load()['guard'] is None:
+                if run['plan'].get('image_config') and self.images.lite_configuration() is None:
+                    self.images.save_lite_configuration(run['plan']['image_config'], expected_revision=self.images.store.load()['revision'])
                 self.update(guard=self.source())
 
     def plan(self):
@@ -204,6 +226,8 @@ class MangaMVP:
         if len(requests) >= plan['text_calls']:
             raise ValueError('承認済みの最大3送信を使用済みです。自動再送・評価・改善の追加送信はしません。')
         ledger = open_budget(self.directory)
+        if ledger.summary(self.project_id)['project_used_jpy'] + Decimal(plan['per_call_max_jpy']) > Decimal(plan.get('max_budget_jpy', '500')):
+            raise ValueError('選択した作品の最大予算を超えるため送信しません。')
         if not BudgetedExecutor(ledger).dry_run(project_id=self.project_id, quote_jpy=plan['per_call_max_jpy'], provider='gemini-text')['possible']:
             raise ValueError('予算不足または請求不明です。共通予算管理で照合するまで停止します。')
 
@@ -271,3 +295,45 @@ class MangaMVP:
                 if not any(r['candidate_id'] == candidate['id'] and r['sha256'] == candidate['sha256'] for r in data['reviews']):
                     self.images.review(candidate['id'], checks, note, expected_revision=data['revision'])
             self.update(guard=self.source())
+
+    def image_preview(self):
+        from manga.manga_mvp_images import preview
+        return preview(self)
+
+    def approve_images(self, token, *, confirmed=False):
+        with self.automation.lock():
+            value = self.image_preview()
+            if not value or value['token'] != token or self.plan()['changed']:
+                raise StorageError('画像の送信対象が変わりました。再表示して確認してください。')
+            identifier = self.images.approve_lite_scope(value['plans'], self.images.lite_configuration(), token=token,
+                project_cap=self.load()['plan'].get('max_budget_jpy', '500'), confirmed=confirmed,
+                expected_revision=self.images.store.load()['revision'])
+            self.update(guard=self.source())
+            return identifier
+
+    def confirm_first_image(self, candidate_id, *, confirmed=False, test_only=False):
+        with self.automation.lock():
+            if self.plan()['changed']:
+                raise StorageError('画像を再表示して確認してください。')
+            result = self.images.confirm_lite_first(candidate_id, confirmed=confirmed, test_only=test_only)
+            self.update(guard=self.source())
+            return result
+
+    def recover_image_save(self, identifier, *, confirmed=False):
+        with self.automation.lock():
+            if self.plan()['changed']:
+                raise StorageError('保存済み素材の変更を再検査してから復旧してください。')
+            result = self.images.recover(identifier, confirmed=confirmed)
+            self.update(guard=self.source(), state='stopped')
+            return result
+
+
+def _check_images(plan):
+    cap = Decimal(plan.get('max_budget_jpy', '500'))
+    if not cap.is_finite() or not 0 < cap <= 500 or Decimal(plan['text_max_jpy']) > cap:
+        raise ValueError('承認した作品の最大予算が不正です。')
+    if plan.get('image_config'):
+        from manga.gemini_image_contract import validate_card
+        validate_card(plan['image_config'])
+    if plan.get('image_mode') not in (None, 'mock', 'manual', 'gemini') or plan.get('image_mode') == 'gemini' and not plan.get('image_config'):
+        raise ValueError('承認した画像の制作方式が不正です。')

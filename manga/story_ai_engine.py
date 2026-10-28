@@ -11,7 +11,7 @@ def update(service,identifier,**fields):
         job.update(fields,updated_at=now_iso());service.store.save(data,'job_state',job_id=identifier,state=job['state'])
 
 
-def run_job(service,identifier):
+def run_job(service,identifier,*,project_cap_jpy=None):
     validate_id(identifier)
     with service.store.lock(generation=True):
         job=next((j for j in service.store.load()['jobs'] if j['id']==identifier),None)
@@ -24,7 +24,7 @@ def run_job(service,identifier):
                 if service.store.safe(f"story_ai/jobs/{identifier}/cancel-{job['run_epoch']}").exists():
                     update(service,identifier,state='stopped',stop_reason='user_cancelled');return next(j for j in service.store.load()['jobs'] if j['id']==identifier)
                 request=next_request(service,identifier)
-                execute(service,job,request)
+                execute(service,job,request,project_cap_jpy=project_cap_jpy)
                 if job['provider']!='mock':
                     current=next(j for j in service.store.load()['jobs'] if j['id']==identifier)
                     if current['phase']!='done':update(service,identifier,state='stopped',stop_reason='approval_required',error=None)

@@ -91,6 +91,9 @@ def run(service,identifier,*,approved=False):
             # 書込不能を可能な限り送信前に検出する。ユーザー素材は変更しない。
             service.store.write(f'image_ai/jobs/{identifier}/prepared',job['live']['input_sha256'].encode(),1024)
         card=job['live']['card']
+        scope_id=job['live'].get('scope_id')
+        scope=next((e['scope'] for e in service.store.load()['events'] if e['kind']=='lite_scope' and e['id']==scope_id),None)
+        project_cap=scope['project_cap_jpy'] if scope else None
         def operation():
             # 予約・実行権取得の間に別画面で元データが変わっていないか再確認する。
             # 検出時も実行権は使い直さず、予約は手動照合まで保持する。
@@ -110,7 +113,7 @@ def run(service,identifier,*,approved=False):
             return response
         try:
             BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=identifier,provider=PROVIDER,model=card['model'],kind='image',
-                price_quote=price_quote(card,payload_sha256=job['live']['input_sha256']),usage_limits=bounds(card),operation=operation,actual_charge_jpy=lambda response:actual_charge(card,response))
+                price_quote=price_quote(card,payload_sha256=job['live']['input_sha256']),usage_limits=bounds(card),operation=operation,actual_charge_jpy=lambda response:actual_charge(card,response),project_cap_jpy=project_cap)
             return publish(service,identifier,ledger)
         except BaseException as error:
             status=ledger.request_status(identifier)
