@@ -4,6 +4,11 @@ from manga.ui_runtime import ui as st
 
 def render_home(project,directory,navigate):
     st.caption('ホーム・進行状況')
+    from manga.manga_mvp_ui import render_manga_mvp
+    if render_manga_mvp(project,directory,navigate):
+        if st.button('従来の制作工程・編集を開く'):
+            navigate('漫画ページ編集')
+        return
     if not project:
         st.info('プロジェクトを作成するか、左の一覧から開いてください。')
         if st.button('プロジェクトを作成する'): navigate('プロジェクト管理')

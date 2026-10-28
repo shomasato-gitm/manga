@@ -7,6 +7,9 @@ from manga.storage import StorageError
 
 
 def render_project(store):
+    if st.button('テーマから新しい漫画をまとめて制作'):
+        from app import navigate
+        navigate('ホーム・進行状況')
     active=st.session_state.get("active_project")
     st.subheader("プロジェクトを編集" if active else "プロジェクトを作成")
     with st.form("project_form"):

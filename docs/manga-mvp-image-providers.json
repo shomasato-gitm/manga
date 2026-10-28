@@ -1,0 +1,46 @@
+{
+  "checked_on": "2026-10-28",
+  "currency": "USD",
+  "network_enabled": false,
+  "purpose": "Comparison only. Output component, not a maximum-charge quote or execution permission.",
+  "providers": [
+    {
+      "model": "gemini-3.1-flash-lite-image",
+      "output_usd_per_image": "0.0336",
+      "setting": "Standard / 1K / 1024x1024",
+      "free_api": false,
+      "input_usd_per_million": "0.25",
+      "text_thinking_output_usd_per_million": "1.50",
+      "image_output_usd_per_million": "30.00",
+      "maximum_charge_verified": false,
+      "sources": ["https://ai.google.dev/gemini-api/docs/pricing", "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite-image", "https://ai.google.dev/gemini-api/terms"]
+    },
+    {
+      "model": "gemini-3.1-flash-image",
+      "output_usd_per_image": "0.067",
+      "setting": "Standard / 1K / official rounded image price",
+      "free_api": false,
+      "input_usd_per_million": "0.50",
+      "text_thinking_output_usd_per_million": "3.00",
+      "image_output_usd_per_million": "60.00",
+      "maximum_charge_verified": false,
+      "sources": ["https://ai.google.dev/gemini-api/docs/pricing", "https://ai.google.dev/gemini-api/docs/image-generation", "https://ai.google.dev/gemini-api/terms"]
+    },
+    {
+      "model": "gpt-image-2",
+      "output_usd_per_image": "0.006",
+      "setting": "Low / 1024x1024 / output component only (Medium: 0.053 USD)",
+      "free_api": false,
+      "maximum_charge_verified": false,
+      "sources": ["https://developers.openai.com/api/docs/guides/image-generation", "https://developers.openai.com/api/docs/models/gpt-image-2", "https://openai.com/policies/services-agreement/"]
+    },
+    {
+      "model": "FLUX.2 [klein] 4B",
+      "output_usd_per_image": null,
+      "setting": "Hosted price not readable in official table. Local 4B weights: Apache 2.0; GPU requirements apply.",
+      "free_api": null,
+      "maximum_charge_verified": false,
+      "sources": ["https://docs.bfl.ai/quick_start/pricing", "https://docs.bfl.ai/flux_2/flux2_overview"]
+    }
+  ]
+}
