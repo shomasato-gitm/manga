@@ -51,6 +51,8 @@ def creation_plan(directory, values, nonce, *, mode='mock', card=None, image_con
     if image_config:
         from manga.image_ai_live_pricing import quotation
         quotation(image_config)
+        if mode == 'verified-free':
+            raise ValueError('画像とテキストは同じAPIキーを使います。有料画像の利用時はテキストを無料枠として精算できません。テキストAIを有料見積または無料モックに変更してください。')
         identity.update(image_config=image_config, max_budget=str(cap))
     identifier = str(uuid5(UUID(nonce), digest(identity)))
     maximum = Decimal('0')
@@ -335,5 +337,7 @@ def _check_images(plan):
     if plan.get('image_config'):
         from manga.gemini_image_contract import validate_card
         validate_card(plan['image_config'])
+        if plan['mode'] == 'verified-free':
+            raise ValueError('同じAPIキーの有料画像と無料テキストを混在させません。有料見積で新規作品を開始してください。')
     if plan.get('image_mode') not in (None, 'mock', 'manual', 'gemini') or plan.get('image_mode') == 'gemini' and not plan.get('image_config'):
         raise ValueError('承認した画像の制作方式が不正です。')

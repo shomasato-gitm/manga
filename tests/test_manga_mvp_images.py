@@ -21,9 +21,10 @@ def live_mvp(tmp_path, monkeypatch):
     monkeypatch.setenv('MANGA_BUDGET_DB', str(tmp_path / 'budget.sqlite3'))
     monkeypatch.setenv('GEMINI_API_KEY', 'FAKE-MVP-IMAGE-KEY-NEVER-PERSIST')
     monkeypatch.setenv('MANGA_ENABLE_TEXT_API', '1')
+    monkeypatch.setenv('MANGA_ENABLE_PAID_STORY', '1')
     from test_gemini35 import card35
     plan = creation_plan(directory, dict(theme='桜色のタイムカプセル', genre='青春', page_count=8, style='日本漫画'),
-                         str(uuid4()), mode='verified-free', card=card35(free=True), image_config=card())
+                         str(uuid4()), mode='paid', card=card35(), image_config=card())
     project = create(directory, plan, approved=True)
     engine = MangaMVP(directory, project.id)
     fake = FakeImage()
@@ -205,3 +206,11 @@ def test_restart_mid_scope_reuses_completed_images_and_same_approval(live_mvp):
 def test_invalid_user_budget_is_not_a_new_budget_pool(tmp_path, cap):
     with pytest.raises(ValueError):
         creation_plan(tmp_path, dict(theme='作品', genre='青春', page_count=8, style='漫画'), str(uuid4()), image_config=card(), max_budget=cap)
+
+
+def test_paid_image_key_never_settles_text_as_free(tmp_path, monkeypatch):
+    from test_gemini35 import card35
+    monkeypatch.setenv('MANGA_ENABLE_TEXT_API', '1')
+    with pytest.raises(ValueError, match='同じAPIキー'):
+        creation_plan(tmp_path, dict(theme='作品', genre='青春', page_count=8, style='漫画'), str(uuid4()),
+                      mode='verified-free', card=card35(free=True), image_config=card())

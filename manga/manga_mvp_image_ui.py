@@ -15,6 +15,7 @@ def creation_settings():
     from manga.gemini_image_contract import template, ASPECTS
     value = template()
     st.info('接続実装済み・実通信未検証です。この画像APIに無料枠はありません。初回は1枚のみ確認し、その後も対象・費用を承認した範囲だけ送信します。')
+    st.caption('テキストと画像は同じAPIキーを使用します。有料画像を選ぶ場合、テキストは有料見積か無料モックを選んでください。テキストの無料枠から有料へ自動切替はしません。')
     quality = st.selectbox('画像品質・思考上限', ['minimal', 'high'],
         format_func=lambda v: {'minimal':'標準（1K・思考込み最大2,048トークン）', 'high':'高い思考上限（1K・最大4,096トークン）'}[v], key='mvp_image_quality')
     aspect = st.selectbox('画像アスペクト比', list(ASPECTS), key='mvp_image_aspect')
