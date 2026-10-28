@@ -21,13 +21,20 @@ def shared_ledger(service,*,expected=None):
     paths={j['live']['ledger_path'] for j in service.store.load()['jobs'] if j['provider']=='gemini-live'}
     paths.update(j['ledger_path'] for j in AIStoryStore(service.directory,service.project_id).load()['jobs'] if j['provider']!='mock')
     paths.update(j['ledger_path'] for j in VoiceStore(service.directory,service.project_id).load()['jobs'] if j['settings']['provider']!='mock')
+    text=AIStoryStore(service.directory,service.project_id).load()
+    paths.update(e['ledger_path'] for e in text['events'] if e['kind']=='gemini_connection_diagnostic')
+    from manga.character_ai_proposals import CharacterProposals
+    paths.update(r['character_ai']['ledger_path'] for r in CharacterProposals(service.directory,service.project_id).load()['requests'] if r.get('character_ai',{}).get('provider')=='gemini-text')
     if paths and paths!={path}: raise ValueError('脚本・音声・画像の台帳保存先が一致しません。新規DBへ切り替えず元の台帳を確認してください。')
+    if paths and not Path(path).is_file(): raise ValueError('履歴の共有予算台帳が欠損しています。初期化せず確認してください。')
     return open_budget(service.directory)
 
 
 def prepare(service,plan,card,consents):
-    service.live_adapter.check()
-    if not service.live_adapter.fake:
+    from manga.gemini_image_contract import MODEL
+    lite=card.get('model')==MODEL
+    service.live_adapter.check_model(card)
+    if not service.live_adapter.fake and not lite:
         from manga.image_ai_live_pricing import research
         if card.get('model')!=research()['model']: raise ValueError('このモデルの実送信能力は確認されていません。')
     current(service.directory,service.project_id,plan,hashed=True)
@@ -67,3 +74,6 @@ def validate_live_job(job):
     if live['card']['provider']!='gemini-live' or set(live['consents'])!={r['id'] for r in job['plan']['reference_images']} or len(live['consents'])!=len(set(live['consents'])): raise ValueError('参照画像同意の記録が不正です。')
     from manga.budget.pricing import _amount
     _amount(job['cost_jpy'],'精算額'); _amount(live['max_jpy'],'最大予約額')
+    if live.get('scope_id') is not None:
+        from manga.models import validate_id
+        validate_id(live['scope_id'])

@@ -25,9 +25,13 @@ ERRORS = {
 def error_info(error):
     code=error.code if isinstance(error,LiveError) else 'billing_or_storage_unknown'
     if not isinstance(code,str): code='billing_or_storage_unknown'
+    from manga.gemini_http_errors import BAD_REQUEST_MESSAGES
+    if code in BAD_REQUEST_MESSAGES: return code,BAD_REQUEST_MESSAGES[code]
     http=re.fullmatch(r'http_?([1-5][0-9]{2})',code)
     if http:
-        status=http[1]; return 'http_'+status,'画像APIがHTTP '+status+'を返しました。'
+        status=http[1]
+        reason={'401':'APIキーの設定を確認してください。','403':'利用権・地域・請求設定を確認してください。','404':'モデルIDと提供状況を確認してください。','429':'利用枠・レート制限を確認してください。'}.get(status,'プロバイダーの障害・通信状態を確認してください。')
+        return 'http_'+status,'画像APIがHTTP '+status+'を返しました。'+reason
     return (code,ERRORS[code]) if code in ERRORS else ('billing_or_storage_unknown','請求・保存内容を確認してください。')
 
 
@@ -93,7 +97,18 @@ class GeminiImageAdapter:
             network_allowed()
             if not os.environ.get('GEMINI_API_KEY','').strip(): raise LiveError('authentication','GEMINI_API_KEYを環境変数に設定してください。')
 
+    def check_model(self,card,*,for_send=False):
+        from manga.gemini_image_contract import MODEL
+        if card.get('model')==MODEL:
+            from manga.gemini_image_transport import check
+            check(card,for_send=for_send and not self.fake)
+        else: self.check()
+
     def send(self,card,body):
+        from manga.gemini_image_contract import MODEL
+        if card.get('model')==MODEL:
+            from manga.gemini_image_transport import send
+            return send(self,card,body)
         _require_budget(card['model'])
         self.check()
         if self.fake:
@@ -141,6 +156,10 @@ def sanitize(response):
 
 
 def request_body(plan,card,references):
+    from manga.gemini_image_contract import MODEL
+    if card.get('model')==MODEL:
+        from manga.gemini_image_contract import request_body as lite_body
+        return lite_body(plan,card,references)
     parts=[dict(text=plan['prompt']+'\n今回実際に添付する参照画像ID：'+', '.join(r['id'] for r,_ in references)+'\n添付画像だけを参照。出力は画像1枚、文字・吹き出しなし。')]
     for ref,raw in references:
         if len(raw)>card['max_reference_bytes'] or hashlib.sha256(raw).hexdigest()!=ref['sha256']: raise LiveError('reference_changed','参照画像の容量・SHAが一致しません。')

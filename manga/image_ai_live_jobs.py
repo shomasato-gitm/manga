@@ -29,7 +29,7 @@ def generation_lock(service):
         finally: fcntl.flock(stream,fcntl.LOCK_UN)
 
 
-def create(service,plan,card,consents,*,approval_token,confirmed,expected_revision,new_request=False):
+def create(service,plan,card,consents,*,approval_token,confirmed,expected_revision,new_request=False,scope_id=None):
     if confirmed is not True or type(new_request) is not bool: raise ValueError('最大費用・個別画像送信・依頼作成を明示承認してください。')
     with service.store.locked():
         data=service.store.checked(expected_revision)
@@ -39,6 +39,13 @@ def create(service,plan,card,consents,*,approval_token,confirmed,expected_revisi
         key=digest(dict(plan=plan,live={k:v for k,v in quoted.items() if k!='budget'}))
         previous=next((j for j in reversed(data['jobs']) if j['job_key']==key),None)
         if previous and not new_request: return copy.deepcopy(previous)
+        from manga.gemini_image_contract import MODEL
+        if card['model']==MODEL:
+            if new_request: raise ValueError('同一画像の無断再生成はできません。対象・指示を変更して別の単発見積を承認するか、手動画像で差し替えてください。')
+            service.live_adapter.check_model(card,for_send=True)
+            from manga.gemini_image_scope import require_scope
+            require_scope(service,plan,card,scope_id)
+            quoted['scope_id']=scope_id
         identifier=str(uuid4())
         job=record(request_id=identifier,candidate_id=str(uuid5(UUID(identifier),'candidate')),provider=PROVIDER,state='queued',plan=copy.deepcopy(plan),
                    input=None,job_key=key,api_calls=0,cost_jpy='0',error=None,error_code=None,live=copy.deepcopy(quoted))
@@ -71,6 +78,11 @@ def run(service,identifier,*,approved=False):
             if job['state']=='ready': return next(c for c in service.store.load()['candidates'] if c['id']==job['candidate_id'])
             if job['state']!='queued': raise ValueError('送信済み・中断した依頼は再送しません。履歴から保存だけを復旧してください。')
             if service.live_adapter.fake!=job['live']['fake']: raise ValueError('fakeと本番のアダプターを切り替えて再送しません。')
+            from manga.gemini_image_contract import MODEL
+            if job['live']['card']['model']==MODEL:
+                service.live_adapter.check_model(job['live']['card'],for_send=True)
+                from manga.gemini_image_scope import require_scope
+                require_scope(service,job['plan'],job['live']['card'],job['live'].get('scope_id'),identifier=identifier)
             quoted,body=prepare(service,job['plan'],job['live']['card'],job['live']['consents'])
             if quoted['approval_token']!=job['live']['approval_token'] or quoted['input_sha256']!=job['live']['input_sha256']: raise ValueError('承認後に入力が変更されています。別依頼として再計画してください。')
             ledger=shared_ledger(service,expected=job['live']['ledger_path'])
@@ -98,7 +110,7 @@ def run(service,identifier,*,approved=False):
             return response
         try:
             BudgetedExecutor(ledger).run(project_id=service.project_id,request_id=identifier,provider=PROVIDER,model=card['model'],kind='image',
-                price_quote=price_quote(card),usage_limits=bounds(card),operation=operation,actual_charge_jpy=lambda response:actual_charge(card,response))
+                price_quote=price_quote(card,payload_sha256=job['live']['input_sha256']),usage_limits=bounds(card),operation=operation,actual_charge_jpy=lambda response:actual_charge(card,response))
             return publish(service,identifier,ledger)
         except BaseException as error:
             status=ledger.request_status(identifier)
@@ -129,7 +141,13 @@ def publish(service,identifier,ledger):
     usage=response['usageMetadata']
     if usage['promptTokenCount']>card['max_input_tokens'] or usage['candidatesTokenCount']>card['max_output_tokens'] or usage['thoughtsTokenCount']>card['max_thinking_tokens']:
         raise LiveError('usage_bounds_exceeded','凍結した最大利用量を超える応答です。精算を保持し、料金の根拠を再確認してください。')
-    png,width,height=response_image(card,response)
+    from manga.gemini_image_contract import MODEL
+    if card['model']==MODEL:
+        if usage['candidatesTokenCount']+usage['thoughtsTokenCount']>card['max_output_tokens']:
+            raise LiveError('usage_bounds_exceeded','思考を含む出力合計が承認上限を超えました。料金根拠の再確認まで停止します。')
+        from manga.gemini_image_contract import response_image as lite_image
+        png,width,height=lite_image(card,response)
+    else: png,width,height=response_image(card,response)
     receipt=dict(job_id=identifier,candidate_id=job['candidate_id'],sha256=hashlib.sha256(png).hexdigest(),width=width,height=height,
                  path=f"image_ai/candidates/{job['candidate_id']}.png",api_calls=1,cost_jpy=str(status['actual_jpy']))
     service.store.write(receipt['path'],png)

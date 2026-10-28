@@ -78,4 +78,6 @@ def validate(data, project_id):
     for a in data['adoptions']:
         if a['candidate_id'] not in candidates or a['review_id'] not in {r['id'] for r in data['reviews']}: raise ValueError
         validate_id(a['image_id']); sha(a['registered_sha256'])
+    from manga.gemini_image_scope import validate_events
+    validate_events(data)
     return data
